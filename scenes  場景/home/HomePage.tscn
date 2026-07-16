@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://5fes2biebjed"]
+
+[ext_resource type="Texture2D" uid="uid://b1c587kowfyjh" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/home_background.png.png" id="1_ks6ul"]
+
+[node name="HomePage" type="Node2D" unique_id=1538389181]
+
+[node name="Background" type="Node2D" parent="." unique_id=1547261970]
+position = Vector2(8, -18)
+
+[node name="Sprite2D" type="Sprite2D" parent="Background" unique_id=1427871622]
+position = Vector2(955.99994, 547.5)
+scale = Vector2(1.1363636, 1.1232733)
+texture = ExtResource("1_ks6ul")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1086420782]
+position = Vector2(960, 540)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1514580408]
+
+[node name="UI" type="Control" parent="CanvasLayer" unique_id=670830068]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = 22.0
+offset_right = 3.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
