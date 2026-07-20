@@ -1,8 +1,11 @@
 [gd_scene format=3 uid="uid://5fes2biebjed"]
 
 [ext_resource type="Texture2D" uid="uid://b1c587kowfyjh" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/home_background.png.png" id="1_ks6ul"]
+[ext_resource type="PackedScene" uid="uid://bqx8n2k7p4mwr" path="res://player/Player.tscn" id="2_6uq7s"]
+[ext_resource type="Script" uid="uid://c2qi22lwvnmwq" path="res://scenes  場景/home/home_page.gd" id="3_home"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
+script = ExtResource("3_home")
 
 [node name="Background" type="Node2D" parent="." unique_id=1547261970]
 position = Vector2(8, -18)
@@ -11,6 +14,9 @@ position = Vector2(8, -18)
 position = Vector2(955.99994, 547.5)
 scale = Vector2(1.1363636, 1.1232733)
 texture = ExtResource("1_ks6ul")
+
+[node name="Player" parent="Background" unique_id=1637976938 instance=ExtResource("2_6uq7s")]
+position = Vector2(711, 436)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1086420782]
 position = Vector2(960, 540)
@@ -29,3 +35,91 @@ offset_bottom = -3.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="StatusPanel" type="PanelContainer" parent="CanvasLayer/UI" unique_id=772117469]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 32.0
+offset_right = 422.0
+offset_bottom = 670.0
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/UI/StatusPanel" unique_id=392256869]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UI/StatusPanel/Margin" unique_id=680442641]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RabbitTitle" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=2030147123]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "兔子資料"
+
+[node name="NameLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1319284889]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "名字："
+
+[node name="HungerLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1454914206]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "飢餓："
+
+[node name="MoodLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=572255560]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "心情："
+
+[node name="EnergyLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=937486245]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "體力："
+
+[node name="AwayLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=124248787]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "是否外出："
+
+[node name="Separator" type="HSeparator" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=136020270]
+layout_mode = 2
+
+[node name="ActivityTitle" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=2134986355]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "活動資料"
+
+[node name="ActivityNameLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1615756055]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "活動：森林散步"
+
+[node name="DurationLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1281423999]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "時間：30 秒"
+
+[node name="ActivityEnergyLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=858498363]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "體力變化：-5"
+
+[node name="ActivityMoodLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=881385101]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "心情變化：+3"
+
+[node name="CountdownLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1915910332]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
+theme_override_font_sizes/font_size = 24
+text = "狀態：在村莊"
+
+[node name="StartButton" type="Button" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=659267176]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "開始森林散步（F）"

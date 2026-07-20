@@ -1,24 +1,26 @@
-[gd_scene load_steps=3 format=3 uid="uid://bqx8n2k7p4mwr"]
+[gd_scene format=3 uid="uid://bqx8n2k7p4mwr"]
 
-[ext_resource type="Script" path="res://player/Player.cs" id="1_player"]
+[ext_resource type="Script" uid="uid://bj4qhi0fndwf1" path="res://player/player.gd" id="1_player"]
+[ext_resource type="Texture2D" uid="uid://cxy2bsvpi1xav" path="res://icon.svg" id="2_3c3w1"]
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_collision"]
-radius = 16.0
-height = 32.0
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]
+size = Vector2(128, 126)
 
-[node name="Player" type="CharacterBody2D"]
+[node name="Player" type="CharacterBody2D" unique_id=538310704]
 script = ExtResource("1_player")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -16)
-shape = SubResource("CapsuleShape2D_collision")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1123566325]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_g4v7s")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="ColorRect" type="ColorRect" parent="." unique_id=2084853263]
 offset_left = -16.0
 offset_top = -32.0
 offset_right = 16.0
-offset_bottom = 0.0
 color = Color(0.2, 0.6, 1, 1)
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1508468998]
 position = Vector2(0, -16)
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1541158222]
+texture = ExtResource("2_3c3w1")
