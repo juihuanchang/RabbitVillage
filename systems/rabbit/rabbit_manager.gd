@@ -28,3 +28,6 @@ func get_all_rabbits() -> Array[RabbitData]:
 
 func remove_rabbit(rabbit_name: String) -> bool:
 	return _rabbits.erase(rabbit_name.to_lower())
+
+func clear_rabbits() -> void:
+	_rabbits.clear()

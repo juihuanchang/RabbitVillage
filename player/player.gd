@@ -1,7 +1,9 @@
 class_name RabbitCharacter
 extends CharacterBody2D
 
+
 signal rabbit_status_changed(rabbit: RabbitData)
+
 
 @export_category("Rabbit")
 @export var rabbit_name: String = "小麥"
@@ -12,16 +14,24 @@ signal rabbit_status_changed(rabbit: RabbitData)
 @export_category("Movement")
 @export var speed: float = 300.0
 
+
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var character_visual: CanvasItem = $ColorRect
 @onready var character_sprite: CanvasItem = $Sprite2D
 
+
 var rabbit_data: RabbitData
 var activity_manager: ActivityManager
+
+var rabbit_manager: RabbitManager = RabbitManager.new()
+var diary_manager: DiaryManager = DiaryManager.new()
+var save_manager: SaveManager = SaveManager.new()
+
 var _last_countdown_second: int = -1
 
 
 func _ready() -> void:
+	# 先建立場景中的預設兔子資料。
 	rabbit_data = RabbitData.new(
 		rabbit_name,
 		initial_hunger,
@@ -29,24 +39,67 @@ func _ready() -> void:
 		initial_energy
 	)
 
+	# 建立活動管理器。
 	activity_manager = ActivityManager.new()
 	activity_manager.name = "ActivityManager"
-	add_child(activity_manager)
 
+	# 將各個管理器加入場景樹。
+	rabbit_manager.name = "RabbitManager"
+	diary_manager.name = "DiaryManager"
+	save_manager.name = "SaveManager"
+
+	add_child(activity_manager)
+	add_child(rabbit_manager)
+	add_child(diary_manager)
+	add_child(save_manager)
+
+	# 連接活動訊號。
 	activity_manager.activity_started.connect(_on_activity_started)
 	activity_manager.countdown_changed.connect(_on_countdown_changed)
 	activity_manager.activity_completed.connect(_on_activity_completed)
 	activity_manager.rabbit_returned.connect(_on_rabbit_returned)
 
+	# 嘗試讀取舊存檔。
+	var loaded := save_manager.load_game(
+		rabbit_manager,
+		diary_manager
+	)
+
+	if loaded:
+		# 找出存檔中的同名兔子。
+		var loaded_rabbit := rabbit_manager.get_rabbit(
+			rabbit_data.rabbit_name
+		)
+
+		if loaded_rabbit != null:
+			rabbit_data = loaded_rabbit
+		else:
+			# 舊存檔中沒有這隻兔子時，加入目前的預設資料。
+			rabbit_manager.add_rabbit(rabbit_data)
+
+		print("讀檔成功")
+		print("目前日記數量：", diary_manager.get_journal_count())
+	else:
+		# 第一次執行，尚未建立存檔。
+		rabbit_manager.add_rabbit(rabbit_data)
+		print("沒有舊存檔，使用新的兔子資料")
+
 	print_status()
 
 
 func _physics_process(_delta: float) -> void:
+	# 兔子外出時不能移動。
 	if rabbit_data.is_away:
 		velocity = Vector2.ZERO
 		return
 
-	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction := Input.get_vector(
+		"ui_left",
+		"ui_right",
+		"ui_up",
+		"ui_down"
+	)
+
 	velocity = direction * speed
 	move_and_slide()
 
@@ -57,7 +110,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			start_forest_walk()
 
 
-## Can also be called by a UI button.
+## 也可以由 UI 按鈕呼叫。
 func start_forest_walk() -> bool:
 	if activity_manager.start_forest_walk(rabbit_data):
 		return true
@@ -72,10 +125,17 @@ func get_rabbit_data() -> RabbitData:
 
 func _on_activity_started(active: ActiveActivityData) -> void:
 	_last_countdown_second = -1
+
 	character_visual.visible = false
 	character_sprite.visible = false
 	collision_shape.set_deferred("disabled", true)
-	print(active.rabbit.rabbit_name, "開始", active.activity.activity_name)
+
+	print(
+		active.rabbit.rabbit_name,
+		"開始",
+		active.activity.activity_name
+	)
+
 	rabbit_status_changed.emit(rabbit_data)
 
 
@@ -84,6 +144,7 @@ func _on_countdown_changed(
 		remaining_seconds: float
 ) -> void:
 	var displayed_second := ceili(remaining_seconds)
+
 	if displayed_second == _last_countdown_second:
 		return
 
@@ -93,16 +154,46 @@ func _on_countdown_changed(
 
 func _on_activity_completed(active: ActiveActivityData) -> void:
 	print(active.activity.activity_name, "完成")
+
 	print_status()
 	rabbit_status_changed.emit(rabbit_data)
+
+	# 根據完成的活動產生日記。
+	var entry := JournalGenerator.generate(active)
+
+	if entry == null:
+		push_error("日記產生失敗")
+		return
+
+	# 將日記加入 DiaryManager。
+	var added := diary_manager.add_journal(entry)
+
+	if not added:
+		push_error("日記新增失敗")
+		return
+
+	print("新增日記成功")
+	print(entry.content)
 
 
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
 	character_visual.visible = true
 	character_sprite.visible = true
 	collision_shape.set_deferred("disabled", false)
+
 	print(returned_rabbit.rabbit_name, "已回村")
 	rabbit_status_changed.emit(returned_rabbit)
+
+	# 日記新增完、兔子回家後，將資料寫入存檔。
+	var success := save_manager.save_game(
+		rabbit_manager,
+		diary_manager
+	)
+
+	if success:
+		print("兔子回家，遊戲已存檔")
+	else:
+		push_error("遊戲存檔失敗")
 
 
 func print_status() -> void:
