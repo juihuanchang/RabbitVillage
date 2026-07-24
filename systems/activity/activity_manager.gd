@@ -53,6 +53,7 @@ func _complete_activity() -> void:
 	var completed := active_activity
 	var rabbit := completed.rabbit
 	rabbit.energy += completed.activity.energy_change
+	rabbit.hunger += completed.activity.hunger_change
 	rabbit.mood += completed.activity.mood_change
 	activity_completed.emit(completed)
 

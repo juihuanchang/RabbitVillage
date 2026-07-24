@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://5fes2biebjed"]
 
+[ext_resource type="Script" uid="uid://b4jlrlsy831cj" path="res://scenes  場景/home/home_page_mcp.gd" id="1_inkar"]
 [ext_resource type="Texture2D" uid="uid://b1c587kowfyjh" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/home_background.png.png" id="1_ks6ul"]
 [ext_resource type="PackedScene" uid="uid://bqx8n2k7p4mwr" path="res://player/Player.tscn" id="2_6uq7s"]
-[ext_resource type="Script" uid="uid://c2qi22lwvnmwq" path="res://scenes  場景/home/home_page.gd" id="3_home"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
-script = ExtResource("3_home")
+script = ExtResource("1_inkar")
 
 [node name="Background" type="Node2D" parent="." unique_id=1547261970]
 position = Vector2(8, -18)
@@ -23,103 +23,342 @@ position = Vector2(960, 540)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1514580408]
 
-[node name="UI" type="Control" parent="CanvasLayer" unique_id=670830068]
+[node name="AUI" type="Control" parent="CanvasLayer" unique_id=602433889]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -20.0
-offset_top = 22.0
-offset_right = 3.0
-offset_bottom = -3.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 
-[node name="StatusPanel" type="PanelContainer" parent="CanvasLayer/UI" unique_id=772117469]
+[node name="MainHUD" type="PanelContainer" parent="CanvasLayer/AUI" unique_id=1995104733]
 layout_mode = 0
-offset_left = 32.0
-offset_top = 32.0
-offset_right = 422.0
-offset_bottom = 670.0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 460.0
+offset_bottom = 605.0
 
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/UI/StatusPanel" unique_id=392256869]
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/AUI/MainHUD" unique_id=964952957]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 26
 
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UI/StatusPanel/Margin" unique_id=680442641]
+[node name="Layout" type="VBoxContainer" parent="CanvasLayer/AUI/MainHUD/Margin" unique_id=659353812]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 15
 
-[node name="RabbitTitle" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=2030147123]
+[node name="Eyebrow" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=177536481]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
-text = "兔子資料"
+theme_override_colors/font_color = Color(0.48, 0.43, 0.32, 1)
+theme_override_font_sizes/font_size = 15
+text = "RABBIT VILLAGE  ·  MY COMPANION"
 
-[node name="NameLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1319284889]
+[node name="Name" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=1548589108]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "名字："
+theme_override_colors/font_color = Color(0.2, 0.29, 0.2, 1)
+theme_override_font_sizes/font_size = 38
+text = "Amy"
 
-[node name="HungerLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1454914206]
+[node name="State" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=1281703822]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "飢餓："
+theme_override_font_sizes/font_size = 18
+text = "●  在家休息"
 
-[node name="MoodLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=572255560]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "心情："
-
-[node name="EnergyLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=937486245]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "體力："
-
-[node name="AwayLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=124248787]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "是否外出："
-
-[node name="Separator" type="HSeparator" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=136020270]
+[node name="Line" type="HSeparator" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=921310121]
 layout_mode = 2
 
-[node name="ActivityTitle" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=2134986355]
+[node name="Stats" type="GridContainer" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=1880813057]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
-text = "活動資料"
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 12
+columns = 3
 
-[node name="ActivityNameLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1615756055]
+[node name="HungerTitle" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=616191847]
+custom_minimum_size = Vector2(55, 26)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "活動：森林散步"
+theme_override_colors/font_color = Color(0.31, 0.28, 0.23, 1)
+theme_override_font_sizes/font_size = 18
+text = "飢餓"
 
-[node name="DurationLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1281423999]
+[node name="HungerBar" type="ProgressBar" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=977516023]
+custom_minimum_size = Vector2(190, 16)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "時間：30 秒"
+value = 100.0
+show_percentage = false
 
-[node name="ActivityEnergyLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=858498363]
+[node name="HungerValue" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=591523450]
+custom_minimum_size = Vector2(72, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "體力變化：-5"
+text = "100 / 100"
+horizontal_alignment = 2
 
-[node name="ActivityMoodLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=881385101]
+[node name="MoodTitle" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=629461011]
+custom_minimum_size = Vector2(55, 26)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "心情變化：+3"
+theme_override_colors/font_color = Color(0.31, 0.28, 0.23, 1)
+theme_override_font_sizes/font_size = 18
+text = "心情"
 
-[node name="CountdownLabel" type="Label" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=1915910332]
+[node name="MoodBar" type="ProgressBar" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=626539181]
+custom_minimum_size = Vector2(190, 16)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
-theme_override_font_sizes/font_size = 24
-text = "狀態：在村莊"
+value = 50.0
+show_percentage = false
 
-[node name="StartButton" type="Button" parent="CanvasLayer/UI/StatusPanel/Margin/VBox" unique_id=659267176]
+[node name="MoodValue" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=1329110936]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "50 / 100"
+horizontal_alignment = 2
+
+[node name="EnergyTitle" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=4976236]
+custom_minimum_size = Vector2(55, 26)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.31, 0.28, 0.23, 1)
+theme_override_font_sizes/font_size = 18
+text = "體力"
+
+[node name="EnergyBar" type="ProgressBar" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=98738872]
+custom_minimum_size = Vector2(190, 16)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="EnergyValue" type="Label" parent="CanvasLayer/AUI/MainHUD/Margin/Layout/Stats" unique_id=739263179]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "100 / 100"
+horizontal_alignment = 2
+
+[node name="Spacer" type="Control" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=1947547595]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ForestButton" type="Button" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=260013298]
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
+theme_override_font_sizes/font_size = 21
+text = "森林散步"
+
+[node name="FishingButton" type="Button" parent="CanvasLayer/AUI/MainHUD/Margin/Layout" unique_id=1465268974]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "池邊釣魚  ·  即將開放"
+
+[node name="DiaryButton" type="Button" parent="CanvasLayer/AUI" unique_id=475203473]
+layout_mode = 0
+offset_left = 1655.0
+offset_top = 48.0
+offset_right = 1872.0
+offset_bottom = 108.0
+theme_override_font_sizes/font_size = 20
+text = "Amy 的日記"
+
+[node name="ActivityStatus" type="PanelContainer" parent="CanvasLayer/AUI" unique_id=1711386508]
+visible = false
+layout_mode = 0
+offset_left = 690.0
+offset_top = 56.0
+offset_right = 1230.0
+offset_bottom = 180.0
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/AUI/ActivityStatus" unique_id=918448138]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+
+[node name="Layout" type="VBoxContainer" parent="CanvasLayer/AUI/ActivityStatus/Margin" unique_id=247742427]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CanvasLayer/AUI/ActivityStatus/Margin/Layout" unique_id=258604539]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.98, 0.87, 1)
+theme_override_font_sizes/font_size = 23
+text = "森林散步中"
+horizontal_alignment = 1
+
+[node name="Remaining" type="Label" parent="CanvasLayer/AUI/ActivityStatus/Margin/Layout" unique_id=2044529948]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.45, 1)
+theme_override_font_sizes/font_size = 20
+text = "剩餘  30 秒"
+horizontal_alignment = 1
+
+[node name="Finish" type="Label" parent="CanvasLayer/AUI/ActivityStatus/Margin/Layout" unique_id=1039638769]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.85, 0.75, 1)
+theme_override_font_sizes/font_size = 15
+text = "預計完成  15:30:00"
+horizontal_alignment = 1
+
+[node name="ActivityPopup" type="Control" parent="CanvasLayer/AUI" unique_id=987219226]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shade" type="ColorRect" parent="CanvasLayer/AUI/ActivityPopup" unique_id=891691323]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.11, 0.07, 0.58)
+
+[node name="Card" type="PanelContainer" parent="CanvasLayer/AUI/ActivityPopup" unique_id=1819195116]
+layout_mode = 0
+offset_left = 645.0
+offset_top = 260.0
+offset_right = 1275.0
+offset_bottom = 750.0
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/AUI/ActivityPopup/Card" unique_id=883349208]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 38
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 38
+
+[node name="Layout" type="VBoxContainer" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin" unique_id=1236164830]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Kicker" type="Label" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=1208195574]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.46, 0.55, 0.35, 1)
+theme_override_font_sizes/font_size = 16
+text = "FOREST ACTIVITY"
+horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=904974405]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.33, 0.21, 1)
+theme_override_font_sizes/font_size = 34
+text = "森林散步"
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=1478143660]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.31, 0.27, 0.22, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_font_sizes/font_size = 19
+text = "讓 Amy 去森林呼吸新鮮空氣，
+也許會帶回一段可愛的小故事。"
+horizontal_alignment = 1
+
+[node name="Details" type="Label" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=425246224]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.34, 0.38, 0.29, 1)
+theme_override_font_sizes/font_size = 20
+text = "10 秒      體力 −5      飢餓 +8      心情 +8"
+horizontal_alignment = 1
+
+[node name="Message" type="Label" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=164229252]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.77, 0.25, 0.2, 1)
+theme_override_font_sizes/font_size = 17
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=503435230]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Cancel" type="Button" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Buttons" unique_id=263165521]
+custom_minimum_size = Vector2(190, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+text = "再想一下"
+
+[node name="Start" type="Button" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Buttons" unique_id=1814634190]
+custom_minimum_size = Vector2(240, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+text = "開始散步  →"
+
+[node name="DiaryWindow" type="Control" parent="CanvasLayer/AUI" unique_id=241797983]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shade" type="ColorRect" parent="CanvasLayer/AUI/DiaryWindow" unique_id=1211534138]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.09, 0.06, 0.62)
+
+[node name="Card" type="PanelContainer" parent="CanvasLayer/AUI/DiaryWindow" unique_id=603436909]
+layout_mode = 0
+offset_left = 480.0
+offset_top = 90.0
+offset_right = 1440.0
+offset_bottom = 990.0
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/AUI/DiaryWindow/Card" unique_id=985362393]
+layout_mode = 2
+theme_override_constants/margin_left = 45
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 45
+theme_override_constants/margin_bottom = 34
+
+[node name="Layout" type="VBoxContainer" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin" unique_id=1793288744]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Header" type="HBoxContainer" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin/Layout" unique_id=1647214575]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin/Layout/Header" unique_id=1931608540]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.2, 0.32, 0.21, 1)
+theme_override_font_sizes/font_size = 34
+text = "Amy 的森林日記"
+
+[node name="Close" type="Button" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin/Layout/Header" unique_id=1585036476]
+custom_minimum_size = Vector2(54, 48)
+layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "開始森林散步（F）"
+text = "×"
+
+[node name="Subtitle" type="Label" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin/Layout" unique_id=1798443487]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.44, 0.34, 1)
+theme_override_font_sizes/font_size = 17
+text = "最新的故事會放在最上面"
+
+[node name="Scroll" type="ScrollContainer" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin/Layout" unique_id=1633446542]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Entries" type="VBoxContainer" parent="CanvasLayer/AUI/DiaryWindow/Card/Margin/Layout/Scroll" unique_id=1677532797]
+custom_minimum_size = Vector2(840, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
+
+[node name="Toast" type="Label" parent="CanvasLayer/AUI" unique_id=904195758]
+visible = false
+layout_mode = 0
+offset_left = 660.0
+offset_top = 920.0
+offset_right = 1260.0
+offset_bottom = 985.0
+theme_override_colors/font_color = Color(1, 0.96, 0.83, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 22
+text = "Amy 回來了！"
+horizontal_alignment = 1

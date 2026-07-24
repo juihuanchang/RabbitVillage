@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bqx8n2k7p4mwr"]
 
 [ext_resource type="Script" uid="uid://bj4qhi0fndwf1" path="res://player/player.gd" id="1_player"]
-[ext_resource type="Texture2D" uid="uid://cxy2bsvpi1xav" path="res://icon.svg" id="2_3c3w1"]
+[ext_resource type="Texture2D" uid="uid://bfuan0diqwnis" path="res://assets 美術、音效等素材(不放程式)/characters/Amy.png" id="2_3c3w1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]
 size = Vector2(128, 126)
@@ -13,14 +13,7 @@ script = ExtResource("1_player")
 position = Vector2(0, 1)
 shape = SubResource("RectangleShape2D_g4v7s")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=2084853263]
-offset_left = -16.0
-offset_top = -32.0
-offset_right = 16.0
-color = Color(0.2, 0.6, 1, 1)
-
-[node name="Camera2D" type="Camera2D" parent="." unique_id=1508468998]
-position = Vector2(0, -16)
-
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1541158222]
+position = Vector2(0, -10)
+scale = Vector2(0.14, 0.14)
 texture = ExtResource("2_3c3w1")
