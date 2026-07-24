@@ -16,7 +16,6 @@ signal rabbit_status_changed(rabbit: RabbitData)
 
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
-@onready var character_visual: CanvasItem = $ColorRect
 @onready var character_sprite: CanvasItem = $Sprite2D
 
 
@@ -27,7 +26,13 @@ var rabbit_manager: RabbitManager = RabbitManager.new()
 var diary_manager: DiaryManager = DiaryManager.new()
 var save_manager: SaveManager = SaveManager.new()
 
+const HOME_TICK_SECONDS := 15.0
+const HOME_ENERGY_GAIN := 5
+const HOME_HUNGER_LOSS := 2
+const HOME_MOOD_LOSS := 2
+
 var _last_countdown_second: int = -1
+var _home_tick_elapsed: float = 0.0
 
 
 func _ready() -> void:
@@ -87,6 +92,25 @@ func _ready() -> void:
 	print_status()
 
 
+func _process(delta: float) -> void:
+	if rabbit_data == null or rabbit_data.is_away:
+		_home_tick_elapsed = 0.0
+		return
+	_home_tick_elapsed += delta
+	if _home_tick_elapsed >= HOME_TICK_SECONDS:
+		_home_tick_elapsed -= HOME_TICK_SECONDS
+		_apply_home_tick()
+
+
+func _apply_home_tick() -> void:
+	rabbit_data.energy += HOME_ENERGY_GAIN
+	rabbit_data.hunger -= HOME_HUNGER_LOSS
+	rabbit_data.mood -= HOME_MOOD_LOSS
+	rabbit_status_changed.emit(rabbit_data)
+	save_manager.save_game(rabbit_manager, diary_manager)
+	print("居家狀態更新：體力 +5、飢餓 -2、心情 -2")
+
+
 func _physics_process(_delta: float) -> void:
 	# 兔子外出時不能移動。
 	if rabbit_data.is_away:
@@ -126,7 +150,6 @@ func get_rabbit_data() -> RabbitData:
 func _on_activity_started(active: ActiveActivityData) -> void:
 	_last_countdown_second = -1
 
-	character_visual.visible = false
 	character_sprite.visible = false
 	collision_shape.set_deferred("disabled", true)
 
@@ -177,7 +200,6 @@ func _on_activity_completed(active: ActiveActivityData) -> void:
 
 
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
-	character_visual.visible = true
 	character_sprite.visible = true
 	collision_shape.set_deferred("disabled", false)
 
