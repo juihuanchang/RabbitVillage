@@ -1,8 +1,37 @@
 {
+	"activity_id": "forest_walk",
 	"templates": [
-		"今天{rabbit_name}去了森林。\n\n回家時撿了一片葉子。",
-		"今天{rabbit_name}在森林裡散步。\n\n回家的路上發現了一顆橡實。",
-		"{rabbit_name}今天去了森林。\n\n風吹過樹葉，發出了沙沙的聲音。",
-		"今天{rabbit_name}在森林探險。\n\n回家時身上還沾著一片小樹葉。"
+		{
+			"title": "森林裡的小鳥",
+			"content": "{rabbit_name} 在樹下聽見小鳥唱歌，停下來安靜地聽了好一會兒。"
+		},
+		{
+			"title": "漂亮的葉子",
+			"content": "{rabbit_name} 在森林裡撿到一片漂亮的葉子，決定把它帶回家收藏。"
+		},
+		{
+			"title": "遇見松鼠",
+			"content": "{rabbit_name} 遇見一隻抱著果實的松鼠，牠們互相看了很久，最後松鼠跑進了樹叢。"
+		},
+		{
+			"title": "樹下的午休",
+			"content": "{rabbit_name} 走累了，在一棵大樹下休息，吹著涼風睡了一個短短的午覺。"
+		},
+		{
+			"title": "森林裡的小花",
+			"content": "{rabbit_name} 在草叢旁發現一朵小花，小心地繞過它，繼續今天的森林散步。"
+		},
+		{
+			"title": "溪水的聲音",
+			"content": "{rabbit_name} 聽見遠處傳來溪水聲，沿著聲音找到一條清澈的小溪。"
+		},
+		{
+			"title": "差點迷路",
+			"content": "{rabbit_name} 在森林裡一度找不到回家的方向，幸好最後認出了熟悉的小路。"
+		},
+		{
+			"title": "小樹枝紀念品",
+			"content": "{rabbit_name} 回家前撿到一根形狀特別的小樹枝，把它當作今天探險的紀念品。"
+		}
 	]
 }

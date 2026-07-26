@@ -177,31 +177,83 @@ func _refresh_diary() -> void:
 
 func _make_diary_entry(entry: JournalEntry) -> Control:
 	var entry_panel := PanelContainer.new()
-	entry_panel.add_theme_stylebox_override("panel", _card(Color("#fffdf7"), Color("#ead9bd"), 16, 0))
+
+	entry_panel.add_theme_stylebox_override(
+		"panel",
+		_card(
+			Color("#fffdf7"),
+			Color("#ead9bd"),
+			16,
+			0
+		)
+	)
+
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 22)
 	margin.add_theme_constant_override("margin_right", 22)
 	margin.add_theme_constant_override("margin_top", 16)
 	margin.add_theme_constant_override("margin_bottom", 18)
 	entry_panel.add_child(margin)
+
 	var box := VBoxContainer.new()
 	margin.add_child(box)
+
+	# 日期與時間
 	var date_label := Label.new()
-	var date := Time.get_datetime_dict_from_unix_time(entry.created_at)
-	date_label.text = "%04d / %02d / %02d　%02d:%02d" % [date.year, date.month, date.day, date.hour, date.minute]
-	date_label.add_theme_color_override("font_color", Color("#9a8b75"))
+
+	var datetime := Time.get_datetime_dict_from_unix_time(
+		int(entry.created_at)
+	)
+
+	date_label.text = "%s　%02d:%02d" % [
+		entry.date,
+		int(datetime.get("hour", 0)),
+		int(datetime.get("minute", 0))
+	]
+
+	date_label.add_theme_color_override(
+		"font_color",
+		Color("#9a8b75")
+	)
+
 	box.add_child(date_label)
-	var title := Label.new()
-	title.text = entry.activity_name
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color("#48634a"))
-	box.add_child(title)
-	var content := Label.new()
-	content.text = entry.content
-	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_theme_font_size_override("font_size", 18)
-	content.add_theme_color_override("font_color", Color("#594f43"))
-	box.add_child(content)
+
+	# 日記標題
+	var title_label := Label.new()
+	title_label.text = entry.title
+
+	title_label.add_theme_font_size_override(
+		"font_size",
+		24
+	)
+
+	title_label.add_theme_color_override(
+		"font_color",
+		Color("#48634a")
+	)
+
+	box.add_child(title_label)
+
+	# 日記內容
+	var content_label := Label.new()
+	content_label.text = entry.content
+
+	content_label.autowrap_mode = (
+		TextServer.AUTOWRAP_WORD_SMART
+	)
+
+	content_label.add_theme_font_size_override(
+		"font_size",
+		18
+	)
+
+	content_label.add_theme_color_override(
+		"font_color",
+		Color("#594f43")
+	)
+
+	box.add_child(content_label)
+
 	return entry_panel
 
 
