@@ -1,25 +1,9 @@
 {
-	"activity_id": "fishing",
-	"templates": [
-		{
-			"title": "沒有魚的一天",
-			"content": "{rabbit_name} 今天沒有釣到魚，卻在池塘邊舒服地睡著了。"
-		},
-		{
-			"title": "放回水裡的小魚",
-			"content": "{rabbit_name} 釣到一條小魚，看了一會兒後，又小心地把牠放回水裡。"
-		},
-		{
-			"title": "水面的波紋",
-			"content": "水面一直出現一圈圈波紋，{rabbit_name} 安靜地坐在池邊看了很久。"
-		},
-		{
-			"title": "池塘邊的青蛙",
-			"content": "{rabbit_name} 在池塘邊遇見一隻青蛙，正想靠近時，牠突然跳進水裡不見了。"
-		},
-		{
-			"title": "被水草纏住",
-			"content": "{rabbit_name} 的釣竿被水草纏住，花了一番力氣才終於順利解開。"
-		}
-	]
+  "activity_id": "fishing",
+  "templates": [
+    {
+      "title": "池邊釣魚",
+      "content": "{rabbit_name} 在池邊度過了一段悠閒的釣魚時光。"
+    }
+  ]
 }

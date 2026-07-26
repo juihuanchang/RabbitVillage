@@ -146,7 +146,7 @@ text = "森林散步"
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "池邊釣魚  ·  即將開放"
+text = "池邊釣魚"
 
 [node name="DiaryButton" type="Button" parent="CanvasLayer/AUI" unique_id=475203473]
 layout_mode = 0
@@ -257,7 +257,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.34, 0.38, 0.29, 1)
 theme_override_font_sizes/font_size = 20
-text = "10 秒      體力 −5      飢餓 +8      心情 +8"
+text = "30 秒      體力 −5      飢餓 −3      心情 +3"
 horizontal_alignment = 1
 
 [node name="Message" type="Label" parent="CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout" unique_id=164229252]

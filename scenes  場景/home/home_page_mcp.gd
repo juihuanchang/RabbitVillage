@@ -16,10 +16,15 @@ extends Node2D
 @onready var diary_button: Button = $CanvasLayer/AUI/DiaryButton
 @onready var popup: Control = $CanvasLayer/AUI/ActivityPopup
 @onready var popup_card: PanelContainer = $CanvasLayer/AUI/ActivityPopup/Card
+@onready var popup_kicker: Label = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Kicker
+@onready var popup_title: Label = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Title
+@onready var popup_description: Label = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Description
+@onready var popup_details: Label = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Details
 @onready var popup_message: Label = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Message
 @onready var start_button: Button = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Buttons/Start
 @onready var cancel_button: Button = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Buttons/Cancel
 @onready var activity_status: PanelContainer = $CanvasLayer/AUI/ActivityStatus
+@onready var activity_title: Label = $CanvasLayer/AUI/ActivityStatus/Margin/Layout/Title
 @onready var remaining_label: Label = $CanvasLayer/AUI/ActivityStatus/Margin/Layout/Remaining
 @onready var finish_label: Label = $CanvasLayer/AUI/ActivityStatus/Margin/Layout/Finish
 @onready var diary_window: Control = $CanvasLayer/AUI/DiaryWindow
@@ -29,14 +34,15 @@ extends Node2D
 @onready var toast: Label = $CanvasLayer/AUI/Toast
 
 var _toast_tween: Tween
+var _selected_activity_id: String = ""
 
 
 func _ready() -> void:
 	_style_interface()
-	forest_button.pressed.connect(_open_forest_popup)
-	fishing_button.pressed.connect(func() -> void: _show_toast("池邊釣魚即將開放 ✦"))
+	forest_button.pressed.connect(func() -> void: _open_activity_popup("forest_walk"))
+	fishing_button.pressed.connect(func() -> void: _open_activity_popup("fishing"))
 	diary_button.pressed.connect(_open_diary)
-	start_button.pressed.connect(_start_forest)
+	start_button.pressed.connect(_start_selected_activity)
 	cancel_button.pressed.connect(func() -> void: popup.hide())
 	close_diary.pressed.connect(func() -> void: diary_window.hide())
 	player.rabbit_status_changed.connect(_update_rabbit_status)
@@ -55,7 +61,7 @@ func _style_interface() -> void:
 	popup_card.add_theme_stylebox_override("panel", _card(Color("#fffaf0"), Color("#b89559"), 28, 18))
 	diary_card.add_theme_stylebox_override("panel", _card(Color("#fffaf0"), Color("#b89559"), 28, 18))
 	activity_status.add_theme_stylebox_override("panel", _card(Color("#294b31e8"), Color("#88ac75"), 18, 8))
-	for button in [forest_button, start_button]:
+	for button in [forest_button, fishing_button, start_button]:
 		button.add_theme_stylebox_override("normal", _button_style(Color("#507e55")))
 		button.add_theme_stylebox_override("hover", _button_style(Color("#659a68")))
 		button.add_theme_color_override("font_color", Color.WHITE)
@@ -97,13 +103,20 @@ func _bar_style(color: Color) -> StyleBoxFlat:
 
 func _update_rabbit_status(rabbit: RabbitData) -> void:
 	name_label.text = rabbit.rabbit_name
-	state_label.text = "●  森林散步中" if rabbit.is_away else "●  在家休息"
+	var current := player.activity_manager.get_current_activity()
+	state_label.text = (
+		"●  %s中" % current.activity.activity_name
+		if rabbit.is_away and current != null
+		else "●  在家休息"
+	)
 	state_label.modulate = Color("#df9152") if rabbit.is_away else Color("#568c60")
 	_set_stat(hunger_bar, hunger_value, rabbit.hunger)
 	_set_stat(mood_bar, mood_value, rabbit.mood)
 	_set_stat(energy_bar, energy_value, rabbit.energy)
 	forest_button.disabled = rabbit.is_away
+	fishing_button.disabled = rabbit.is_away
 	forest_button.text = "Amy 外出中…" if rabbit.is_away else "森林散步"
+	fishing_button.text = "Amy 外出中…" if rabbit.is_away else "池邊釣魚"
 	player.visible = not rabbit.is_away
 	activity_status.visible = player.activity_manager.active_activity != null
 
@@ -113,30 +126,52 @@ func _set_stat(bar: ProgressBar, label: Label, value: int) -> void:
 	label.text = "%d / 100" % value
 
 
-func _open_forest_popup() -> void:
-	if player.get_rabbit_data().is_away:
-		_show_toast("Amy 正在外出中")
+func _open_activity_popup(activity_id: String) -> void:
+	var check := player.activity_manager.can_start_activity(activity_id)
+	if not bool(check.get("ok", false)):
+		_show_toast(str(check.get("reason", "無法開始活動")))
 		return
+	var activity := player.activity_manager.get_activity(activity_id)
+	if activity == null:
+		_show_toast("找不到活動")
+		return
+	_selected_activity_id = activity_id
+	popup_kicker.text = "FISHING ACTIVITY" if activity_id == "fishing" else "FOREST ACTIVITY"
+	popup_title.text = activity.activity_name
+	popup_description.text = (
+		"讓 Amy 帶著釣竿到池邊，\n享受安靜悠閒的釣魚時光。"
+		if activity_id == "fishing"
+		else "讓 Amy 到森林裡散散步，\n呼吸新鮮空氣並放鬆心情。"
+	)
+	popup_details.text = "%d 秒      體力 −%d      飢餓 −%d      心情 +%d" % [
+		int(activity.duration_seconds),
+		activity.energy_cost,
+		absi(activity.hunger_change),
+		activity.mood_reward
+	]
+	start_button.text = "開始釣魚  →" if activity_id == "fishing" else "開始散步  →"
 	popup_message.text = ""
 	start_button.disabled = false
 	popup.show()
 
 
-func _start_forest() -> void:
-	var rabbit := player.get_rabbit_data()
-	if rabbit.energy < 5:
-		popup_message.text = "體力不足，先讓 Amy 休息一下吧！"
-		start_button.disabled = true
-		return
-	if not player.start_forest_walk():
-		popup_message.text = "Amy 正在外出中，不能開始新的活動。"
+func _start_selected_activity() -> void:
+	var result := player.start_activity(_selected_activity_id)
+	if not bool(result.get("ok", false)):
+		popup_message.text = str(result.get("reason", "無法開始活動"))
+		start_button.disabled = result.get("reason", "") == "體力不足"
 		return
 	popup.hide()
-	_show_toast("Amy 帶著小背包出發了！")
+	_show_toast(
+		"Amy 帶著釣竿出發了！"
+		if _selected_activity_id == "fishing"
+		else "Amy 帶著小背包出發了！"
+	)
 
 
 func _on_activity_started(active: ActiveActivityData) -> void:
 	activity_status.show()
+	activity_title.text = "%s中" % active.activity.activity_name
 	_update_rabbit_status(player.get_rabbit_data())
 	_on_countdown_changed(active, active.get_remaining_seconds(TimeManager.get_now()))
 
