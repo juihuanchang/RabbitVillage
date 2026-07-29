@@ -108,6 +108,7 @@ func _create_ui() -> void:
 	hint_label.custom_minimum_size = Vector2(330, 76)
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hint_label.add_theme_font_size_override("font_size", 20)
+	hint_label.add_theme_color_override("font_color", Color.BLACK)
 	row.add_child(hint_label)
 
 	var exit := Button.new()
