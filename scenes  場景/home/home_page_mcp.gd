@@ -38,6 +38,7 @@ var _selected_activity_id: String = ""
 
 
 func _ready() -> void:
+	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_style_interface()
 	forest_button.pressed.connect(func() -> void: _open_activity_popup("forest_walk"))
 	fishing_button.pressed.connect(func() -> void: _open_activity_popup("fishing"))
@@ -117,13 +118,18 @@ func _update_rabbit_status(rabbit: RabbitData) -> void:
 	fishing_button.disabled = rabbit.is_away
 	forest_button.text = "Amy 外出中…" if rabbit.is_away else "森林散步"
 	fishing_button.text = "Amy 外出中…" if rabbit.is_away else "池邊釣魚"
-	player.visible = not rabbit.is_away
+	var stays_home := current != null and current.activity.activity_id == "home_rest"
+	player.visible = not rabbit.is_away or stays_home
 	activity_status.visible = player.activity_manager.active_activity != null
 
 
 func _set_stat(bar: ProgressBar, label: Label, value: int) -> void:
 	bar.value = value
 	label.text = "%d / 100" % value
+
+
+func _signed_value(value: int) -> String:
+	return "+%d" % value if value >= 0 else str(value)
 
 
 func _open_activity_popup(activity_id: String) -> void:
@@ -136,20 +142,23 @@ func _open_activity_popup(activity_id: String) -> void:
 		_show_toast("找不到活動")
 		return
 	_selected_activity_id = activity_id
-	popup_kicker.text = "FISHING ACTIVITY" if activity_id == "fishing" else "FOREST ACTIVITY"
+	var location_names := {"forest_walk": "森林", "forest_explore": "森林", "fishing": "湖邊", "home_rest": "Amy 的家"}
+	var descriptions := {
+		"forest_walk": "讓 Amy 到森林裡散散步，呼吸新鮮空氣並放鬆心情。",
+		"forest_explore": "Amy 會前往森林較深的地方探索。",
+		"fishing": "讓 Amy 帶著釣竿到湖邊，享受安靜悠閒的釣魚時光。",
+		"home_rest": "Amy 可以留在家中好好休息，恢復精神。"
+	}
+	popup_kicker.text = str(location_names.get(activity_id, "村莊")).to_upper() + " ACTIVITY"
 	popup_title.text = activity.activity_name
-	popup_description.text = (
-		"讓 Amy 帶著釣竿到池邊，\n享受安靜悠閒的釣魚時光。"
-		if activity_id == "fishing"
-		else "讓 Amy 到森林裡散散步，\n呼吸新鮮空氣並放鬆心情。"
-	)
-	popup_details.text = "%d 秒      體力 −%d      飢餓 −%d      心情 +%d" % [
+	popup_description.text = str(descriptions.get(activity_id, "和 Amy 一起度過一段悠閒時光。"))
+	popup_details.text = "%d 秒　　體力 %s　　飢餓 %s　　心情 %s" % [
 		int(activity.duration_seconds),
-		activity.energy_cost,
-		absi(activity.hunger_change),
-		activity.mood_reward
+		_signed_value(-activity.energy_cost),
+		_signed_value(activity.hunger_change),
+		_signed_value(activity.mood_reward)
 	]
-	start_button.text = "開始釣魚  →" if activity_id == "fishing" else "開始散步  →"
+	start_button.text = "開始%s  →" % activity.activity_name
 	popup_message.text = ""
 	start_button.disabled = false
 	popup.show()
@@ -162,16 +171,14 @@ func _start_selected_activity() -> void:
 		start_button.disabled = result.get("reason", "") == "體力不足"
 		return
 	popup.hide()
-	_show_toast(
-		"Amy 帶著釣竿出發了！"
-		if _selected_activity_id == "fishing"
-		else "Amy 帶著小背包出發了！"
-	)
+	var started_activity := player.activity_manager.get_activity(_selected_activity_id)
+	_show_toast("Amy 開始%s了！" % (started_activity.activity_name if started_activity != null else "活動"))
 
 
 func _on_activity_started(active: ActiveActivityData) -> void:
 	activity_status.show()
-	activity_title.text = "%s中" % active.activity.activity_name
+	var activity_locations := {"forest_walk": "森林", "forest_explore": "森林", "fishing": "湖邊", "home_rest": "家裡"}
+	activity_title.text = "Amy 正在%s · %s" % [active.activity.activity_name, str(activity_locations.get(active.activity.activity_id, "村莊"))]
 	_update_rabbit_status(player.get_rabbit_data())
 	_on_countdown_changed(active, active.get_remaining_seconds(TimeManager.get_now()))
 

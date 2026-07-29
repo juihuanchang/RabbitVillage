@@ -1,8 +1,10 @@
 [gd_scene format=3 uid="uid://5fes2biebjed"]
 
 [ext_resource type="Script" uid="uid://b4jlrlsy831cj" path="res://scenes  場景/home/home_page_mcp.gd" id="1_inkar"]
-[ext_resource type="Texture2D" uid="uid://b1c587kowfyjh" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/home_background.png.png" id="1_ks6ul"]
 [ext_resource type="PackedScene" uid="uid://bqx8n2k7p4mwr" path="res://player/Player.tscn" id="2_6uq7s"]
+[ext_resource type="Texture2D" uid="uid://cann1skmc44sg" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/底圖.png" id="2_inkar"]
+[ext_resource type="Script" uid="uid://dpl2e367u3u70" path="res://systems/building/building_system.gd" id="4_tt2vn"]
+[ext_resource type="Script" uid="uid://bexhx6mnb13op" path="res://scenes  場景/home/week3_a_ui.gd" id="5_2si26"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
 script = ExtResource("1_inkar")
@@ -13,7 +15,7 @@ position = Vector2(8, -18)
 [node name="Sprite2D" type="Sprite2D" parent="Background" unique_id=1427871622]
 position = Vector2(955.99994, 547.5)
 scale = Vector2(1.1363636, 1.1232733)
-texture = ExtResource("1_ks6ul")
+texture = ExtResource("2_inkar")
 
 [node name="Player" parent="Background" unique_id=1637976938 instance=ExtResource("2_6uq7s")]
 position = Vector2(711, 436)
@@ -362,3 +364,9 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_font_sizes/font_size = 22
 text = "Amy 回來了！"
 horizontal_alignment = 1
+
+[node name="BuildingSystem" type="Node2D" parent="." unique_id=569378686]
+script = ExtResource("4_tt2vn")
+
+[node name="Week3AUI" type="Node" parent="." unique_id=1977266883]
+script = ExtResource("5_2si26")
