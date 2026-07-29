@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1c587kowfyjh"
-path="res://.godot/imported/home_background.png.png-2251327ad9b00f6a6cc4ebfc4c459c76.ctex"
+uid="uid://cpul8oyngdxha"
+path="res://.godot/imported/coffee_shop.png-dac9ee6a60c595941bb13fa4762b5217.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/home_background.png.png"
-dest_files=["res://.godot/imported/home_background.png.png-2251327ad9b00f6a6cc4ebfc4c459c76.ctex"]
+source_file="res://assets 美術、音效等素材(不放程式)/buildings/coffee_shop.png"
+dest_files=["res://.godot/imported/coffee_shop.png-dac9ee6a60c595941bb13fa4762b5217.ctex"]
 
 [params]
 

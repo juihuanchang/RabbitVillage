@@ -48,8 +48,8 @@ func load_or_create(default_rabbit: RabbitData) -> RabbitData:
 		_rabbit_manager.add_rabbit(rabbit)
 	if not data.current_activity.is_empty():
 		var owner_name := str(data.current_activity.get("rabbit_name", rabbit.rabbit_name))
-		var owner := _rabbit_manager.get_rabbit(owner_name)
-		var restored := ActiveActivityData.from_dict(data.current_activity, owner)
+		var activity_owner := _rabbit_manager.get_rabbit(owner_name)
+		var restored := ActiveActivityData.from_dict(data.current_activity, activity_owner)
 		if restored != null and not restored.is_completed:
 			_activity_manager.restore_activity(restored)
 		else:
