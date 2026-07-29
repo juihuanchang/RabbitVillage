@@ -14,6 +14,7 @@ extends Node2D
 @onready var forest_button: Button = $CanvasLayer/AUI/MainHUD/Margin/Layout/ForestButton
 @onready var fishing_button: Button = $CanvasLayer/AUI/MainHUD/Margin/Layout/FishingButton
 @onready var diary_button: Button = $CanvasLayer/AUI/DiaryButton
+@onready var hud_toggle_button: Button = $HUDMenuLayer/HUDToggleButton
 @onready var popup: Control = $CanvasLayer/AUI/ActivityPopup
 @onready var popup_card: PanelContainer = $CanvasLayer/AUI/ActivityPopup/Card
 @onready var popup_kicker: Label = $CanvasLayer/AUI/ActivityPopup/Card/Margin/Layout/Kicker
@@ -40,9 +41,11 @@ var _selected_activity_id: String = ""
 func _ready() -> void:
 	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_style_interface()
+	panel.hide()
 	forest_button.pressed.connect(func() -> void: _open_activity_popup("forest_walk"))
 	fishing_button.pressed.connect(func() -> void: _open_activity_popup("fishing"))
 	diary_button.pressed.connect(_open_diary)
+	hud_toggle_button.pressed.connect(_toggle_main_hud)
 	start_button.pressed.connect(_start_selected_activity)
 	cancel_button.pressed.connect(func() -> void: popup.hide())
 	close_diary.pressed.connect(func() -> void: diary_window.hide())
@@ -57,8 +60,17 @@ func _ready() -> void:
 		_on_activity_started(player.activity_manager.active_activity)
 
 
+func _toggle_main_hud() -> void:
+	panel.visible = not panel.visible
+	hud_toggle_button.tooltip_text = "收合 Amy 資訊" if panel.visible else "展開 Amy 資訊"
+
+
 func _style_interface() -> void:
 	panel.add_theme_stylebox_override("panel", _card(Color("#fff7df"), Color("#c9ae78"), 28, 12))
+	hud_toggle_button.add_theme_stylebox_override("normal", _card(Color("#fff7df"), Color("#c9ae78"), 16, 6))
+	hud_toggle_button.add_theme_stylebox_override("hover", _card(Color("#fffaf0"), Color("#9e875d"), 16, 7))
+	hud_toggle_button.add_theme_color_override("font_color", Color("#40573e"))
+	hud_toggle_button.add_theme_color_override("font_hover_color", Color("#2f482f"))
 	popup_card.add_theme_stylebox_override("panel", _card(Color("#fffaf0"), Color("#b89559"), 28, 18))
 	diary_card.add_theme_stylebox_override("panel", _card(Color("#fffaf0"), Color("#b89559"), 28, 18))
 	activity_status.add_theme_stylebox_override("panel", _card(Color("#294b31e8"), Color("#88ac75"), 18, 8))

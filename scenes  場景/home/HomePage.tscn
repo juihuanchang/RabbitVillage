@@ -370,3 +370,15 @@ script = ExtResource("4_tt2vn")
 
 [node name="Week3AUI" type="Node" parent="." unique_id=1977266883]
 script = ExtResource("5_2si26")
+
+[node name="HUDMenuLayer" type="CanvasLayer" parent="." unique_id=2108136075]
+layer = 100
+
+[node name="HUDToggleButton" type="Button" parent="HUDMenuLayer" unique_id=421186964]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 78.0
+offset_bottom = 78.0
+tooltip_text = "展開 Amy 資訊"
+theme_override_font_sizes/font_size = 28
+text = "☰"
