@@ -21,6 +21,7 @@ func save_game() -> bool:
 		data.rabbits.append(rabbit.to_dict())
 	if _activity_manager.active_activity != null:
 		data.current_activity = _activity_manager.active_activity.to_dict()
+	data.completed_activity_ids = _activity_manager.get_completed_record_ids()
 	data.journals = _diary_manager.to_array()
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -39,6 +40,7 @@ func load_or_create(default_rabbit: RabbitData) -> RabbitData:
 	if not data.is_supported_version():
 		return _create_default(default_rabbit)
 	_rabbit_manager.clear_rabbits()
+	_activity_manager.set_completed_record_ids(data.completed_activity_ids)
 	_diary_manager.load_from_array(data.journals)
 	for raw: Dictionary in data.rabbits:
 		_rabbit_manager.add_rabbit(RabbitData.from_dict(raw))
@@ -51,13 +53,18 @@ func load_or_create(default_rabbit: RabbitData) -> RabbitData:
 		var activity_owner := _rabbit_manager.get_rabbit(owner_name)
 		var restored := ActiveActivityData.from_dict(data.current_activity, activity_owner)
 		if restored != null and not restored.is_completed:
+			var current_definition := _activity_manager.get_activity(restored.activity.activity_id)
+			if current_definition != null:
+				restored.activity = current_definition
 			_activity_manager.restore_activity(restored)
 		else:
 			rabbit.is_away = false
 			rabbit.current_activity = ""
+			rabbit.current_state = ""
 	else:
 		rabbit.is_away = false
 		rabbit.current_activity = ""
+		rabbit.current_state = ""
 	return rabbit
 
 func _create_default(rabbit: RabbitData) -> RabbitData:

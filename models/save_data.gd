@@ -1,7 +1,7 @@
 class_name SaveData
 extends Resource
 
-const CURRENT_VERSION := 2
+const CURRENT_VERSION := 3
 var save_version := CURRENT_VERSION
 var rabbits: Array[Dictionary] = []
 var current_activity: Dictionary = {}

@@ -40,8 +40,18 @@ func get_completion_data() -> Dictionary:
 	return {
 		"activity_record_id": activity_record_id,
 		"activity_id": activity.activity_id if activity else "",
+		"location_id": activity.location_id if activity else "",
 		"activity_name": activity.activity_name if activity else "",
-		"completed_at": completed_at
+		"started_at": started_at,
+		"completed_at": completed_at,
+		"energy_change": activity.energy_change if activity else 0,
+		"hunger_change": activity.hunger_change if activity else 0,
+		"mood_change": activity.mood_change if activity else 0,
+		"forest_experience_change": activity.forest_experience_change if activity else 0,
+		"fishing_experience_change": activity.fishing_experience_change if activity else 0,
+		"intimacy_change": activity.intimacy_change if activity else 0,
+		"activity_completion_count": 1,
+		"reward_items": []
 	}
 
 func to_dict() -> Dictionary:
