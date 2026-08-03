@@ -1,0 +1,10 @@
+{
+  "activity_id": "home_rest",
+  "templates": [
+    {"title": "窗邊日光", "content": "{rabbit_name} 躺在窗邊曬了很久的太陽，整個下午都暖暖的。"},
+    {"title": "地毯午睡", "content": "{rabbit_name} 在地毯上睡著了，醒來時還有點不想離開那塊舒服的位置。"},
+    {"title": "整理葉子", "content": "{rabbit_name} 把從森林帶回家的葉子排好，像是在整理一點點回憶。"},
+    {"title": "抱著枕頭", "content": "{rabbit_name} 抱著枕頭在床上翻了好幾次身，最後才慢慢安靜下來。"},
+    {"title": "看著村莊", "content": "{rabbit_name} 坐在窗邊安靜地看著村莊，什麼也沒做，卻覺得很安心。"}
+  ]
+}

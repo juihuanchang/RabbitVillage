@@ -1,9 +1,10 @@
 {
   "activity_id": "fishing",
   "templates": [
-    {
-      "title": "池邊釣魚",
-      "content": "{rabbit_name} 在池邊度過了一段悠閒的釣魚時光。"
-    }
+	{"title": "釣不到魚的午後", "content": "{rabbit_name} 沒有釣到魚，卻在池邊曬著太陽，不小心睡著了。"},
+	{"title": "放回湖裡", "content": "{rabbit_name} 釣到一條小魚，看了一會兒後，又把牠輕輕放回水裡。"},
+	{"title": "水面的波紋", "content": "{rabbit_name} 坐在湖邊看著水面一圈又一圈的波紋，發了好一會兒呆。"},
+	{"title": "遇見青蛙", "content": "{rabbit_name} 在池邊遇見一隻青蛙，牠突然跳進水裡，把 {rabbit_name} 嚇了一跳。"},
+	{"title": "釣竿纏住水草", "content": "{rabbit_name} 的釣竿被水草纏住了，花了不少時間才慢慢解開。"}
   ]
 }

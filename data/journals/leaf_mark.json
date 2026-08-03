@@ -1,0 +1,8 @@
+{
+  "growth_mark_id": "leaf_mark",
+  "title": "耳朵旁的小葉子",
+  "content": "今天 {rabbit_name} 從森林回來時，耳朵旁黏著一片小葉子。\n\n牠經過窗戶時看了自己很久，最後沒有把葉子拿下來。\n\n或許對 {rabbit_name} 來說，這是森林送給牠的第一份小禮物。",
+  "location_id": "forest",
+  "location_name": "森林",
+  "illustration_id": "leaf_mark_memory"
+}

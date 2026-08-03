@@ -1,9 +1,9 @@
 {
   "activity_id": "forest_walk",
   "templates": [
-    {
-      "title": "森林散步",
-      "content": "{rabbit_name} 在森林裡散步，帶著愉快的心情回家了。"
-    }
+	{
+	  "title": "森林散步",
+	  "content": "{rabbit_name} 在森林裡散步，帶著愉快的心情回家了。"
+	}
   ]
 }

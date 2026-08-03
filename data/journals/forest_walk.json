@@ -1,0 +1,13 @@
+{
+  "activity_id": "forest_walk",
+  "templates": [
+    {"title": "森林小鳥", "content": "{rabbit_name} 在森林裡看見小鳥停在枝頭，忍不住停下腳步看了好一會兒。"},
+    {"title": "撿到葉子", "content": "{rabbit_name} 在散步時撿到一片漂亮的葉子，小心地把它帶回家。"},
+    {"title": "遇見松鼠", "content": "{rabbit_name} 在林間小路上遇見了一隻松鼠，牠們彼此對看了一下。"},
+    {"title": "樹下休息", "content": "{rabbit_name} 走累了，就在大樹下休息了一會兒，風輕輕吹過耳邊。"},
+    {"title": "發現小花", "content": "{rabbit_name} 在路邊發現一朵小花，覺得今天的森林特別溫柔。"},
+    {"title": "溪水聲", "content": "{rabbit_name} 聽見附近傳來溪水聲，邊走邊聽，心情也變得平靜。"},
+    {"title": "短暫迷路", "content": "{rabbit_name} 在森林裡短暫迷路了一下，最後還是順利找到回家的方向。"},
+    {"title": "小樹枝", "content": "{rabbit_name} 帶回了一根形狀特別的小樹枝，像是今天散步的紀念。"}
+  ]
+}

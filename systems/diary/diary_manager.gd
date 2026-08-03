@@ -8,7 +8,17 @@ var _journals: Array[JournalEntry] = []
 func create_journal_from_activity(active: ActiveActivityData) -> JournalEntry:
 	if active == null or active.activity_record_id.is_empty() or has_activity_record_id(active.activity_record_id):
 		return null
-	var entry := JournalGenerator.generate(active, "journal_%03d" % (_journals.size() + 1))
+	var entry := JournalGenerator.generate(active, _generate_next_journal_id())
+	if entry != null:
+		_journals.append(entry)
+		journal_added.emit(entry)
+		journals_changed.emit()
+	return entry
+
+func create_growth_journal(rabbit_name: String, growth_mark_id: String, created_at: float = -1.0) -> JournalEntry:
+	if growth_mark_id.is_empty() or has_journal_for_growth_mark(growth_mark_id):
+		return null
+	var entry := JournalGenerator.generate_growth_journal(rabbit_name, _generate_next_journal_id(), growth_mark_id, created_at)
 	if entry != null:
 		_journals.append(entry)
 		journal_added.emit(entry)
@@ -17,7 +27,13 @@ func create_journal_from_activity(active: ActiveActivityData) -> JournalEntry:
 
 func has_activity_record_id(record_id: String) -> bool:
 	for entry: JournalEntry in _journals:
-		if entry.activity_record_id == record_id:
+		if not record_id.is_empty() and entry.activity_record_id == record_id:
+			return true
+	return false
+
+func has_journal_for_growth_mark(growth_mark_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.growth_mark_id == growth_mark_id:
 			return true
 	return false
 
@@ -49,6 +65,15 @@ func load_from_array(data: Array) -> void:
 	for raw: Variant in data:
 		if raw is Dictionary:
 			var entry := JournalEntry.from_dict(raw)
-			if entry.is_valid() and not has_activity_record_id(entry.activity_record_id):
+			if not entry.is_valid():
+				continue
+			if entry.journal_type == "growth":
+				if not has_journal_for_growth_mark(entry.growth_mark_id):
+					_journals.append(entry)
+			elif not has_activity_record_id(entry.activity_record_id):
 				_journals.append(entry)
+			
 	journals_changed.emit()
+
+func _generate_next_journal_id() -> String:
+	return "journal_%03d" % (_journals.size() + 1)

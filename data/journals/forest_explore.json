@@ -1,0 +1,13 @@
+{
+  "activity_id": "forest_explore",
+  "templates": [
+    {"title": "陌生小路", "content": "{rabbit_name} 發現一條以前沒有走過的小路，沿著它慢慢往森林深處前進。"},
+    {"title": "奇怪蘑菇", "content": "{rabbit_name} 在森林深處看見一朵奇怪的蘑菇，忍不住蹲下來研究了一會兒。"},
+    {"title": "遠方水聲", "content": "{rabbit_name} 聽見遠處傳來水聲，便好奇地朝聲音的方向走去。"},
+    {"title": "閃亮小石頭", "content": "{rabbit_name} 在樹洞旁找到一顆閃亮的小石頭，像是森林偷偷藏起來的寶物。"},
+    {"title": "蝴蝶帶路", "content": "{rabbit_name} 差點在森林裡迷路，最後跟著一隻蝴蝶回到了熟悉的小路上。"},
+    {"title": "被藤蔓遮住的石碑", "content": "{rabbit_name} 看見一座被藤蔓遮住的小石碑，靜靜站在原地看了很久。"},
+    {"title": "特別樹枝", "content": "{rabbit_name} 帶回一根形狀很特別的樹枝，覺得它像森林送的紀念品。"},
+    {"title": "森林深處休息", "content": "{rabbit_name} 在森林深處休息了一會兒，感受著周圍安靜又神祕的氣氛。"}
+  ]
+}

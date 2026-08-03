@@ -36,22 +36,29 @@ func mark_completed(at_time: float = -1.0) -> void:
 	is_completed = true
 	completed_at = TimeManager.get_now() if at_time < 0.0 else at_time
 
+func get_stat_changes() -> Dictionary:
+	if activity == null:
+		return {}
+	return {
+		"energy": activity.energy_change,
+		"hunger": activity.hunger_change,
+		"mood": activity.mood_change,
+		"forest_experience": activity.forest_experience_change,
+		"fishing_experience": activity.fishing_experience_change,
+		"intimacy": activity.intimacy_change
+	}
+
 func get_completion_data() -> Dictionary:
 	return {
 		"activity_record_id": activity_record_id,
 		"activity_id": activity.activity_id if activity else "",
 		"location_id": activity.location_id if activity else "",
+		"location_name": activity.location_name if activity else "",
 		"activity_name": activity.activity_name if activity else "",
 		"started_at": started_at,
 		"completed_at": completed_at,
-		"energy_change": activity.energy_change if activity else 0,
-		"hunger_change": activity.hunger_change if activity else 0,
-		"mood_change": activity.mood_change if activity else 0,
-		"forest_experience_change": activity.forest_experience_change if activity else 0,
-		"fishing_experience_change": activity.fishing_experience_change if activity else 0,
-		"intimacy_change": activity.intimacy_change if activity else 0,
-		"activity_completion_count": 1,
-		"reward_items": []
+		"stat_changes": get_stat_changes(),
+		"items": activity.reward_items if activity else []
 	}
 
 func to_dict() -> Dictionary:

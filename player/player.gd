@@ -20,6 +20,7 @@ var rabbit_manager := RabbitManager.new()
 var diary_manager := DiaryManager.new()
 var save_manager := SaveManager.new()
 var growth_manager := GrowthManager.new()
+var growth_album_manager := GrowthAlbumManager.new()
 var _save_requested := false
 var _home_tick_elapsed := 0.0
 
@@ -30,23 +31,23 @@ const HOME_MOOD_LOSS := 2
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
-	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager]:
+	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager]:
 		add_child(manager)
-	save_manager.setup(rabbit_manager, diary_manager, activity_manager)
+	save_manager.setup(rabbit_manager, diary_manager, activity_manager, growth_manager, growth_album_manager)
 	rabbit_data = save_manager.load_or_create(
 		RabbitData.new(rabbit_name, initial_hunger, initial_mood, initial_energy)
 	)
 	activity_manager.setup(rabbit_data)
+	growth_manager.setup(rabbit_data)
 	activity_manager.activity_started.connect(_on_activity_started)
 	activity_manager.activity_completed.connect(_on_activity_completed)
 	growth_manager.growth_event_created.connect(_on_growth_event_created)
 	growth_manager.growth_mark_unlocked.connect(_on_growth_mark_unlocked)
-	growth_manager.setup(rabbit_data)
 	activity_manager.rabbit_returned.connect(_on_rabbit_returned)
 	rabbit_data.data_changed.connect(_on_data_changed)
 	diary_manager.journal_added.connect(func(_entry: JournalEntry) -> void: _request_save())
+	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
 	_update_character_visibility()
-	# A restored activity uses wall-clock time and may finish immediately here.
 	activity_manager.check_for_completion()
 	rabbit_status_changed.emit(rabbit_data)
 
@@ -87,20 +88,20 @@ func get_latest_journal() -> JournalEntry:
 func get_journal_count() -> int:
 	return diary_manager.get_journal_count()
 
+func get_growth_album_entries() -> Array[GrowthAlbumEntry]:
+	return growth_album_manager.get_all_entries()
+
 func save_now() -> bool:
 	return save_manager.save_game()
 
 func _on_activity_started(_active: ActiveActivityData) -> void:
 	_update_character_visibility()
 	rabbit_status_changed.emit(rabbit_data)
-	# C is notified immediately through the save operation.
 	save_manager.save_game()
 
 func _on_activity_completed(active: ActiveActivityData) -> void:
-	# DiaryManager de-duplicates by the unique activity record id.
 	diary_manager.create_journal_from_activity(active)
-	if active.activity.location_id == "forest":
-		growth_manager.check_growth_conditions()
+	growth_manager.record_completed_activity(active)
 	rabbit_status_changed.emit(rabbit_data)
 	save_manager.save_game()
 
@@ -108,7 +109,21 @@ func _on_growth_event_created(_event: GrowthEventData) -> void:
 	rabbit_status_changed.emit(rabbit_data)
 	save_manager.save_game()
 
-func _on_growth_mark_unlocked(_mark: GrowthMarkData, _event: GrowthEventData) -> void:
+func _on_growth_mark_unlocked(mark: GrowthMarkData, event: GrowthEventData) -> void:
+	var journal := diary_manager.create_growth_journal(rabbit_data.rabbit_name, mark.id, event.triggered_at)
+	if journal != null and not growth_album_manager.has_entry_for_growth_mark(mark.id):
+		var entry := GrowthAlbumEntry.new(
+			"album_%s" % mark.id,
+			mark.id,
+			mark.display_name,
+			"Amy 從森林帶回了一片留在耳朵旁的小葉子。" if mark.id == "leaf_mark" else mark.description,
+			mark.growth_path,
+			mark.stage,
+			mark.unlocked_at,
+			journal.journal_id,
+			journal.illustration_id
+		)
+		growth_album_manager.add_album_entry(entry)
 	rabbit_status_changed.emit(rabbit_data)
 	save_manager.save_game()
 
@@ -125,6 +140,7 @@ func has_pending_growth_event() -> bool: return growth_manager.has_pending_growt
 func get_pending_growth_event() -> GrowthEventData: return growth_manager.get_pending_growth_event()
 func confirm_growth_event(event_id: String) -> bool: return growth_manager.confirm_growth_event(event_id)
 func get_growth_tendency(path_id: String) -> String: return growth_manager.get_growth_tendency(path_id)
+func get_all_activity_records() -> Array[Dictionary]: return growth_manager.get_all_activity_records()
 
 func GetActivitiesByLocation(location_id: String) -> Array[ActivityData]: return get_activities_by_location(location_id)
 func GetActivityData(activity_id: String) -> ActivityData: return get_activity_data(activity_id)
@@ -139,6 +155,8 @@ func HasPendingGrowthEvent() -> bool: return has_pending_growth_event()
 func GetPendingGrowthEvent() -> GrowthEventData: return get_pending_growth_event()
 func ConfirmGrowthEvent(event_id: String) -> bool: return confirm_growth_event(event_id)
 func GetGrowthTendency(path_id: String) -> String: return get_growth_tendency(path_id)
+func GetGrowthAlbumEntries() -> Array[GrowthAlbumEntry]: return get_growth_album_entries()
+func GetAllActivityRecords() -> Array[Dictionary]: return get_all_activity_records()
 
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
 	_update_character_visibility()
