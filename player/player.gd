@@ -5,9 +5,9 @@ signal rabbit_status_changed(rabbit: RabbitData)
 
 @export_category("Rabbit")
 @export var rabbit_name := "Amy"
-@export_range(0, 100) var initial_hunger := 100
-@export_range(0, 100) var initial_mood := 50
-@export_range(0, 100) var initial_energy := 100
+@export_range(0, 100) var initial_hunger := 70
+@export_range(0, 100) var initial_mood := 70
+@export_range(0, 100) var initial_energy := 70
 @export_category("Movement")
 @export var speed := 300.0
 
@@ -23,7 +23,10 @@ var growth_manager := GrowthManager.new()
 var growth_album_manager := GrowthAlbumManager.new()
 var _save_requested := false
 var _home_tick_elapsed := 0.0
+var _test_reset_elapsed := 0.0
 
+const TEST_AUTO_RESET_SECONDS := 30.0
+const TEST_AUTO_RESET_VALUE := 70
 const HOME_TICK_SECONDS := 15.0
 const HOME_ENERGY_GAIN := 5
 const HOME_HUNGER_LOSS := 2
@@ -52,6 +55,15 @@ func _ready() -> void:
 	rabbit_status_changed.emit(rabbit_data)
 
 func _process(delta: float) -> void:
+	if rabbit_data != null:
+		_test_reset_elapsed += delta
+		if _test_reset_elapsed >= TEST_AUTO_RESET_SECONDS:
+			_test_reset_elapsed = 0.0
+			rabbit_data.hunger = TEST_AUTO_RESET_VALUE
+			rabbit_data.mood = TEST_AUTO_RESET_VALUE
+			rabbit_data.energy = TEST_AUTO_RESET_VALUE
+			rabbit_status_changed.emit(rabbit_data)
+			save_manager.save_game()
 	if rabbit_data == null or rabbit_data.is_away or not rabbit_data.current_activity.is_empty():
 		_home_tick_elapsed = 0.0
 		return

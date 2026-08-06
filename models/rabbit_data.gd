@@ -19,6 +19,8 @@ signal data_changed
 @export var total_activity_count := 0: set = _set_total_activity_count
 @export var unlocked_growth_marks: Array[Dictionary] = []
 @export var pending_growth_event: Dictionary = {}
+@export var building_placements: Dictionary = {}: set = _set_building_placements
+@export var village_a_state: Dictionary = {}: set = _set_village_a_state
 
 func _init(initial_name := "Amy", initial_hunger := 100, initial_mood := 50,
 	initial_energy := 100, initial_is_away := false, initial_current_activity := "") -> void:
@@ -43,6 +45,8 @@ func _set_forest_activity_count(value: int) -> void: forest_activity_count = max
 func _set_fishing_activity_count(value: int) -> void: fishing_activity_count = maxi(value, 0); data_changed.emit()
 func _set_home_activity_count(value: int) -> void: home_activity_count = maxi(value, 0); data_changed.emit()
 func _set_total_activity_count(value: int) -> void: total_activity_count = maxi(value, 0); data_changed.emit()
+func _set_building_placements(value: Dictionary) -> void: building_placements = value.duplicate(true); data_changed.emit()
+func _set_village_a_state(value: Dictionary) -> void: village_a_state = value.duplicate(true); data_changed.emit()
 
 func to_dict() -> Dictionary:
 	return {
@@ -53,7 +57,9 @@ func to_dict() -> Dictionary:
 		"fishing_activity_count": fishing_activity_count, "home_activity_count": home_activity_count,
 		"total_activity_count": total_activity_count,
 		"unlocked_growth_marks": unlocked_growth_marks.duplicate(),
-		"pending_growth_event": pending_growth_event.duplicate(true)
+		"pending_growth_event": pending_growth_event.duplicate(true),
+		"building_placements": building_placements.duplicate(true),
+		"village_a_state": village_a_state.duplicate(true)
 	}
 
 static func from_dict(data: Dictionary) -> RabbitData:
@@ -76,4 +82,6 @@ static func from_dict(data: Dictionary) -> RabbitData:
 			# Migrates early week-three saves which stored only the mark id.
 			result.unlocked_growth_marks.append({"id": str(mark), "is_unlocked": true, "unlocked_at": 0.0})
 	if data.get("pending_growth_event", {}) is Dictionary: result.pending_growth_event = data.get("pending_growth_event", {}).duplicate(true)
+	if data.get("building_placements", {}) is Dictionary: result.building_placements = data.get("building_placements", {}).duplicate(true)
+	if data.get("village_a_state", {}) is Dictionary: result.village_a_state = data.get("village_a_state", {}).duplicate(true)
 	return result
