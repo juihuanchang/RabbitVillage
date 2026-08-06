@@ -22,6 +22,7 @@ var info_dialog: AcceptDialog
 var coffee_button: Button
 var pending_slot := -1
 var hint_label: Label
+@onready var player: RabbitCharacter = get_node("../Background/Player")
 
 
 func _ready() -> void:
@@ -29,6 +30,7 @@ func _ready() -> void:
 	_create_ui()
 	_load_buildings()
 	_refresh_slots()
+	player.activity_manager.activity_started.connect(func(_active: ActiveActivityData) -> void: _exit_building_mode())
 
 
 func _create_slots() -> void:
@@ -134,6 +136,9 @@ func _create_ui() -> void:
 
 
 func _toggle_building_mode() -> void:
+	if not building_mode and (player.activity_manager.has_active_activity() or player.has_pending_growth_event()):
+		hint_label.text = "目前無法進入建築模式"
+		return
 	if building_mode:
 		_exit_building_mode()
 	else:
@@ -266,15 +271,16 @@ func _panel_style() -> StyleBoxFlat:
 
 
 func _save_buildings() -> void:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
+	if player == null or player.rabbit_data == null:
 		push_error("無法儲存建築資料")
 		return
-	file.store_string(JSON.stringify({"version": 1, "slots": placed_buildings}, "\t"))
-	file.close()
+	player.rabbit_data.building_placements = placed_buildings.duplicate(true)
 
 
 func _load_buildings() -> void:
+	if player != null and player.rabbit_data != null and not player.rabbit_data.building_placements.is_empty():
+		placed_buildings = player.rabbit_data.building_placements.duplicate(true)
+		return
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	var json := JSON.new()
@@ -282,4 +288,5 @@ func _load_buildings() -> void:
 		return
 	var raw_slots: Variant = json.data.get("slots", {})
 	if raw_slots is Dictionary:
-		placed_buildings = raw_slots
+		placed_buildings = raw_slots.duplicate(true)
+		_save_buildings()

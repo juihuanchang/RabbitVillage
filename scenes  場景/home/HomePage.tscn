@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://cann1skmc44sg" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/底圖.png" id="2_inkar"]
 [ext_resource type="Script" uid="uid://dpl2e367u3u70" path="res://systems/building/building_system.gd" id="4_tt2vn"]
 [ext_resource type="Script" uid="uid://bexhx6mnb13op" path="res://scenes  場景/home/week3_a_ui.gd" id="5_2si26"]
+[ext_resource type="Script" uid="uid://djq2rkd8u0s17" path="res://scenes  場景/home/week4_a_ui.gd" id="6_we17s"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
 script = ExtResource("1_inkar")
@@ -382,3 +383,6 @@ offset_bottom = 78.0
 tooltip_text = "展開 Amy 資訊"
 theme_override_font_sizes/font_size = 28
 text = "☰"
+
+[node name="Week4AUI" type="Node" parent="." unique_id=1472467627]
+script = ExtResource("6_we17s")

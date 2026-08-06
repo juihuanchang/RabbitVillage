@@ -21,6 +21,8 @@ const LOCATION_DATA := {
 	}
 }
 
+const LEAF_MARK_TEXTURE := preload("res://assets 美術、音效等素材(不放程式)/characters/leaf_mark.png")
+
 const ACTIVITY_NAMES := {
 	"home_rest": "在家休息",
 	"forest_walk": "森林散步",
@@ -36,6 +38,7 @@ const ACTIVITY_NAMES := {
 @onready var old_fishing_button: Button = host.get_node("CanvasLayer/AUI/MainHUD/Margin/Layout/FishingButton")
 
 var layer: CanvasLayer
+var map_layer: CanvasLayer
 var location_popup: Control
 var location_title: Label
 var location_description: Label
@@ -45,7 +48,7 @@ var album_window: Control
 var album_list: VBoxContainer
 var forest_tendency: Label
 var lake_tendency: Label
-var leaf_mark: Label
+var leaf_mark: Sprite2D
 var interaction_locked := false
 
 
@@ -58,6 +61,7 @@ func _setup() -> void:
 	old_fishing_button.hide()
 	main_panel.offset_bottom = 790.0
 	_create_hud_extensions()
+	_create_map_location_buttons()
 	_create_overlay_layer()
 	_create_location_popup()
 	_create_growth_event_popup()
@@ -108,11 +112,36 @@ func _create_hud_extensions() -> void:
 	hud_layout.add_child(album_button)
 
 
+func _create_map_location_buttons() -> void:
+	map_layer = CanvasLayer.new()
+	map_layer.name = "MapLocationButtons"
+	map_layer.layer = 2
+	add_child(map_layer)
+	_add_map_location_button("home", "🏠  Amy 的家", Vector2(440, 245))
+	_add_map_location_button("forest", "🌲  森林入口", Vector2(1360, 140))
+	_add_map_location_button("lake", "🎣  湖邊", Vector2(1420, 760))
+
+
 func _create_overlay_layer() -> void:
 	layer = CanvasLayer.new()
 	layer.name = "Week3AUI"
 	layer.layer = 18
 	add_child(layer)
+
+
+func _add_map_location_button(location_id: String, label: String, position: Vector2) -> void:
+	var button := Button.new()
+	button.name = "%sArea" % location_id.capitalize()
+	button.text = label
+	button.position = position
+	button.size = Vector2(210, 54)
+	button.tooltip_text = "前往%s" % LOCATION_DATA[location_id].name
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_stylebox_override("normal", _solid_button_style(Color("#fff8e8e8")))
+	button.add_theme_stylebox_override("hover", _solid_button_style(Color("#fffdf5")))
+	button.add_theme_color_override("font_color", Color("#40573e"))
+	button.pressed.connect(_open_location.bind(location_id))
+	map_layer.add_child(button)
 
 
 func _create_location_popup() -> void:
@@ -245,32 +274,43 @@ func _create_growth_event_popup() -> void:
 	content.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_theme_font_size_override("font_size", 22)
+	content.add_theme_color_override("font_color", Color("#4f5546"))
+	content.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.8))
+	content.add_theme_constant_override("shadow_offset_x", 1)
+	content.add_theme_constant_override("shadow_offset_y", 1)
 	box.add_child(content)
 	var confirm := Button.new()
 	confirm.text = "看看 Amy"
 	confirm.custom_minimum_size = Vector2(0, 58)
+	confirm.add_theme_font_size_override("font_size", 21)
+	confirm.add_theme_stylebox_override("normal", _solid_button_style(Color("#557a50")))
+	confirm.add_theme_stylebox_override("hover", _solid_button_style(Color("#6b9164")))
+	confirm.add_theme_color_override("font_color", Color.WHITE)
 	confirm.pressed.connect(_confirm_growth_event)
 	box.add_child(confirm)
 	growth_popup.hide()
 
 
 func _confirm_growth_event() -> void:
-	if not interaction_locked:
+	if not interaction_locked or not player.has_method("GetPendingGrowthEvent"):
+		return
+	var pending: GrowthEventData = player.call("GetPendingGrowthEvent")
+	if pending == null or not player.has_method("ConfirmGrowthEvent"):
+		return
+	if not bool(player.call("ConfirmGrowthEvent", pending.event_id)):
 		return
 	interaction_locked = false
-	if player.has_method("ConfirmGrowthEvent"):
-		player.call("ConfirmGrowthEvent", "growth_leaf_mark_001")
 	growth_popup.hide()
 	_refresh_growth_ui()
 
 
 func _create_leaf_mark() -> void:
-	leaf_mark = Label.new()
+	leaf_mark = Sprite2D.new()
 	leaf_mark.name = "LeafMarkSprite"
-	leaf_mark.text = "🍃"
-	leaf_mark.position = Vector2(20, -102)
-	leaf_mark.add_theme_font_size_override("font_size", 34)
-	leaf_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	leaf_mark.texture = LEAF_MARK_TEXTURE
+	leaf_mark.position = Vector2(22, -104)
+	leaf_mark.scale = Vector2(0.045, 0.045)
+	leaf_mark.z_index = 2
 	player.add_child(leaf_mark)
 	leaf_mark.hide()
 
@@ -329,14 +369,19 @@ func _open_album() -> void:
 func _refresh_album() -> void:
 	for child in album_list.get_children():
 		child.queue_free()
-	var has_leaf := _has_leaf_mark()
-	if not has_leaf:
+	var entries: Array[GrowthAlbumEntry] = player.get_growth_album_entries()
+	if entries.is_empty():
 		var empty := Label.new()
 		empty.text = "目前還沒有成長印記。\n\n陪 Amy 多去不同的地方看看吧！"
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty.add_theme_font_size_override("font_size", 24)
+		empty.add_theme_font_size_override("font_size", 26)
+		empty.add_theme_color_override("font_color", Color("#4b5f44"))
+		empty.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.85))
+		empty.add_theme_constant_override("shadow_offset_x", 1)
+		empty.add_theme_constant_override("shadow_offset_y", 1)
 		album_list.add_child(empty)
 		return
+	var album_entry: GrowthAlbumEntry = entries[0]
 	var entry := PanelContainer.new()
 	entry.add_theme_stylebox_override("panel", _card_style(Color("#fffdf5"), Color("#bdd09a")))
 	var margin := MarginContainer.new()
@@ -344,7 +389,11 @@ func _refresh_album() -> void:
 		margin.add_theme_constant_override("margin_" + side, 26)
 	entry.add_child(margin)
 	var text := Label.new()
-	text.text = "🍃  第一片葉子\n\n成長路線：森林\n階段：第一階段\n\nAmy 從森林回來時，耳朵旁黏著一片小葉子。\n牠似乎很喜歡，沒有把它拿下來。"
+	var unlocked := Time.get_datetime_dict_from_unix_time(int(album_entry.unlocked_at))
+	var unlocked_date := "%04d/%02d/%02d" % [unlocked.year, unlocked.month, unlocked.day]
+	text.text = "🍃  %s\n\n成長路線：%s\n階段：第%d階段\n取得日期：%s\n\n%s" % [
+		album_entry.title, album_entry.growth_path, album_entry.stage, unlocked_date, album_entry.description
+	]
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.add_theme_font_size_override("font_size", 22)
 	text.add_theme_color_override("font_color", Color("#4b5f44"))
@@ -382,6 +431,13 @@ func _on_rabbit_status_changed(_rabbit: RabbitData) -> void:
 func _close_transient_windows() -> void:
 	location_popup.hide()
 	album_window.hide()
+
+
+func _solid_button_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.set_corner_radius_all(12)
+	return style
 
 
 func _card_style(color: Color, border: Color) -> StyleBoxFlat:

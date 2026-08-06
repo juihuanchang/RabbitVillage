@@ -274,7 +274,7 @@ func _make_diary_entry(entry: JournalEntry) -> Control:
 
 	# 日記標題
 	var title_label := Label.new()
-	title_label.text = entry.title
+	title_label.text = ("【特殊回憶】 " if entry.is_special_memory else "") + entry.title
 
 	title_label.add_theme_font_size_override(
 		"font_size",
