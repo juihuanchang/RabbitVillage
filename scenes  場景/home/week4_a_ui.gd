@@ -15,6 +15,14 @@ var rest_left := 0.0
 var rest_cooldown := 40.0
 var farm_state := "ready"
 var farm_left := 0.0
+# C bridge: stable ids for A-side demo actions, so journals/history can de-duplicate.
+var c_farm_cycle_id := ""
+var c_harvest_serial := 0
+var c_construction_record_ids: Dictionary = {}
+var c_construction_started_at: Dictionary = {}
+var c_rest_use_id := ""
+var c_rest_started_at := 0.0
+var c_rest_use_count := 0
 var construction_end: Dictionary = {}
 var built_once: Dictionary = {}
 var _last_construction_second := -1
@@ -41,13 +49,31 @@ func _ready() -> void:
 	_create_carrot_counter()
 	_create_construction_status()
 	_refresh_all()
-	if rest_left > 0.0:
+	# Older A-side week-four saves may already have completed buildings but no C journals.
+	call_deferred("_backfill_c_building_journals")
+	call_deferred("_backfill_c_village_event_journals")
+	if not c_rest_use_id.is_empty() and rest_left <= 0.0:
+		call_deferred("_finish_rest")
+	elif rest_left > 0.0:
 		call_deferred("_show_rest_lock")
 	else:
-		call_deferred("_show_village_event")
+		call_deferred("_show_first_village_event")
 
 func _show_village_event(title := "村莊事件：新的生活開始", story := "Amy 發現村裡多了幾個能停下腳步的地方。\n\n小休息亭已可建造；公告欄與胡蘿蔔農田會隨村莊進度解鎖。") -> void:
 	_show_actions(title, story, "去看看", func(): pass, "稍後再看", func(): pass)
+
+func _show_first_village_event() -> void:
+	var player := _player()
+	if player != null and player.HasJournalForVillageEvent("village_rest_pavilion_001"):
+		return
+	_show_actions(
+		"村莊事件：村莊的新角落",
+		"Amy 發現村莊裡多了一個適合停下腳步的角落。\n\n或許不久之後，這裡會有一座能好好休息的小亭子。",
+		"去看看",
+		Callable(self, "_record_c_village_event").bind("village_rest_pavilion_001"),
+		"稍後再看",
+		func(): pass
+	)
 
 func _process(delta: float) -> void:
 	var now := Time.get_unix_time_from_system()
@@ -55,6 +81,7 @@ func _process(delta: float) -> void:
 		if now >= float(construction_end[building_id]):
 			states[building_id] = "completed"
 			built_once[building_id] = true
+			_record_c_construction_complete(str(building_id))
 			construction_end.erase(building_id)
 			_save_village_state()
 			_refresh_all()
@@ -116,6 +143,13 @@ func _load_village_state() -> void:
 	carrots = int(saved.get("carrots", carrots))
 	farm_state = str(saved.get("farm_state", farm_state))
 	farm_left = float(saved.get("farm_left", farm_left))
+	c_farm_cycle_id = str(saved.get("c_farm_cycle_id", c_farm_cycle_id))
+	c_harvest_serial = maxi(0, int(saved.get("c_harvest_serial", c_harvest_serial)))
+	if saved.get("c_construction_record_ids", {}) is Dictionary: c_construction_record_ids = saved.get("c_construction_record_ids", {}).duplicate(true)
+	if saved.get("c_construction_started_at", {}) is Dictionary: c_construction_started_at = saved.get("c_construction_started_at", {}).duplicate(true)
+	c_rest_use_id = str(saved.get("c_rest_use_id", c_rest_use_id))
+	c_rest_started_at = maxf(0.0, float(saved.get("c_rest_started_at", c_rest_started_at)))
+	c_rest_use_count = maxi(0, int(saved.get("c_rest_use_count", c_rest_use_count)))
 	rest_left = float(saved.get("rest_left", rest_left))
 	rest_cooldown = float(saved.get("rest_cooldown", rest_cooldown))
 	if saved.get("construction_end", {}) is Dictionary: construction_end = saved.construction_end.duplicate(true)
@@ -137,7 +171,7 @@ func _save_village_state() -> void:
 	var player := _player()
 	if player == null or player.rabbit_data == null:
 		return
-	player.rabbit_data.village_a_state = {"states": states, "placements": placements, "carrots": carrots, "farm_state": farm_state, "farm_left": farm_left, "rest_left": rest_left, "rest_cooldown": rest_cooldown, "construction_end": construction_end, "built_once": built_once, "saved_at": Time.get_unix_time_from_system()}
+	player.rabbit_data.village_a_state = {"states": states, "placements": placements, "carrots": carrots, "farm_state": farm_state, "farm_left": farm_left, "c_farm_cycle_id": c_farm_cycle_id, "c_harvest_serial": c_harvest_serial, "c_construction_record_ids": c_construction_record_ids, "c_construction_started_at": c_construction_started_at, "c_rest_use_id": c_rest_use_id, "c_rest_started_at": c_rest_started_at, "c_rest_use_count": c_rest_use_count, "rest_left": rest_left, "rest_cooldown": rest_cooldown, "construction_end": construction_end, "built_once": built_once, "saved_at": Time.get_unix_time_from_system()}
 	player.save_now()
 
 func _create_layers() -> void:
@@ -231,6 +265,8 @@ func _unlock_test_buildings() -> void:
 	states.notice_board = "available"
 	states.carrot_farm = "available"
 	hint.text = "測試用：公告欄與胡蘿蔔農田已解鎖。"
+	_record_c_village_event("village_notice_board_001")
+	_record_c_village_event("village_small_farm_001")
 	_save_village_state()
 	_refresh_all()
 
@@ -329,6 +365,7 @@ func _finish_build_at_slot(building_id: String, index: int) -> void:
 		return
 	states[building_id] = "constructing"
 	construction_end[building_id] = Time.get_unix_time_from_system() + 30.0
+	_record_c_construction_start(building_id, index)
 	hint.text = "施工開始！目前顯示施工中外觀。"
 	_save_village_state()
 	_refresh_all()
@@ -448,6 +485,7 @@ func _open_rest_popup() -> void:
 		else:
 			rest_left = 30.0
 			rest_cooldown = 60.0
+			_begin_c_rest_use()
 			_save_village_state()
 			_show_rest_lock()
 			_show_message("開始休息", "Amy 正在小休息亭休息 30 秒。\n正式數值結算會在 B 接入。")
@@ -470,6 +508,7 @@ func _finish_rest() -> void:
 	player.rabbit_data.energy += 3
 	player.rabbit_data.intimacy += 1
 	player.rabbit_status_changed.emit(player.rabbit_data)
+	_record_c_rest_complete()
 	_close_rest_lock()
 	_save_village_state()
 	player.save_now()
@@ -480,19 +519,336 @@ func _refresh_rest_hint() -> void:
 		hint.text = "Amy 正在小休息亭休息：%.0f 秒" % rest_left
 
 func _open_notice_popup() -> void:
-	_show_actions("村莊公告欄", "📌 今日公告\n\n今天森林裡的風很舒服。\nAmy 似乎想去散步看看。\n\n（每日公告與解鎖條件將由 B、C 接入。）", "知道了", func(): pass, "稍後再看", func(): pass)
+	var player := _player()
+	if player == null:
+		_show_message("村莊公告欄", "公告資料暫時無法讀取。")
+		return
+	var notice := player.GetTodayNotice()
+	if notice == null:
+		_show_message("村莊公告欄", "今天的公告暫時無法產生，請稍後再試。")
+		return
+	var read_state := "已讀" if notice.is_read else "未讀"
+	var first_read_text := _format_notice_time(notice.first_read_at) if notice.is_read and notice.first_read_at > 0.0 else "尚未閱讀"
+	var body := "📌 今日公告\n\n%s\n\n日期：%s\n狀態：%s\n第一次閱讀：%s" % [
+		notice.content,
+		notice.date_key,
+		read_state,
+		first_read_text
+	]
+	var primary_text := "關閉" if notice.is_read else "知道了"
+	var primary_action: Callable = func() -> void: _mark_today_notice_read(notice)
+	var history_action := Callable(self, "_open_notice_history")
+	_show_actions("村莊公告欄", body, primary_text, primary_action, "公告歷史", history_action)
+
+func _mark_today_notice_read(notice: DailyNoticeRecord) -> void:
+	var player := _player()
+	if player == null or notice == null or notice.is_read:
+		return
+	# Prefer the formal C NoticeManager path. A's temporary building state can be
+	# ahead of B's BuildingManager, so keep a safe persistence fallback.
+	if player.MarkTodayNoticeRead():
+		player.save_now()
+		return
+	notice.is_read = true
+	notice.first_read_at = TimeManager.get_now()
+	if player.SaveTodayNotice(notice):
+		# The formal signal path normally creates this journal. The fallback needs
+		# to do it explicitly, while DiaryManager still protects against duplicates.
+		player.diary_manager.generate_notice_journal(notice, player.rabbit_data.rabbit_name, player.GetVillageLevel())
+		player.save_now()
+
+func _open_notice_history() -> void:
+	var player := _player()
+	if player == null:
+		_show_message("公告歷史", "公告歷史暫時無法讀取。")
+		return
+	var history: Array[Dictionary] = []
+	for raw: Variant in player.GetNoticeHistory():
+		if raw is Dictionary:
+			history.append(raw.duplicate(true))
+	if history.is_empty():
+		_show_actions("公告歷史", "目前還沒有公告歷史。", "返回今日公告", func(): _open_notice_popup(), "關閉", func(): pass)
+		return
+	history.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("generated_at", 0.0)) > float(b.get("generated_at", 0.0))
+	)
+	var lines: Array[String] = []
+	var shown := mini(history.size(), 5)
+	for i in shown:
+		var raw := history[i]
+		var date_key := str(raw.get("date_key", raw.get("notice_date", "")))
+		var content := str(raw.get("content", ""))
+		var is_read := bool(raw.get("is_read", false))
+		var first_read_at := float(raw.get("first_read_at", 0.0))
+		var status := "已讀" if is_read else "未讀"
+		var first_read := _format_notice_time(first_read_at) if is_read and first_read_at > 0.0 else "—"
+		lines.append("%s　[%s]\n%s\n首次閱讀：%s" % [date_key, status, content, first_read])
+	var body := "最近 %d 則公告\n\n%s" % [shown, "\n\n".join(lines)]
+	_show_actions("公告歷史", body, "返回今日公告", func(): _open_notice_popup(), "關閉", func(): pass)
+
+func _format_notice_time(unix_time: float) -> String:
+	if unix_time <= 0.0:
+		return "—"
+	var d := Time.get_datetime_dict_from_unix_time(int(unix_time))
+	return "%04d/%02d/%02d %02d:%02d" % [d.year, d.month, d.day, d.hour, d.minute]
+
+func _slot_id_from_index(index: int) -> String:
+	return "Slot%02d" % clampi(index + 1, 1, 9)
+
+func _record_c_village_event(event_id: String) -> void:
+	var player := _player()
+	if player == null or event_id.is_empty():
+		return
+	var changed := false
+	var entry := player.GenerateVillageEventJournal(event_id)
+	if entry != null:
+		changed = true
+	if player.village_data != null and not player.village_data.completed_village_event_ids.has(event_id):
+		player.village_data.completed_village_event_ids.append(event_id)
+		player.village_data.progress.completed_village_event_count += 1
+		changed = true
+	if changed:
+		player.rabbit_data.village_data = player.village_data.to_dict()
+		player.save_now()
+
+func _backfill_c_village_event_journals() -> void:
+	var player := _player()
+	if player == null:
+		return
+	# Existing A-side saves can already have buildings unlocked/completed without the C event journal.
+	var event_by_building := {
+		"rest_pavilion": "village_rest_pavilion_001",
+		"notice_board": "village_notice_board_001",
+		"carrot_farm": "village_small_farm_001"
+	}
+	for building_id: String in event_by_building.keys():
+		var state := str(states.get(building_id, "locked"))
+		var was_built := bool(built_once.get(building_id, false))
+		# Do not create the rest-pavilion event merely because a fresh game starts with it available.
+		# Completed/constructing buildings are safe evidence that the unlock event has already happened.
+		if was_built or state == "completed" or state == "constructing":
+			_record_c_village_event(str(event_by_building[building_id]))
+
+func _ensure_c_construction_id(building_id: String) -> String:
+	var existing := str(c_construction_record_ids.get(building_id, ""))
+	if not existing.is_empty():
+		return existing
+	var record_id := "a_construction_%s_%d_%d" % [building_id, int(TimeManager.get_now() * 1000.0), randi_range(1000, 9999)]
+	c_construction_record_ids[building_id] = record_id
+	return record_id
+
+func _record_c_construction_start(building_id: String, slot_index: int) -> void:
+	var player := _player()
+	if player == null:
+		return
+	var record_id := _ensure_c_construction_id(building_id)
+	var started_at := TimeManager.get_now()
+	c_construction_started_at[building_id] = started_at
+	var record := ConstructionRecord.new()
+	record.construction_record_id = record_id
+	record.building_id = building_id
+	record.slot_id = _slot_id_from_index(slot_index)
+	record.started_at = started_at
+	record.ends_at = float(construction_end.get(building_id, started_at + 30.0))
+	player.diary_manager.generate_construction_start_journal(record, player.rabbit_data.rabbit_name, player.GetVillageLevel())
+	var history := ConstructionHistoryEntry.new()
+	history.construction_record_id = record_id
+	history.building_id = building_id
+	history.slot_id = record.slot_id
+	history.started_at = started_at
+	player.AddConstructionHistory(history)
+	player.village_history_manager.mark_building_placed(building_id, record.slot_id, started_at)
+	player.village_history_manager.mark_building_construction_started(building_id, record.slot_id, started_at)
+	player.save_now()
+
+func _record_c_construction_complete(building_id: String) -> void:
+	var player := _player()
+	if player == null:
+		return
+	var record_id := _ensure_c_construction_id(building_id)
+	var now := TimeManager.get_now()
+	var started_at := maxf(0.0, float(c_construction_started_at.get(building_id, now)))
+	var slot_index := int(placements.get(building_id, 0))
+	# If this patch was applied while a building was already constructing, create the missing start entry first.
+	var start_record := ConstructionRecord.new()
+	start_record.construction_record_id = record_id
+	start_record.building_id = building_id
+	start_record.slot_id = _slot_id_from_index(slot_index)
+	start_record.started_at = started_at
+	start_record.ends_at = now
+	player.diary_manager.generate_construction_start_journal(start_record, player.rabbit_data.rabbit_name, player.GetVillageLevel())
+	var result := ConstructionResult.new()
+	result.construction_record_id = record_id
+	result.building_id = building_id
+	result.slot_id = start_record.slot_id
+	result.started_at = started_at
+	result.completed_at = now
+	result.is_first_completion = true
+	player.GenerateConstructionJournal(result)
+	if not player.village_history_manager.update_construction_completed(record_id, now):
+		var history := ConstructionHistoryEntry.new()
+		history.construction_record_id = record_id
+		history.building_id = building_id
+		history.slot_id = result.slot_id
+		history.started_at = started_at
+		history.completed_at = now
+		player.AddConstructionHistory(history)
+	player.village_history_manager.mark_building_completed(building_id, result.slot_id, now)
+	player.save_now()
+
+func _backfill_c_building_journals() -> void:
+	var player := _player()
+	if player == null:
+		return
+	var changed := false
+	for building_id in ["rest_pavilion", "notice_board", "carrot_farm"]:
+		if not bool(built_once.get(building_id, false)):
+			continue
+		var record_id := _ensure_c_construction_id(building_id)
+		var now := TimeManager.get_now()
+		var started_at := maxf(0.0, float(c_construction_started_at.get(building_id, now)))
+		c_construction_started_at[building_id] = started_at
+		var slot_index := int(placements.get(building_id, 0))
+		var record := ConstructionRecord.new()
+		record.construction_record_id = record_id
+		record.building_id = building_id
+		record.slot_id = _slot_id_from_index(slot_index)
+		record.started_at = started_at
+		record.ends_at = now
+		var start_entry := player.diary_manager.generate_construction_start_journal(record, player.rabbit_data.rabbit_name, player.GetVillageLevel())
+		var result := ConstructionResult.new()
+		result.construction_record_id = record_id
+		result.building_id = building_id
+		result.slot_id = record.slot_id
+		result.started_at = started_at
+		result.completed_at = now
+		result.is_first_completion = true
+		var complete_entry := player.GenerateConstructionJournal(result)
+		if start_entry != null or complete_entry != null:
+			changed = true
+		var history := ConstructionHistoryEntry.new()
+		history.construction_record_id = record_id
+		history.building_id = building_id
+		history.slot_id = record.slot_id
+		history.started_at = started_at
+		history.completed_at = now
+		player.AddConstructionHistory(history)
+		player.village_history_manager.update_construction_completed(record_id, now)
+		player.village_history_manager.mark_building_completed(building_id, record.slot_id, now)
+	if changed:
+		_save_village_state()
+
+func _begin_c_rest_use() -> void:
+	if not c_rest_use_id.is_empty():
+		return
+	c_rest_started_at = TimeManager.get_now()
+	c_rest_use_id = "a_building_use_rest_%d_%d" % [int(c_rest_started_at * 1000.0), randi_range(1000, 9999)]
+
+func _record_c_rest_complete() -> void:
+	var player := _player()
+	if player == null:
+		return
+	if c_rest_use_id.is_empty():
+		_begin_c_rest_use()
+	var now := TimeManager.get_now()
+	c_rest_use_count += 1
+	var result := BuildingUseResult.new()
+	result.building_use_record_id = c_rest_use_id
+	result.interaction_record_id = c_rest_use_id
+	result.building_id = "rest_pavilion"
+	result.started_at = c_rest_started_at if c_rest_started_at > 0.0 else now
+	result.completed_at = now
+	result.energy_change = 3
+	result.mood_change = 8
+	result.intimacy_change = 1
+	result.use_count = c_rest_use_count
+	var has_prior_use := false
+	for journal: JournalEntry in player.diary_manager.get_all_journals():
+		if journal.journal_type == "building_use" and journal.building_id == "rest_pavilion":
+			has_prior_use = true
+			break
+	result.is_first_use = not has_prior_use
+	player.GenerateBuildingUseJournal(result)
+	var history := BuildingUseHistoryEntry.new()
+	history.building_use_record_id = result.building_use_record_id
+	history.building_id = result.building_id
+	history.started_at = result.started_at
+	history.completed_at = result.completed_at
+	history.use_count = result.use_count
+	player.AddBuildingUseHistory(history)
+	player.village_history_manager.mark_building_used(result.building_id, result.completed_at, result.use_count)
+	c_rest_use_id = ""
+	c_rest_started_at = 0.0
+	player.save_now()
 
 func _open_farm_popup() -> void:
 	var status: String = str({"sprout":"剛種下的嫩芽","growing":"正在成長中","ready":"已成熟，可以收成"}.get(farm_state, ""))
 	_show_actions("固定胡蘿蔔農田", "農田狀態：%s\n\n%s\n\n目前胡蘿蔔：%d" % [status, "成熟胡蘿蔔閃著橘色光澤。" if farm_state == "ready" else "請等它慢慢長大。", carrots], "收成" if farm_state == "ready" else "知道了", func():
 		if farm_state == "ready":
+			_record_c_harvest(10)
 			carrots += 10
 			farm_state = "sprout"
 			farm_left = 30.0
+			_start_c_farm_cycle_for_next_round()
 			_save_village_state()
 			_refresh_all()
-			_show_village_event("村莊事件：第一次收成", "Amy 把剛成熟的胡蘿蔔收進籃子。\n\n獲得胡蘿蔔 ×10！\n農田會在 30 秒後進入下一個成長階段。")
+			_show_village_event("村莊事件：胡蘿蔔收成", "Amy 把剛成熟的胡蘿蔔收進籃子。\n\n獲得胡蘿蔔 ×10！\n收成故事已收進 Amy 的日記。")
 	, "關閉", func(): pass)
+
+func _ensure_c_farm_cycle_id() -> String:
+	if not c_farm_cycle_id.is_empty():
+		return c_farm_cycle_id
+	c_farm_cycle_id = "a_farm_%d_%d" % [int(TimeManager.get_now() * 1000.0), randi_range(1000, 9999)]
+	return c_farm_cycle_id
+
+func _record_c_harvest(amount: int) -> void:
+	var player := _player()
+	if player == null:
+		return
+	var now := TimeManager.get_now()
+	var result := HarvestResult.new()
+	result.farm_cycle_id = _ensure_c_farm_cycle_id()
+	c_harvest_serial += 1
+	result.harvest_record_id = "a_harvest_%s_%03d" % [result.farm_cycle_id, c_harvest_serial]
+	result.amount = maxi(0, amount)
+	result.harvested_at = now
+	var has_harvest_journal := false
+	for journal: JournalEntry in player.diary_manager.get_all_journals():
+		if journal.journal_type == "harvest":
+			has_harvest_journal = true
+			break
+	result.is_first_harvest = not has_harvest_journal
+	# Use C's public diary generator; duplicate checks remain inside DiaryManager.
+	player.GenerateHarvestJournal(result)
+	# Also save the fourth-week harvest/farm/inventory history.
+	var harvest_history := HarvestHistoryEntry.new()
+	harvest_history.harvest_record_id = result.harvest_record_id
+	harvest_history.farm_cycle_id = result.farm_cycle_id
+	harvest_history.harvested_at = result.harvested_at
+	harvest_history.harvest_amount = result.amount
+	harvest_history.is_first_harvest = result.is_first_harvest
+	player.AddHarvestHistory(harvest_history)
+	player.village_history_manager.mark_farm_cycle_harvested(result.farm_cycle_id, result.harvested_at, result.amount)
+	player.village_history_manager.add_carrots(result.amount, result.harvested_at)
+	player.save_now()
+
+func _start_c_farm_cycle_for_next_round() -> void:
+	var player := _player()
+	if player == null:
+		return
+	var now := TimeManager.get_now()
+	c_farm_cycle_id = "a_farm_%d_%d" % [int(now * 1000.0), randi_range(1000, 9999)]
+	var cycle := FarmCycleData.new()
+	cycle.farm_cycle_id = c_farm_cycle_id
+	cycle.started_at = now
+	# A's visual farm currently uses two 30-second phases.
+	cycle.ready_at = now + 60.0
+	player.GenerateFarmGrowthJournal(cycle)
+	var farm_history := FarmCycleHistoryEntry.new()
+	farm_history.farm_cycle_id = cycle.farm_cycle_id
+	farm_history.started_at = cycle.started_at
+	farm_history.ready_at = cycle.ready_at
+	player.AddFarmCycleHistory(farm_history)
 
 func _show_message(title: String, body: String) -> void:
 	_show_actions(title, body, "知道了", func(): pass, "", func(): pass)

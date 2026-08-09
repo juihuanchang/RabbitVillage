@@ -1,0 +1,223 @@
+{
+  "templates": [
+    {
+      "notice_id": "general_001",
+      "category": "general",
+      "content": "今天森林裡的風很輕。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_002",
+      "category": "general",
+      "content": "湖面看起來比昨天更平靜。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_003",
+      "category": "general",
+      "content": "村莊今天也很安靜。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_004",
+      "category": "general",
+      "content": "Amy 今天看起來很有精神。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_005",
+      "category": "general",
+      "content": "小路旁似乎多開了一朵花。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_006",
+      "category": "general",
+      "content": "清晨的村莊有一點涼，適合慢慢散步。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_007",
+      "category": "general",
+      "content": "今天的天空很乾淨，雲飄得很慢。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_008",
+      "category": "general",
+      "content": "村莊入口旁傳來幾聲小鳥的叫聲。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_009",
+      "category": "general",
+      "content": "午後的陽光落在小路上，看起來暖暖的。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "general_010",
+      "category": "general",
+      "content": "今天似乎會是平靜的一天。",
+      "priority": 1,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "activity_forest_001",
+      "category": "activity",
+      "content": "Amy 最近很常前往森林。",
+      "required_activity_location": "forest",
+      "priority": 3,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "activity_lake_001",
+      "category": "activity",
+      "content": "湖邊似乎有魚游過。",
+      "required_activity_location": "lake",
+      "priority": 3,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "activity_home_001",
+      "category": "activity",
+      "content": "Amy 今天在家休息了很久。",
+      "required_activity_location": "home",
+      "priority": 3,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "activity_forest_002",
+      "category": "activity",
+      "content": "森林入口附近留下了 Amy 最近走過的腳印。",
+      "required_activity_location": "forest",
+      "priority": 3,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "activity_lake_002",
+      "category": "activity",
+      "content": "湖面的波紋讓人想起 Amy 最近的釣魚時光。",
+      "required_activity_location": "lake",
+      "priority": 3,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "building_pavilion_complete",
+      "category": "building",
+      "content": "小休息亭已經完工了。",
+      "required_building_id": "rest_pavilion",
+      "required_building_state": "completed",
+      "priority": 5,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "building_board_complete",
+      "category": "building",
+      "content": "公告欄今天貼上了新的消息。",
+      "required_building_id": "notice_board",
+      "required_building_state": "completed",
+      "priority": 5,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "building_farm_constructing",
+      "category": "building",
+      "content": "小農田正在施工。",
+      "required_building_id": "carrot_farm",
+      "required_building_state": "constructing",
+      "priority": 6,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "building_pavilion_constructing",
+      "category": "building",
+      "content": "小休息亭的木頭正在慢慢搭起來。",
+      "required_building_id": "rest_pavilion",
+      "required_building_state": "constructing",
+      "priority": 6,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "building_board_constructing",
+      "category": "building",
+      "content": "公告欄正在施工，村莊很快就會有固定的消息角落。",
+      "required_building_id": "notice_board",
+      "required_building_state": "constructing",
+      "priority": 6,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "farm_growing_001",
+      "category": "farm",
+      "content": "胡蘿蔔正在慢慢長大。",
+      "required_farm_state": "growing",
+      "priority": 7,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "farm_growing_002",
+      "category": "farm",
+      "content": "農田裡的胡蘿蔔快成熟了。",
+      "required_farm_state": "growing",
+      "priority": 7,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "farm_ready_001",
+      "category": "farm",
+      "content": "胡蘿蔔已經可以收成了。",
+      "required_farm_state": "ready",
+      "priority": 8,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "farm_ready_002",
+      "category": "farm",
+      "content": "農田裡露出了一排成熟的胡蘿蔔葉子。",
+      "required_farm_state": "ready",
+      "priority": 8,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "farm_idle_001",
+      "category": "farm",
+      "content": "剛整理過的農田正在等下一輪胡蘿蔔。",
+      "required_farm_state": "idle",
+      "priority": 4,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "growth_leaf_001",
+      "category": "growth",
+      "content": "Amy 身上的小葉子還留著。",
+      "required_growth_mark_id": "leaf_mark",
+      "priority": 5,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "growth_leaf_002",
+      "category": "growth",
+      "content": "森林似乎已經成為 Amy 生活的一部分。",
+      "required_growth_mark_id": "leaf_mark",
+      "priority": 5,
+      "can_repeat": true
+    },
+    {
+      "notice_id": "growth_leaf_003",
+      "category": "growth",
+      "content": "那片小葉子讓 Amy 看起來更像村莊的一份子了。",
+      "required_growth_mark_id": "leaf_mark",
+      "priority": 5,
+      "can_repeat": true
+    }
+  ]
+}

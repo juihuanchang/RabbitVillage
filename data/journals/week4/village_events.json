@@ -1,0 +1,7 @@
+{
+  "templates": {
+    "village_rest_pavilion_001": {"title": "村莊的新角落", "content": "Amy 發現村莊裡多了一個適合停下腳步的角落。或許不久之後，這裡會有一座能好好休息的小亭子。"},
+    "village_notice_board_001": {"title": "村莊需要一些消息", "content": "村莊慢慢有了新的變化，Amy 覺得如果有個地方能留下每天的消息，大家一定會更了解這裡發生的事情。"},
+    "village_small_farm_001": {"title": "村莊也需要食物", "content": "Amy 看著村莊裡空著的一塊土地，突然覺得這裡也許可以種些東西。村莊除了故事，也需要能慢慢長大的食物。"}
+  }
+}

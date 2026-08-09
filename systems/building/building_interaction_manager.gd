@@ -38,7 +38,12 @@ func check_rest_pavilion_completion() -> BuildingUseResult:
 	data.conditions.claim_once("building_use:" + id); rabbit.energy += definition.energy_change; rabbit.mood += definition.mood_change; rabbit.intimacy += definition.intimacy_change
 	var record: Dictionary = data.building_records["rest_pavilion"]; record["use_count"] = int(record.get("use_count", 0)) + 1; record["last_used_at"] = TimeManager.get_now(); data.building_records["rest_pavilion"] = record
 	data.building_interactions["rest_pavilion_cooldown_ends_at"] = TimeManager.get_now() + definition.cooldown_seconds; data.active_building_interaction = {}; rabbit.current_activity = ""; rabbit.current_state = ""; village.register_rest_pavilion_use(); village.claim_reward_once("first_use:rest_pavilion", 15)
-	var result := BuildingUseResult.new(); result.interaction_record_id = id; result.building_id = "rest_pavilion"; result.completed_at = TimeManager.get_now(); result.energy_change = definition.energy_change; result.mood_change = definition.mood_change; result.intimacy_change = definition.intimacy_change; result.use_count = int(record.use_count); building_interaction_completed.emit(result); return result
+	var result := BuildingUseResult.new()
+	result.building_use_record_id = id; result.interaction_record_id = id; result.building_id = "rest_pavilion"
+	result.started_at = float(raw.get("started_at", 0.0)); result.completed_at = TimeManager.get_now()
+	result.energy_change = definition.energy_change; result.mood_change = definition.mood_change; result.intimacy_change = definition.intimacy_change
+	result.use_count = int(record.get("use_count", 0)); result.is_first_use = result.use_count == 1
+	building_interaction_completed.emit(result); return result
 func is_rest_pavilion_in_use() -> bool: return data != null and not data.active_building_interaction.is_empty()
 func get_rest_pavilion_use_remaining() -> float: return maxf(float(data.active_building_interaction.get("ends_at", 0.0)) - TimeManager.get_now(), 0.0) if is_rest_pavilion_in_use() else 0.0
 func is_rest_pavilion_on_cooldown() -> bool: return get_rest_pavilion_cooldown_remaining() > 0.0

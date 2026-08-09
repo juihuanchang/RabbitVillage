@@ -5,12 +5,15 @@ signal village_progress_changed(progress: VillageProgressData)
 const LEVEL_THRESHOLDS := [0, 100, 250, 500, 900]
 var data: VillageData
 
-func setup(village_data: VillageData) -> void: data = village_data; check_village_level()
+func setup(village_data: VillageData) -> void:
+	data = village_data
+	if data.progress.village_level > 0 or data.progress.village_experience > 0:
+		check_village_level()
 func add_village_experience(value: int) -> int:
 	if data == null or value <= 0: return get_village_experience()
 	data.progress.village_experience += value; check_village_level(); village_progress_changed.emit(data.progress); return data.progress.village_experience
 func get_village_experience() -> int: return data.progress.village_experience if data else 0
-func get_village_level() -> int: return data.progress.village_level if data else 1
+func get_village_level() -> int: return data.progress.village_level if data else 0
 func check_village_level() -> int:
 	if data == null: return 1
 	var level := 1

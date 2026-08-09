@@ -7,7 +7,7 @@ var buildings: Dictionary = {}
 var construction_manager: ConstructionManager
 
 func _init() -> void:
-	for b in [BuildingData.create("rest_pavilion", "休息亭", 30.0, 25, true), BuildingData.create("notice_board", "公告欄", 45.0, 30), BuildingData.create("carrot_farm", "小農田", 60.0, 40)]: buildings[b.building_id] = b
+	for b in [BuildingData.create("rest_pavilion", "休息亭", 30.0, 25, false), BuildingData.create("notice_board", "公告欄", 45.0, 30), BuildingData.create("carrot_farm", "小農田", 60.0, 40)]: buildings[b.building_id] = b
 func setup(village_data: VillageData) -> void:
 	data = village_data
 	for id in data.unlocked_building_ids:

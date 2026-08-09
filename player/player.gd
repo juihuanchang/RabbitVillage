@@ -28,10 +28,12 @@ var village_event_manager := VillageEventManager.new()
 var building_interaction_manager := BuildingInteractionManager.new()
 var farm_manager := FarmManager.new()
 var notice_manager := NoticeManager.new()
+var village_history_manager := VillageHistoryManager.new()
 var village_data: VillageData
 var _save_requested := false
 var _home_tick_elapsed := 0.0
 var _test_reset_elapsed := 0.0
+var _last_village_stage := 0
 
 const TEST_AUTO_RESET_SECONDS := 30.0
 const TEST_AUTO_RESET_VALUE := 70
@@ -42,7 +44,7 @@ const HOME_MOOD_LOSS := 2
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
-	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager]:
+	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager]:
 		add_child(manager)
 	save_manager.setup(rabbit_manager, diary_manager, activity_manager, growth_manager, growth_album_manager)
 	rabbit_data = save_manager.load_or_create(
@@ -58,12 +60,22 @@ func _ready() -> void:
 	farm_manager.setup(village_data, building_manager, village_manager)
 	building_interaction_manager.setup(village_data, rabbit_data, activity_manager, building_manager, village_manager, growth_manager, village_event_manager)
 	notice_manager.setup(village_data, village_manager, building_manager, construction_manager, farm_manager, growth_manager)
+	village_history_manager.setup(village_data)
+	_last_village_stage = village_manager.get_village_level()
 	activity_manager.activity_started.connect(_on_activity_started)
 	activity_manager.activity_completed.connect(_on_activity_completed)
 	growth_manager.growth_event_created.connect(_on_growth_event_created)
 	growth_manager.growth_mark_unlocked.connect(_on_growth_mark_unlocked)
 	for manager_signal in [village_manager.village_progress_changed, construction_manager.construction_started, construction_manager.construction_completed, village_event_manager.village_event_created, village_event_manager.village_event_completed, building_interaction_manager.building_interaction_started, building_interaction_manager.building_interaction_completed, farm_manager.farm_cycle_started, farm_manager.farm_ready, farm_manager.carrots_harvested, notice_manager.notice_generated, notice_manager.notice_read]:
 		manager_signal.connect(func(_value = null) -> void: _on_village_state_changed())
+	village_manager.village_progress_changed.connect(_on_c_village_progress_changed)
+	construction_manager.construction_started.connect(_on_c_construction_started)
+	village_event_manager.village_event_completed.connect(_on_c_village_event_completed)
+	building_interaction_manager.building_interaction_completed.connect(_on_c_building_use_completed)
+	farm_manager.farm_cycle_started.connect(_on_c_farm_cycle_started)
+	farm_manager.carrots_harvested.connect(_on_c_harvested)
+	notice_manager.notice_read.connect(_on_c_notice_read)
+	village_history_manager.history_changed.connect(_on_village_state_changed)
 	construction_manager.construction_completed.connect(_on_construction_completed)
 	building_interaction_manager.building_interaction_completed.connect(func(_result: BuildingUseResult) -> void: village_event_manager.check_event_conditions())
 	notice_manager.notice_read.connect(func(_notice: DailyNoticeData) -> void: village_event_manager.check_event_conditions())
@@ -157,7 +169,20 @@ func _on_village_state_changed() -> void:
 	save_manager.save_game()
 
 func _on_construction_completed(result: ConstructionResult) -> void:
-	if result.building_id == "carrot_farm": farm_manager.start_first_growth_cycle()
+	if result == null:
+		return
+	diary_manager.generate_construction_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+	if not village_history_manager.update_construction_completed(result.construction_record_id, result.completed_at):
+		var history := ConstructionHistoryEntry.new()
+		history.construction_record_id = result.construction_record_id
+		history.building_id = result.building_id
+		history.slot_id = result.slot_id
+		history.started_at = result.started_at
+		history.completed_at = result.completed_at
+		village_history_manager.add_construction_history(history)
+	village_history_manager.mark_building_completed(result.building_id, result.slot_id, result.completed_at)
+	if result.building_id == "carrot_farm":
+		farm_manager.start_first_growth_cycle()
 	village_event_manager.check_event_conditions()
 
 func get_village_progress() -> VillageProgressData: return village_manager.get_village_progress()
@@ -175,7 +200,14 @@ func ConfirmVillageEvent(id: String) -> VillageEventResult: return confirm_villa
 func GetAllBuildings() -> Array[BuildingData]: return building_manager.get_all_buildings()
 func GetBuilding(id: String) -> BuildingData: return building_manager.get_building(id)
 func CanPlaceBuilding(id: String, slot: String) -> Dictionary: return building_manager.can_place_building(id, slot)
-func PlaceBuilding(id: String, slot: String) -> Dictionary: var r := building_manager.place_building(id, slot); _on_village_state_changed(); return r
+func PlaceBuilding(id: String, slot: String) -> Dictionary:
+	var result := building_manager.place_building(id, slot)
+	if bool(result.get("ok", false)):
+		var record := result.get("record") as BuildingRecord
+		if record != null:
+			village_history_manager.mark_building_placed(record.building_id, record.slot_id, record.placed_at)
+	_on_village_state_changed()
+	return result
 func GetBuildingState(id: String) -> String: return building_manager.get_building_state(id)
 func StartConstruction(id: String) -> Dictionary: return construction_manager.start_construction(id)
 func HasActiveConstruction() -> bool: return construction_manager.has_active_construction()
@@ -187,7 +219,9 @@ func StartRestPavilionUse() -> Dictionary: return building_interaction_manager.s
 func GetRestPavilionUseRemaining() -> float: return building_interaction_manager.get_rest_pavilion_use_remaining()
 func GetRestPavilionCooldownRemaining() -> float: return building_interaction_manager.get_rest_pavilion_cooldown_remaining()
 func HasTodayNotice() -> bool: return notice_manager.has_today_notice()
-func GetTodayNotice() -> DailyNoticeData: return notice_manager.get_today_notice()
+func GetTodayNotice() -> DailyNoticeRecord:
+	var notice := notice_manager.get_today_notice()
+	return notice if notice != null else notice_manager.generate_today_notice()
 func MarkTodayNoticeRead() -> bool: return notice_manager.mark_today_notice_read()
 func GetNoticeConditionContext() -> Dictionary: return notice_manager.get_notice_condition_context()
 func GetFarmState() -> String: return farm_manager.get_farm_state()
@@ -201,6 +235,64 @@ func HarvestCarrots() -> HarvestResult: return farm_manager.harvest_carrots()
 func GetCarrotAmount() -> int: return farm_manager.get_carrot_amount()
 func GetTotalHarvestCount() -> int: return farm_manager.get_total_harvest_count()
 func GetCurrentFarmCycle() -> FarmCycleData: return farm_manager.get_current_farm_cycle()
+
+func SaveTodayNotice(record: DailyNoticeRecord) -> bool:
+	var ok := notice_manager.save_today_notice(record)
+	if ok: _on_village_state_changed()
+	return ok
+func GetNoticeHistory() -> Array[Dictionary]: return notice_manager.get_notice_history()
+func SelectNoticeTemplate(context: NoticeConditionContext) -> NoticeTemplate: return notice_manager.select_notice_template(context)
+func GetCarrotInventory() -> CarrotInventoryEntry: return village_history_manager.get_carrot_inventory()
+func GenerateVillageEventJournal(eventId: String) -> JournalEntry: return diary_manager.generate_village_event_journal(eventId, rabbit_data.rabbit_name, TimeManager.get_now(), village_manager.get_village_level())
+func GenerateConstructionJournal(result: ConstructionResult) -> JournalEntry: return diary_manager.generate_construction_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+func GenerateBuildingUseJournal(result: BuildingUseResult) -> JournalEntry: return diary_manager.generate_building_use_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+func GenerateFarmGrowthJournal(cycle: FarmCycleData) -> JournalEntry: return diary_manager.generate_farm_growth_journal(cycle, rabbit_data.rabbit_name, village_manager.get_village_level())
+func GenerateHarvestJournal(result: HarvestResult) -> JournalEntry: return diary_manager.generate_harvest_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+func HasJournalForVillageEvent(id: String) -> bool: return diary_manager.has_journal_for_village_event(id)
+func HasJournalForConstruction(id: String) -> bool: return diary_manager.has_journal_for_construction(id)
+func HasJournalForBuildingUse(id: String) -> bool: return diary_manager.has_journal_for_building_use(id)
+func HasJournalForFarmCycle(id: String) -> bool: return diary_manager.has_journal_for_farm_cycle(id)
+func HasJournalForHarvest(id: String) -> bool: return diary_manager.has_journal_for_harvest(id)
+func AddBuildingHistory(entry: BuildingHistoryEntry) -> bool: return village_history_manager.add_building_history(entry)
+func AddConstructionHistory(entry: ConstructionHistoryEntry) -> bool: return village_history_manager.add_construction_history(entry)
+func AddBuildingUseHistory(entry: BuildingUseHistoryEntry) -> bool: return village_history_manager.add_building_use_history(entry)
+func AddFarmCycleHistory(entry: FarmCycleHistoryEntry) -> bool: return village_history_manager.add_farm_cycle_history(entry)
+func AddHarvestHistory(entry: HarvestHistoryEntry) -> bool: return village_history_manager.add_harvest_history(entry)
+func SaveGame() -> bool: return save_manager.save_game()
+func LoadGame() -> RabbitData: return save_manager.load_or_create(RabbitData.new(rabbit_name, initial_hunger, initial_mood, initial_energy))
+func MigrateSaveData(data: SaveData) -> SaveData: return save_manager.migrate_save_data(data)
+
+func _on_c_village_progress_changed(progress: VillageProgressData) -> void:
+	if progress != null and progress.village_level > _last_village_stage:
+		_last_village_stage = progress.village_level
+		diary_manager.generate_village_growth_journal(progress.village_level, rabbit_data.rabbit_name, TimeManager.get_now())
+func _on_c_village_event_completed(result: VillageEventResult) -> void:
+	if result == null: return
+	diary_manager.generate_village_event_journal(result.event_id, rabbit_data.rabbit_name, result.applied_at, village_manager.get_village_level())
+	if not result.unlocked_building_id.is_empty(): village_history_manager.mark_building_unlocked(result.unlocked_building_id, result.applied_at)
+func _on_c_construction_started(record: ConstructionRecord) -> void:
+	if record == null: return
+	diary_manager.generate_construction_start_journal(record, rabbit_data.rabbit_name, village_manager.get_village_level())
+	var h := ConstructionHistoryEntry.new(); h.construction_record_id = record.construction_record_id; h.building_id = record.building_id; h.slot_id = record.slot_id; h.started_at = record.started_at
+	village_history_manager.add_construction_history(h); village_history_manager.mark_building_construction_started(record.building_id, record.slot_id, record.started_at)
+func _on_c_building_use_completed(result: BuildingUseResult) -> void:
+	if result == null: return
+	diary_manager.generate_building_use_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+	var h := BuildingUseHistoryEntry.new(); h.building_use_record_id = result.building_use_record_id if not result.building_use_record_id.is_empty() else result.interaction_record_id; h.building_id = result.building_id; h.started_at = result.started_at; h.completed_at = result.completed_at; h.use_count = result.use_count
+	village_history_manager.add_building_use_history(h); village_history_manager.mark_building_used(result.building_id, result.completed_at, result.use_count)
+func _on_c_farm_cycle_started(cycle: FarmCycleData) -> void:
+	if cycle == null: return
+	diary_manager.generate_farm_growth_journal(cycle, rabbit_data.rabbit_name, village_manager.get_village_level())
+	var h := FarmCycleHistoryEntry.new(); h.farm_cycle_id = cycle.farm_cycle_id; h.started_at = cycle.started_at; h.ready_at = cycle.ready_at
+	village_history_manager.add_farm_cycle_history(h)
+func _on_c_harvested(result: HarvestResult) -> void:
+	if result == null: return
+	diary_manager.generate_harvest_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+	var h := HarvestHistoryEntry.new(); h.harvest_record_id = result.harvest_record_id; h.farm_cycle_id = result.farm_cycle_id; h.harvested_at = result.harvested_at; h.harvest_amount = result.amount; h.is_first_harvest = result.is_first_harvest
+	village_history_manager.add_harvest_history(h); village_history_manager.mark_farm_cycle_harvested(result.farm_cycle_id, result.harvested_at, result.amount); village_history_manager.add_carrots(result.amount, result.harvested_at)
+func _on_c_notice_read(notice: DailyNoticeData) -> void:
+	if notice == null: return
+	diary_manager.generate_notice_journal(DailyNoticeRecord.from_dict(notice.to_dict()), rabbit_data.rabbit_name, village_manager.get_village_level())
 
 func _on_growth_event_created(_event: GrowthEventData) -> void:
 	rabbit_status_changed.emit(rabbit_data)
