@@ -44,8 +44,20 @@ const HOME_MOOD_LOSS := 2
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
+	_attach_system_managers()
+	load_game_state()
+	_connect_system_signals()
+	_restore_pending_system_state()
+	_on_village_state_changed()
+	rabbit_status_changed.emit(rabbit_data)
+
+
+func _attach_system_managers() -> void:
 	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager]:
 		add_child(manager)
+
+
+func load_game_state() -> void:
 	save_manager.setup(rabbit_manager, diary_manager, activity_manager, growth_manager, growth_album_manager)
 	rabbit_data = save_manager.load_or_create(
 		RabbitData.new(rabbit_name, initial_hunger, initial_mood, initial_energy)
@@ -62,6 +74,9 @@ func _ready() -> void:
 	notice_manager.setup(village_data, village_manager, building_manager, construction_manager, farm_manager, growth_manager)
 	village_history_manager.setup(village_data)
 	_last_village_stage = village_manager.get_village_level()
+
+
+func _connect_system_signals() -> void:
 	activity_manager.activity_started.connect(_on_activity_started)
 	activity_manager.activity_completed.connect(_on_activity_completed)
 	growth_manager.growth_event_created.connect(_on_growth_event_created)
@@ -78,20 +93,21 @@ func _ready() -> void:
 	village_history_manager.history_changed.connect(_on_village_state_changed)
 	construction_manager.construction_completed.connect(_on_construction_completed)
 	building_interaction_manager.building_interaction_completed.connect(func(_result: BuildingUseResult) -> void: village_event_manager.check_event_conditions())
-	notice_manager.notice_read.connect(func(_notice: DailyNoticeData) -> void: village_event_manager.check_event_conditions())
+	notice_manager.notice_read.connect(func(_notice: DailyNoticeRecord) -> void: village_event_manager.check_event_conditions())
 	farm_manager.carrots_harvested.connect(func(_result: HarvestResult) -> void: village_event_manager.check_event_conditions())
 	activity_manager.rabbit_returned.connect(_on_rabbit_returned)
 	rabbit_data.data_changed.connect(_on_data_changed)
 	diary_manager.journal_added.connect(func(_entry: JournalEntry) -> void: _request_save())
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
+
+
+func _restore_pending_system_state() -> void:
 	_update_character_visibility()
 	activity_manager.check_for_completion()
 	construction_manager.check_construction_completion()
 	building_interaction_manager.check_rest_pavilion_completion()
 	farm_manager.check_farm_ready_state()
 	village_event_manager.check_event_conditions()
-	_on_village_state_changed()
-	rabbit_status_changed.emit(rabbit_data)
 
 func _process(delta: float) -> void:
 	construction_manager.check_construction_completion()
@@ -126,9 +142,6 @@ func _physics_process(_delta: float) -> void:
 
 func start_activity(activity_id: String) -> Dictionary:
 	return activity_manager.start_activity(activity_id)
-
-func StartActivity(activity_id: String) -> Dictionary:
-	return start_activity(activity_id)
 
 func get_rabbit_data() -> RabbitData:
 	return rabbit_data
@@ -191,16 +204,10 @@ func get_village_experience() -> int: return village_manager.get_village_experie
 func has_pending_village_event() -> bool: return village_event_manager.has_pending_event()
 func get_pending_village_event() -> VillageEventData: return village_event_manager.get_pending_event()
 func confirm_village_event(id: String) -> VillageEventResult: return village_event_manager.confirm_event(id)
-func GetVillageProgress() -> VillageProgressData: return get_village_progress()
-func GetVillageLevel() -> int: return get_village_level()
-func GetVillageExperience() -> int: return get_village_experience()
-func HasPendingVillageEvent() -> bool: return has_pending_village_event()
-func GetPendingVillageEvent() -> VillageEventData: return get_pending_village_event()
-func ConfirmVillageEvent(id: String) -> VillageEventResult: return confirm_village_event(id)
-func GetAllBuildings() -> Array[BuildingData]: return building_manager.get_all_buildings()
-func GetBuilding(id: String) -> BuildingData: return building_manager.get_building(id)
-func CanPlaceBuilding(id: String, slot: String) -> Dictionary: return building_manager.can_place_building(id, slot)
-func PlaceBuilding(id: String, slot: String) -> Dictionary:
+func get_all_buildings() -> Array[BuildingData]: return building_manager.get_all_buildings()
+func get_building(id: String) -> BuildingData: return building_manager.get_building(id)
+func can_place_building(id: String, slot: String) -> Dictionary: return building_manager.can_place_building(id, slot)
+func place_building(id: String, slot: String) -> Dictionary:
 	var result := building_manager.place_building(id, slot)
 	if bool(result.get("ok", false)):
 		var record := result.get("record") as BuildingRecord
@@ -208,59 +215,71 @@ func PlaceBuilding(id: String, slot: String) -> Dictionary:
 			village_history_manager.mark_building_placed(record.building_id, record.slot_id, record.placed_at)
 	_on_village_state_changed()
 	return result
-func GetBuildingState(id: String) -> String: return building_manager.get_building_state(id)
-func StartConstruction(id: String) -> Dictionary: return construction_manager.start_construction(id)
-func HasActiveConstruction() -> bool: return construction_manager.has_active_construction()
-func GetActiveConstruction() -> ConstructionRecord: return construction_manager.get_active_construction()
-func GetConstructionRemainingSeconds() -> float: return construction_manager.get_construction_remaining_seconds()
-func GetConstructionEndTime() -> float: return construction_manager.get_construction_end_time()
-func CanUseRestPavilion() -> Dictionary: return building_interaction_manager.can_use_rest_pavilion()
-func StartRestPavilionUse() -> Dictionary: return building_interaction_manager.start_rest_pavilion_use()
-func GetRestPavilionUseRemaining() -> float: return building_interaction_manager.get_rest_pavilion_use_remaining()
-func GetRestPavilionCooldownRemaining() -> float: return building_interaction_manager.get_rest_pavilion_cooldown_remaining()
-func HasTodayNotice() -> bool: return notice_manager.has_today_notice()
-func GetTodayNotice() -> DailyNoticeRecord:
+func get_building_state(id: String) -> String: return building_manager.get_building_state(id)
+func start_construction(id: String) -> Dictionary: return construction_manager.start_construction(id)
+func cancel_construction() -> Dictionary:
+	var result := construction_manager.cancel_construction()
+	if bool(result.get("ok", false)): _on_village_state_changed()
+	return result
+func reclaim_building(id: String) -> Dictionary:
+	var result := building_manager.reclaim_building(id)
+	if bool(result.get("ok", false)): _on_village_state_changed()
+	return result
+func adopt_completed_building(id: String, slot: String) -> bool:
+	var ok := building_manager.adopt_completed_building(id, slot)
+	if ok: _on_village_state_changed()
+	return ok
+func has_active_construction() -> bool: return construction_manager.has_active_construction()
+func get_active_construction() -> ConstructionRecord: return construction_manager.get_active_construction()
+func get_construction_remaining_seconds() -> float: return construction_manager.get_construction_remaining_seconds()
+func get_construction_end_time() -> float: return construction_manager.get_construction_end_time()
+func can_use_rest_pavilion() -> Dictionary: return building_interaction_manager.can_use_rest_pavilion()
+func start_rest_pavilion_use() -> Dictionary: return building_interaction_manager.start_rest_pavilion_use()
+func get_rest_pavilion_use_remaining() -> float: return building_interaction_manager.get_rest_pavilion_use_remaining()
+func get_rest_pavilion_cooldown_remaining() -> float: return building_interaction_manager.get_rest_pavilion_cooldown_remaining()
+func has_today_notice() -> bool: return notice_manager.has_today_notice()
+func get_today_notice() -> DailyNoticeRecord:
 	var notice := notice_manager.get_today_notice()
 	return notice if notice != null else notice_manager.generate_today_notice()
-func MarkTodayNoticeRead() -> bool: return notice_manager.mark_today_notice_read()
-func GetNoticeConditionContext() -> Dictionary: return notice_manager.get_notice_condition_context()
-func GetFarmState() -> String: return farm_manager.get_farm_state()
-func StartFirstGrowthCycle() -> Dictionary: return farm_manager.start_first_growth_cycle()
-func StartNextGrowthCycle() -> Dictionary: return farm_manager.start_next_growth_cycle()
-func HasActiveGrowthCycle() -> bool: return farm_manager.has_active_growth_cycle()
-func IsFarmReady() -> bool: return farm_manager.is_farm_ready()
-func GetFarmRemainingSeconds() -> float: return farm_manager.get_farm_remaining_seconds()
-func GetFarmReadyTime() -> float: return farm_manager.get_farm_ready_time()
-func HarvestCarrots() -> HarvestResult: return farm_manager.harvest_carrots()
-func GetCarrotAmount() -> int: return farm_manager.get_carrot_amount()
-func GetTotalHarvestCount() -> int: return farm_manager.get_total_harvest_count()
-func GetCurrentFarmCycle() -> FarmCycleData: return farm_manager.get_current_farm_cycle()
+func mark_today_notice_read() -> bool: return notice_manager.mark_today_notice_read()
+func get_notice_condition_context() -> Dictionary: return notice_manager.get_notice_condition_context()
+func get_farm_state() -> String: return farm_manager.get_farm_state()
+func start_first_growth_cycle() -> Dictionary: return farm_manager.start_first_growth_cycle()
+func start_next_growth_cycle() -> Dictionary: return farm_manager.start_next_growth_cycle()
+func has_active_growth_cycle() -> bool: return farm_manager.has_active_growth_cycle()
+func is_farm_ready() -> bool: return farm_manager.is_farm_ready()
+func get_farm_remaining_seconds() -> float: return farm_manager.get_farm_remaining_seconds()
+func get_farm_ready_time() -> float: return farm_manager.get_farm_ready_time()
+func harvest_carrots() -> HarvestResult: return farm_manager.harvest_carrots()
+func get_carrot_amount() -> int: return farm_manager.get_carrot_amount()
+func get_total_harvest_count() -> int: return farm_manager.get_total_harvest_count()
+func get_current_farm_cycle() -> FarmCycleData: return farm_manager.get_current_farm_cycle()
 
-func SaveTodayNotice(record: DailyNoticeRecord) -> bool:
+func save_today_notice(record: DailyNoticeRecord) -> bool:
 	var ok := notice_manager.save_today_notice(record)
 	if ok: _on_village_state_changed()
 	return ok
-func GetNoticeHistory() -> Array[Dictionary]: return notice_manager.get_notice_history()
-func SelectNoticeTemplate(context: NoticeConditionContext) -> NoticeTemplate: return notice_manager.select_notice_template(context)
-func GetCarrotInventory() -> CarrotInventoryEntry: return village_history_manager.get_carrot_inventory()
-func GenerateVillageEventJournal(eventId: String) -> JournalEntry: return diary_manager.generate_village_event_journal(eventId, rabbit_data.rabbit_name, TimeManager.get_now(), village_manager.get_village_level())
-func GenerateConstructionJournal(result: ConstructionResult) -> JournalEntry: return diary_manager.generate_construction_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
-func GenerateBuildingUseJournal(result: BuildingUseResult) -> JournalEntry: return diary_manager.generate_building_use_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
-func GenerateFarmGrowthJournal(cycle: FarmCycleData) -> JournalEntry: return diary_manager.generate_farm_growth_journal(cycle, rabbit_data.rabbit_name, village_manager.get_village_level())
-func GenerateHarvestJournal(result: HarvestResult) -> JournalEntry: return diary_manager.generate_harvest_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
-func HasJournalForVillageEvent(id: String) -> bool: return diary_manager.has_journal_for_village_event(id)
-func HasJournalForConstruction(id: String) -> bool: return diary_manager.has_journal_for_construction(id)
-func HasJournalForBuildingUse(id: String) -> bool: return diary_manager.has_journal_for_building_use(id)
-func HasJournalForFarmCycle(id: String) -> bool: return diary_manager.has_journal_for_farm_cycle(id)
-func HasJournalForHarvest(id: String) -> bool: return diary_manager.has_journal_for_harvest(id)
-func AddBuildingHistory(entry: BuildingHistoryEntry) -> bool: return village_history_manager.add_building_history(entry)
-func AddConstructionHistory(entry: ConstructionHistoryEntry) -> bool: return village_history_manager.add_construction_history(entry)
-func AddBuildingUseHistory(entry: BuildingUseHistoryEntry) -> bool: return village_history_manager.add_building_use_history(entry)
-func AddFarmCycleHistory(entry: FarmCycleHistoryEntry) -> bool: return village_history_manager.add_farm_cycle_history(entry)
-func AddHarvestHistory(entry: HarvestHistoryEntry) -> bool: return village_history_manager.add_harvest_history(entry)
-func SaveGame() -> bool: return save_manager.save_game()
-func LoadGame() -> RabbitData: return save_manager.load_or_create(RabbitData.new(rabbit_name, initial_hunger, initial_mood, initial_energy))
-func MigrateSaveData(data: SaveData) -> SaveData: return save_manager.migrate_save_data(data)
+func get_notice_history() -> Array[Dictionary]: return notice_manager.get_notice_history()
+func select_notice_template(context: NoticeConditionData) -> NoticeTemplate: return notice_manager.select_notice_template(context)
+func get_carrot_inventory() -> CarrotInventoryEntry: return village_history_manager.get_carrot_inventory()
+func generate_village_event_journal(event_id: String) -> JournalEntry: return diary_manager.generate_village_event_journal(event_id, rabbit_data.rabbit_name, TimeManager.get_now(), village_manager.get_village_level())
+func generate_construction_journal(result: ConstructionResult) -> JournalEntry: return diary_manager.generate_construction_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+func generate_building_use_journal(result: BuildingUseResult) -> JournalEntry: return diary_manager.generate_building_use_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+func generate_farm_growth_journal(cycle: FarmCycleData) -> JournalEntry: return diary_manager.generate_farm_growth_journal(cycle, rabbit_data.rabbit_name, village_manager.get_village_level())
+func generate_harvest_journal(result: HarvestResult) -> JournalEntry: return diary_manager.generate_harvest_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
+func has_journal_for_village_event(id: String) -> bool: return diary_manager.has_journal_for_village_event(id)
+func has_journal_for_construction(id: String) -> bool: return diary_manager.has_journal_for_construction(id)
+func has_journal_for_building_use(id: String) -> bool: return diary_manager.has_journal_for_building_use(id)
+func has_journal_for_farm_cycle(id: String) -> bool: return diary_manager.has_journal_for_farm_cycle(id)
+func has_journal_for_harvest(id: String) -> bool: return diary_manager.has_journal_for_harvest(id)
+func add_building_history(entry: BuildingHistoryEntry) -> bool: return village_history_manager.add_building_history(entry)
+func add_construction_history(entry: ConstructionHistoryEntry) -> bool: return village_history_manager.add_construction_history(entry)
+func add_building_use_history(entry: BuildingUseHistoryEntry) -> bool: return village_history_manager.add_building_use_history(entry)
+func add_farm_cycle_history(entry: FarmCycleHistoryEntry) -> bool: return village_history_manager.add_farm_cycle_history(entry)
+func add_harvest_history(entry: HarvestHistoryEntry) -> bool: return village_history_manager.add_harvest_history(entry)
+func save_game() -> bool: return save_now()
+func load_game() -> RabbitData: return save_manager.load_or_create(RabbitData.new(rabbit_name, initial_hunger, initial_mood, initial_energy))
+func migrate_save_data(data: SaveData) -> SaveData: return save_manager.migrate_save_data(data)
 
 func _on_c_village_progress_changed(progress: VillageProgressData) -> void:
 	if progress != null and progress.village_level > _last_village_stage:
@@ -290,7 +309,7 @@ func _on_c_harvested(result: HarvestResult) -> void:
 	diary_manager.generate_harvest_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
 	var h := HarvestHistoryEntry.new(); h.harvest_record_id = result.harvest_record_id; h.farm_cycle_id = result.farm_cycle_id; h.harvested_at = result.harvested_at; h.harvest_amount = result.amount; h.is_first_harvest = result.is_first_harvest
 	village_history_manager.add_harvest_history(h); village_history_manager.mark_farm_cycle_harvested(result.farm_cycle_id, result.harvested_at, result.amount); village_history_manager.add_carrots(result.amount, result.harvested_at)
-func _on_c_notice_read(notice: DailyNoticeData) -> void:
+func _on_c_notice_read(notice: DailyNoticeRecord) -> void:
 	if notice == null: return
 	diary_manager.generate_notice_journal(DailyNoticeRecord.from_dict(notice.to_dict()), rabbit_data.rabbit_name, village_manager.get_village_level())
 
@@ -330,22 +349,6 @@ func get_pending_growth_event() -> GrowthEventData: return growth_manager.get_pe
 func confirm_growth_event(event_id: String) -> bool: return growth_manager.confirm_growth_event(event_id)
 func get_growth_tendency(path_id: String) -> String: return growth_manager.get_growth_tendency(path_id)
 func get_all_activity_records() -> Array[Dictionary]: return growth_manager.get_all_activity_records()
-
-func GetActivitiesByLocation(location_id: String) -> Array[ActivityData]: return get_activities_by_location(location_id)
-func GetActivityData(activity_id: String) -> ActivityData: return get_activity_data(activity_id)
-func GetForestExperience() -> int: return get_forest_experience()
-func GetFishingExperience() -> int: return get_fishing_experience()
-func GetIntimacy() -> int: return get_intimacy()
-func GetForestActivityCount() -> int: return get_forest_activity_count()
-func GetFishingActivityCount() -> int: return get_fishing_activity_count()
-func HasGrowthMark(mark_id: String) -> bool: return has_growth_mark(mark_id)
-func GetUnlockedGrowthMarks() -> Array[GrowthMarkData]: return get_unlocked_growth_marks()
-func HasPendingGrowthEvent() -> bool: return has_pending_growth_event()
-func GetPendingGrowthEvent() -> GrowthEventData: return get_pending_growth_event()
-func ConfirmGrowthEvent(event_id: String) -> bool: return confirm_growth_event(event_id)
-func GetGrowthTendency(path_id: String) -> String: return get_growth_tendency(path_id)
-func GetGrowthAlbumEntries() -> Array[GrowthAlbumEntry]: return get_growth_album_entries()
-func GetAllActivityRecords() -> Array[Dictionary]: return get_all_activity_records()
 
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
 	_update_character_visibility()

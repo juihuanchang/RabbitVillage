@@ -14,14 +14,14 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="MyGame"
+config/name="Rabbit Village"
 run/main_scene="res://scenes  場景/home/HomePage.tscn"
-config/features=PackedStringArray("4.7", "Mobile")
+config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
 [autoload]
 
-MCPRuntime="*uid://bp152yxptwqio"
+MCPRuntime="*res://addons/godot_mcp/runtime/mcp_runtime.gd"
 
 [display]
 
@@ -34,7 +34,7 @@ window/stretch/mode="canvas_items"
 
 [dotnet]
 
-project/assembly_name="MyGame"
+project/assembly_name="RabbitVillage"
 
 [editor_plugins]
 

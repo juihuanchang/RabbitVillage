@@ -137,17 +137,3 @@ func get_growth_tendency(path_id: String) -> String:
 
 func get_growth_tendencies() -> Dictionary:
 	return _growth_tendencies.duplicate(true)
-
-func CheckGrowthConditions() -> GrowthEventData: return check_growth_conditions()
-func CanUnlockMark(mark_id: String) -> bool: return can_unlock_mark(mark_id)
-func HasGrowthMark(mark_id: String) -> bool: return has_growth_mark(mark_id)
-func UnlockGrowthMark(mark_id: String) -> bool: return unlock_growth_mark(mark_id)
-func GetUnlockedGrowthMarks() -> Array[GrowthMarkData]: return get_unlocked_growth_marks()
-func HasPendingGrowthEvent() -> bool: return has_pending_growth_event()
-func GetPendingGrowthEvent() -> GrowthEventData: return get_pending_growth_event()
-func ConfirmGrowthEvent(event_id: String) -> bool: return confirm_growth_event(event_id)
-func GetGrowthTendency(path_id: String) -> String: return get_growth_tendency(path_id)
-func GetGrowthTendencies() -> Dictionary: return get_growth_tendencies()
-func GetAllActivityRecords() -> Array[Dictionary]: return get_all_activity_records()
-func HasActivityRecord(record_id: String) -> bool: return has_activity_record(record_id)
-func RecordCompletedActivity(active: ActiveActivityData) -> bool: return record_completed_activity(active)

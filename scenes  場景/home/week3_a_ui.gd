@@ -137,8 +137,8 @@ func _add_map_location_button(location_id: String, label: String, position: Vect
 	button.size = Vector2(210, 54)
 	button.tooltip_text = "前往%s" % LOCATION_DATA[location_id].name
 	button.add_theme_font_size_override("font_size", 18)
-	button.add_theme_stylebox_override("normal", _solid_button_style(Color("#fff8e8e8")))
-	button.add_theme_stylebox_override("hover", _solid_button_style(Color("#fffdf5")))
+	button.add_theme_stylebox_override("normal", UIStyleFactory.button(Color("#fff8e8e8"), 12, 0.0))
+	button.add_theme_stylebox_override("hover", UIStyleFactory.button(Color("#fffdf5"), 12, 0.0))
 	button.add_theme_color_override("font_color", Color("#40573e"))
 	button.pressed.connect(_open_location.bind(location_id))
 	map_layer.add_child(button)
@@ -159,7 +159,7 @@ func _create_location_popup() -> void:
 	var card := PanelContainer.new()
 	card.position = Vector2(650, 220)
 	card.size = Vector2(620, 600)
-	card.add_theme_stylebox_override("panel", _card_style(Color("#fffaf0"), Color("#b89559")))
+	card.add_theme_stylebox_override("panel", UIStyleFactory.panel(Color("#fffaf0"), Color("#b89559"), 26, 2, 16, Color(0, 0, 0, 0.3)))
 	location_popup.add_child(card)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -243,7 +243,7 @@ func _create_growth_event_popup() -> void:
 	var card := PanelContainer.new()
 	card.position = Vector2(610, 205)
 	card.size = Vector2(700, 650)
-	card.add_theme_stylebox_override("panel", _card_style(Color("#fffaf0"), Color("#88a968")))
+	card.add_theme_stylebox_override("panel", UIStyleFactory.panel(Color("#fffaf0"), Color("#88a968"), 26, 2, 16, Color(0, 0, 0, 0.3)))
 	growth_popup.add_child(card)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -283,8 +283,8 @@ func _create_growth_event_popup() -> void:
 	confirm.text = "看看 Amy"
 	confirm.custom_minimum_size = Vector2(0, 58)
 	confirm.add_theme_font_size_override("font_size", 21)
-	confirm.add_theme_stylebox_override("normal", _solid_button_style(Color("#557a50")))
-	confirm.add_theme_stylebox_override("hover", _solid_button_style(Color("#6b9164")))
+	confirm.add_theme_stylebox_override("normal", UIStyleFactory.button(Color("#557a50"), 12, 0.0))
+	confirm.add_theme_stylebox_override("hover", UIStyleFactory.button(Color("#6b9164"), 12, 0.0))
 	confirm.add_theme_color_override("font_color", Color.WHITE)
 	confirm.pressed.connect(_confirm_growth_event)
 	box.add_child(confirm)
@@ -292,12 +292,12 @@ func _create_growth_event_popup() -> void:
 
 
 func _confirm_growth_event() -> void:
-	if not interaction_locked or not player.has_method("GetPendingGrowthEvent"):
+	if not interaction_locked:
 		return
-	var pending: GrowthEventData = player.call("GetPendingGrowthEvent")
-	if pending == null or not player.has_method("ConfirmGrowthEvent"):
+	var pending := player.get_pending_growth_event()
+	if pending == null:
 		return
-	if not bool(player.call("ConfirmGrowthEvent", pending.event_id)):
+	if not player.confirm_growth_event(pending.event_id):
 		return
 	interaction_locked = false
 	growth_popup.hide()
@@ -328,7 +328,7 @@ func _create_album_window() -> void:
 	var card := PanelContainer.new()
 	card.position = Vector2(510, 100)
 	card.size = Vector2(900, 880)
-	card.add_theme_stylebox_override("panel", _card_style(Color("#fffaf0"), Color("#b89559")))
+	card.add_theme_stylebox_override("panel", UIStyleFactory.panel(Color("#fffaf0"), Color("#b89559"), 26, 2, 16, Color(0, 0, 0, 0.3)))
 	album_window.add_child(card)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -383,13 +383,13 @@ func _refresh_album() -> void:
 		return
 	var album_entry: GrowthAlbumEntry = entries[0]
 	var entry := PanelContainer.new()
-	entry.add_theme_stylebox_override("panel", _card_style(Color("#fffdf5"), Color("#bdd09a")))
+	entry.add_theme_stylebox_override("panel", UIStyleFactory.panel(Color("#fffdf5"), Color("#bdd09a"), 26, 2, 16, Color(0, 0, 0, 0.3)))
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 26)
 	entry.add_child(margin)
 	var text := Label.new()
-	var unlocked := Time.get_datetime_dict_from_unix_time(int(album_entry.unlocked_at))
+	var unlocked := TimeManager.get_local_datetime(album_entry.unlocked_at)
 	var unlocked_date := "%04d/%02d/%02d" % [unlocked.year, unlocked.month, unlocked.day]
 	text.text = "🍃  %s\n\n成長路線：%s\n階段：第%d階段\n取得日期：%s\n\n%s" % [
 		album_entry.title, album_entry.growth_path, album_entry.stage, unlocked_date, album_entry.description
@@ -413,15 +413,11 @@ func _refresh_growth_ui() -> void:
 
 
 func _has_leaf_mark() -> bool:
-	if player.has_method("HasGrowthMark"):
-		return bool(player.call("HasGrowthMark", "leaf_mark"))
-	return false
+	return player.has_growth_mark("leaf_mark")
 
 
 func _has_pending_growth_event() -> bool:
-	if player.has_method("GetPendingGrowthEvent"):
-		return player.call("GetPendingGrowthEvent") != null
-	return false
+	return player.get_pending_growth_event() != null
 
 
 func _on_rabbit_status_changed(_rabbit: RabbitData) -> void:
@@ -431,21 +427,3 @@ func _on_rabbit_status_changed(_rabbit: RabbitData) -> void:
 func _close_transient_windows() -> void:
 	location_popup.hide()
 	album_window.hide()
-
-
-func _solid_button_style(color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.set_corner_radius_all(12)
-	return style
-
-
-func _card_style(color: Color, border: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.border_color = border
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(26)
-	style.shadow_color = Color(0, 0, 0, 0.3)
-	style.shadow_size = 16
-	return style

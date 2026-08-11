@@ -3,7 +3,7 @@ extends Resource
 
 @export var crop_id := "carrot"
 @export var state := FarmState.LOCKED
-@export var growth_seconds := 90.0
+@export var growth_seconds := 60.0
 @export var current_cycle: Dictionary = {}
 @export var completed_cycle_ids: Array[String] = []
 
@@ -14,7 +14,7 @@ static func from_dict(d: Dictionary) -> FarmData:
     var f := FarmData.new()
     f.crop_id = "carrot"
     f.state = str(d.get("state", FarmState.LOCKED))
-    f.growth_seconds = maxf(0.1, float(d.get("growth_seconds", 90.0)))
+    f.growth_seconds = maxf(0.1, float(d.get("growth_seconds", 60.0)))
     if d.get("current_cycle", {}) is Dictionary:
         f.current_cycle = d.get("current_cycle", {}).duplicate(true)
     for id: Variant in d.get("completed_cycle_ids", []):

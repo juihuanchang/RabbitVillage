@@ -22,6 +22,11 @@ func has_active_construction() -> bool: return data != null and not data.active_
 func get_active_construction() -> ConstructionRecord: return ConstructionRecord.from_dict(data.active_construction) if has_active_construction() else null
 func get_construction_remaining_seconds() -> float: var r := get_active_construction(); return maxf(r.ends_at - TimeManager.get_now(), 0.0) if r else 0.0
 func get_construction_end_time() -> float: var r := get_active_construction(); return r.ends_at if r else 0.0
+func cancel_construction() -> Dictionary:
+	var record := get_active_construction()
+	if record == null: return {"ok": false, "reason": "目前沒有施工中的建築"}
+	data.active_construction = {}; data.building_records.erase(record.building_id)
+	return {"ok": true, "reason": "", "building_id": record.building_id}
 func check_construction_completion() -> ConstructionResult:
 	var record := get_active_construction()
 	if record == null or TimeManager.get_now() < record.ends_at: return null
@@ -34,9 +39,3 @@ func check_construction_completion() -> ConstructionResult:
 	if first: result.village_experience_reward = building_manager.get_building(record.building_id).village_experience_reward; village_manager.add_village_experience(result.village_experience_reward)
 	data.active_construction = {}; construction_completed.emit(result); return result
 func _unique_id(prefix: String) -> String: return "%s_%d_%d" % [prefix, int(TimeManager.get_now() * 1000000.0), randi_range(1000, 9999)]
-func StartConstruction(id: String) -> Dictionary: return start_construction(id)
-func HasActiveConstruction() -> bool: return has_active_construction()
-func GetActiveConstruction() -> ConstructionRecord: return get_active_construction()
-func GetConstructionRemainingSeconds() -> float: return get_construction_remaining_seconds()
-func GetConstructionEndTime() -> float: return get_construction_end_time()
-func CheckConstructionCompletion() -> ConstructionResult: return check_construction_completion()

@@ -21,10 +21,6 @@ func get_all_entries() -> Array[GrowthAlbumEntry]:
 	result.sort_custom(func(a: GrowthAlbumEntry, b: GrowthAlbumEntry) -> bool: return a.unlocked_at > b.unlocked_at)
 	return result
 
-func get_latest_entry() -> GrowthAlbumEntry:
-	var all := get_all_entries()
-	return all[0] if not all.is_empty() else null
-
 func has_entry_for_growth_mark(growth_mark_id: String) -> bool:
 	for entry: GrowthAlbumEntry in _entries:
 		if entry.growth_mark_id == growth_mark_id:
@@ -53,9 +49,3 @@ func load_from_array(data: Array) -> void:
 				_entries.append(entry)
 	sort_by_unlocked_time()
 	entries_changed.emit()
-
-func AddAlbumEntry(entry: GrowthAlbumEntry) -> bool: return add_album_entry(entry)
-func GetAllEntries() -> Array[GrowthAlbumEntry]: return get_all_entries()
-func GetLatestEntry() -> GrowthAlbumEntry: return get_latest_entry()
-func HasEntryForGrowthMark(growth_mark_id: String) -> bool: return has_entry_for_growth_mark(growth_mark_id)
-func SortByUnlockedTime() -> void: sort_by_unlocked_time()

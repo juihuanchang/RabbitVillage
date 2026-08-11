@@ -41,9 +41,6 @@ func get_activity(activity_id: String) -> ActivityData:
 
 func get_activity_data(activity_id: String) -> ActivityData: return get_activity(activity_id)
 
-func get_all_activities() -> Array[ActivityData]:
-	var result: Array[ActivityData] = []; result.assign(_activities.values()); return result
-
 func get_activities_by_location(location_id: String) -> Array[ActivityData]:
 	var result: Array[ActivityData] = []
 	for activity: ActivityData in _activities.values():
@@ -77,8 +74,6 @@ func start_activity(activity_id: String) -> Dictionary:
 func has_active_activity() -> bool: return active_activity != null and not active_activity.is_completed
 func get_current_activity() -> ActiveActivityData: return active_activity
 func get_remaining_seconds() -> float: return active_activity.get_remaining_seconds() if active_activity else 0.0
-func get_end_time() -> float: return active_activity.ends_at if active_activity else 0.0
-func is_rabbit_away() -> bool: return _rabbit != null and _rabbit.is_away
 func get_rabbit_data() -> RabbitData: return _rabbit
 
 func restore_activity(restored: ActiveActivityData) -> void:
@@ -128,13 +123,3 @@ func _complete_activity(completed_time: float) -> void:
 	rabbit.is_away = false; rabbit.current_activity = ""; rabbit.current_state = ""
 	activity_completed.emit(completed); activity_completed_data.emit(completed.get_completion_data())
 	active_activity = null; rabbit_returned.emit(rabbit)
-
-func StartActivity(activity_id: String) -> Dictionary: return start_activity(activity_id)
-func HasActiveActivity() -> bool: return has_active_activity()
-func GetCurrentActivity() -> ActiveActivityData: return get_current_activity()
-func GetRemainingSeconds() -> float: return get_remaining_seconds()
-func GetEndTime() -> float: return get_end_time()
-func IsRabbitAway() -> bool: return is_rabbit_away()
-func GetRabbitData() -> RabbitData: return get_rabbit_data()
-func GetActivitiesByLocation(location_id: String) -> Array[ActivityData]: return get_activities_by_location(location_id)
-func GetActivityData(activity_id: String) -> ActivityData: return get_activity_data(activity_id)
