@@ -40,17 +40,3 @@ func confirm_event(id:String)->VillageEventResult:
     if not data.completed_village_event_ids.has(id): data.completed_village_event_ids.append(id)
     data.progress.completed_village_event_count+=1; data.pending_village_events.clear(); var r:=VillageEventResult.new(); r.event_id=id; r.unlocked_building_id=e.unlock_building_id; r.applied_at=e.confirmed_at; village_event_completed.emit(r); return r
 func has_completed_event(id:String)->bool: return data!=null and data.completed_village_event_ids.has(id)
-func get_completed_events()->Array[VillageEventData]:
-    var out:Array[VillageEventData]=[]
-    for id in data.completed_village_event_ids:
-        if events.has(id): out.append(events[id])
-    return out
-func CheckEventConditions()->VillageEventData: return check_event_conditions()
-func CanTriggerEvent(id:String)->bool: return can_trigger_event(id)
-func CreatePendingEvent(id:String)->VillageEventData: return create_pending_event(id)
-func HasPendingEvent()->bool: return has_pending_event()
-func GetPendingEvent()->VillageEventData: return get_pending_event()
-func ConfirmEvent(id:String)->VillageEventResult: return confirm_event(id)
-func ApplyEventResult(id:String)->VillageEventResult: return confirm_event(id)
-func HasCompletedEvent(id:String)->bool: return has_completed_event(id)
-func GetCompletedEvents()->Array[VillageEventData]: return get_completed_events()

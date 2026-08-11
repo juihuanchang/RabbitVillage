@@ -1,7 +1,7 @@
 class_name NoticeManager
 extends Node
-signal notice_generated(notice: DailyNoticeData)
-signal notice_read(notice: DailyNoticeData)
+signal notice_generated(notice: DailyNoticeRecord)
+signal notice_read(notice: DailyNoticeRecord)
 const TEMPLATE_PATH := "res://data/notices/notice_templates.json"
 var data:VillageData
 var village:VillageManager
@@ -12,9 +12,9 @@ var growth:GrowthManager
 var recent_activity_location:=""
 var _templates:Array[NoticeTemplate]=[]
 func setup(v:VillageData,vm:VillageManager,bm:BuildingManager,cm:ConstructionManager,fm:FarmManager,gm:GrowthManager)->void:
-    data=v; village=vm; buildings=bm; construction=cm; farm=fm; growth=gm; _load_templates(); _migrate_legacy(); _repair_today()
+    data=v; village=vm; buildings=bm; construction=cm; farm=fm; growth=gm; _load_templates(); _repair_history(); _repair_today()
 func _date_key(offset:=0)->String:
-    var d:=Time.get_datetime_dict_from_unix_time(int(TimeManager.get_now())+offset*86400); return "%04d-%02d-%02d"%[d.year,d.month,d.day]
+    var d:=TimeManager.get_local_datetime(TimeManager.get_now()+offset*86400); return "%04d-%02d-%02d"%[d.year,d.month,d.day]
 func has_today_notice()->bool: return get_today_notice()!=null
 func get_today_notice()->DailyNoticeRecord:
     if data==null: return null
@@ -29,7 +29,7 @@ func get_today_notice()->DailyNoticeRecord:
     return null
 func generate_today_notice()->DailyNoticeRecord:
     var existing:=get_today_notice(); if existing!=null: return existing
-    var t:=select_notice_template(NoticeConditionContext.from_dict(get_notice_condition_context()))
+    var t:=select_notice_template(NoticeConditionData.from_dict(get_notice_condition_context()))
     if t==null: t=_fallback_general(_previous_notice_id())
     if t==null: return null
     var n:=DailyNoticeRecord.new(); n.notice_id=t.notice_id; n.category=t.category; n.date_key=_date_key(); n.generated_at=TimeManager.get_now(); n.title="村莊公告"; n.content=t.content
@@ -38,10 +38,10 @@ func save_today_notice(n:DailyNoticeRecord)->bool:
     if data==null or n==null or n.notice_id.is_empty() or n.date_key.is_empty() or n.content.is_empty(): return false
     for i in data.notice_history.size():
         if str(data.notice_history[i].get("date_key",""))==n.date_key:
-            data.notice_history[i]=n.to_dict(); data.notices=data.notice_history.duplicate(true)
+            data.notice_history[i]=n.to_dict()
             if n.date_key==_date_key(): data.daily_notice=n.to_dict()
             return true
-    data.notice_history.append(n.to_dict()); data.notices=data.notice_history.duplicate(true)
+    data.notice_history.append(n.to_dict())
     if n.date_key==_date_key(): data.daily_notice=n.to_dict()
     return true
 func mark_today_notice_read()->bool:
@@ -49,7 +49,7 @@ func mark_today_notice_read()->bool:
     var n:=get_today_notice(); if n==null: n=generate_today_notice()
     if n==null or n.is_read: return false
     n.is_read=true; n.first_read_at=TimeManager.get_now(); save_today_notice(n); village.register_notice_read(); village.claim_reward_once("notice_read:"+n.date_key,5); notice_read.emit(n); return true
-func select_notice_template(c:NoticeConditionContext)->NoticeTemplate:
+func select_notice_template(c:NoticeConditionData)->NoticeTemplate:
     if _templates.is_empty(): _load_templates()
     var candidates:Array[NoticeTemplate]=[]; var previous:=_previous_notice_id()
     for t in _templates:
@@ -65,17 +65,17 @@ func select_notice_template(c:NoticeConditionContext)->NoticeTemplate:
         if t.priority==highest: top.append(t)
     return top.pick_random() if not top.is_empty() else candidates.pick_random()
 func get_notice_condition_context()->Dictionary:
-    var c:=NoticeConditionContext.new(); c.recent_activity_location=recent_activity_location; c.constructing_building_id=construction.get_active_construction().building_id if construction.has_active_construction() else ""; c.is_farm_growing=farm.has_active_growth_cycle(); c.are_carrots_ready=farm.is_farm_ready(); c.has_leaf_mark=growth.has_growth_mark("leaf_mark")
+    var c:=NoticeConditionData.new(); c.recent_activity_location=recent_activity_location; c.constructing_building_id=construction.get_active_construction().building_id if construction.has_active_construction() else ""; c.is_farm_growing=farm.has_active_growth_cycle(); c.are_carrots_ready=farm.is_farm_ready(); c.has_leaf_mark=growth.has_growth_mark("leaf_mark")
     for r in buildings.get_completed_buildings(): c.completed_building_ids.append(r.building_id)
     return c.to_dict()
 func get_notice_history()->Array[Dictionary]: return data.notice_history.duplicate(true) if data else []
-func _matches(t:NoticeTemplate,c:NoticeConditionContext)->bool:
+func _matches(t:NoticeTemplate,c:NoticeConditionData)->bool:
     if not t.required_activity_location.is_empty() and c.recent_activity_location!=t.required_activity_location: return false
     if t.required_growth_mark_id=="leaf_mark" and not c.has_leaf_mark: return false
     if not t.required_farm_state.is_empty() and farm.get_farm_state()!=t.required_farm_state: return false
     if not t.required_building_id.is_empty() and not t.required_building_state.is_empty() and buildings.get_building_state(t.required_building_id)!=t.required_building_state: return false
     return true
-func _has_alternative(c:NoticeConditionContext,excluded:String)->bool:
+func _has_alternative(c:NoticeConditionData,excluded:String)->bool:
     for t in _templates:
         if t.notice_id!=excluded and _matches(t,c): return true
     return false
@@ -102,20 +102,23 @@ func _load_templates()->void:
     for raw:Variant in j.data.get("templates",[]):
         if raw is Dictionary:
             var t:=NoticeTemplate.from_dict(raw); if t.is_valid(): _templates.append(t)
-func _migrate_legacy()->void:
-    if data.notice_history.is_empty() and not data.notices.is_empty():
-        for raw in data.notices:
-            if not str(raw.get("date_key","" )).is_empty(): data.notice_history.append(raw.duplicate(true))
-    data.notices=data.notice_history.duplicate(true)
+func _repair_history()->void:
+    var by_date:Dictionary={}
+    for raw:Variant in data.notice_history:
+        if not (raw is Dictionary): continue
+        var date_key:=str(raw.get("date_key",""))
+        if date_key.is_empty(): continue
+        if not by_date.has(date_key):
+            by_date[date_key]=raw.duplicate(true)
+            continue
+        var existing:Dictionary=by_date[date_key]
+        if bool(raw.get("is_read",false)) and not bool(existing.get("is_read",false)):
+            by_date[date_key]=raw.duplicate(true)
+        elif float(raw.get("generated_at",0.0))>float(existing.get("generated_at",0.0)):
+            by_date[date_key]=raw.duplicate(true)
+    data.notice_history.clear()
+    for date_key:Variant in by_date.keys(): data.notice_history.append(by_date[date_key])
+    data.notice_history.sort_custom(func(a:Dictionary,b:Dictionary)->bool: return float(a.get("generated_at",0.0))<float(b.get("generated_at",0.0)))
 func _repair_today()->void:
     if data.daily_notice.is_empty(): return
     if not DailyNoticeRecord.from_dict(data.daily_notice).is_valid_for_date(_date_key()): data.daily_notice={}
-func HasTodayNotice()->bool: return has_today_notice()
-func GetTodayNotice()->DailyNoticeRecord: return get_today_notice()
-func GenerateTodayNotice()->DailyNoticeRecord: return generate_today_notice()
-func SaveTodayNotice(record:DailyNoticeRecord)->bool: return save_today_notice(record)
-func MarkTodayNoticeRead()->bool: return mark_today_notice_read()
-func HasReadTodayNotice()->bool: var n:=get_today_notice(); return n!=null and n.is_read
-func GetNoticeConditionContext()->Dictionary: return get_notice_condition_context()
-func GetNoticeHistory()->Array[Dictionary]: return get_notice_history()
-func SelectNoticeTemplate(context:NoticeConditionContext)->NoticeTemplate: return select_notice_template(context)

@@ -1,5 +1,5 @@
 class_name DailyNoticeRecord
-extends DailyNoticeData
+extends NoticeData
 
 @export var category := "general"
 

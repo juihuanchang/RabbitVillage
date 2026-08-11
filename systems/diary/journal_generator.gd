@@ -81,4 +81,4 @@ static func _load_json(path:String)->Dictionary:
     var j:=JSON.new(); if j.parse(FileAccess.get_file_as_string(path))!=OK or not (j.data is Dictionary): return {}
     return j.data
 static func _format_date(t:float)->String:
-    var d:=Time.get_datetime_dict_from_unix_time(int(t)); return "%04d/%02d/%02d"%[d.year,d.month,d.day]
+    var d:=TimeManager.get_local_datetime(t); return "%04d/%02d/%02d"%[d.year,d.month,d.day]

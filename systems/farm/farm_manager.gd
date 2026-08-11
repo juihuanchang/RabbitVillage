@@ -38,25 +38,27 @@ func check_farm_ready_state()->bool:
 func harvest_carrots()->HarvestResult:
     check_farm_ready_state(); if not is_farm_ready(): return null
     var c:=get_current_farm_cycle(); if c==null or c.is_harvested or farm.completed_cycle_ids.has(c.farm_cycle_id): return null
-    var first:=data.progress.total_harvest_count==0; farm.completed_cycle_ids.append(c.farm_cycle_id); c.is_harvested=true; c.harvested_at=TimeManager.get_now(); farm.state=FarmState.IDLE; farm.current_cycle={}; var amount:=10; data.carrot_amount=maxi(0,data.carrot_amount)+amount; village.register_carrot_harvest(amount); village.add_village_experience(10)
+    var first:=data.progress.total_harvest_count==0; farm.completed_cycle_ids.append(c.farm_cycle_id); c.is_harvested=true; c.harvested_at=TimeManager.get_now(); farm.state=FarmState.IDLE; farm.current_cycle={}; var amount:=10; village.register_carrot_harvest(amount); village.add_village_experience(10)
     var r:=HarvestResult.new(); r.harvest_record_id="harvest_%d_%d"%[int(c.harvested_at*1000000.0),randi_range(1000,9999)]; r.farm_cycle_id=c.farm_cycle_id; r.amount=amount; r.harvested_at=c.harvested_at; r.village_experience_reward=10; r.is_first_harvest=first; _sync(); start_next_growth_cycle(); carrots_harvested.emit(r); return r
-func get_carrot_amount()->int: return maxi(0,data.carrot_amount)
+func get_carrot_amount()->int: return CarrotInventoryEntry.from_dict(data.carrot_inventory).amount
 func get_total_harvest_count()->int: return data.progress.total_harvest_count
-func _sync()->void: data.farm=farm.to_dict(); data.carrot_amount=maxi(0,data.carrot_amount)
+func migrate_legacy_state(legacy_state:String, remaining_seconds:float)->bool:
+    if data==null or not buildings.is_building_completed("carrot_farm"): return false
+    if has_active_growth_cycle() or is_farm_ready() or data.conditions.rewarded_keys.has("farm:first_cycle_created"): return false
+    if legacy_state!="ready" and legacy_state!="sprout" and legacy_state!="growing": return false
+    var now:=TimeManager.get_now()
+    if legacy_state=="ready":
+        farm.state=FarmState.READY; farm.current_cycle={"farm_cycle_id":"migrated_a_farm","started_at":now-60.0,"ready_at":now}
+    elif legacy_state=="sprout" or legacy_state=="growing":
+        farm.state=FarmState.GROWING
+        var extra:=30.0 if legacy_state=="sprout" else 0.0
+        farm.current_cycle={"farm_cycle_id":"migrated_a_farm","started_at":now,"ready_at":now+maxf(1.0,remaining_seconds+extra)}
+    else:
+        farm.state=FarmState.IDLE; farm.current_cycle={}
+    _sync(); return true
+func _sync()->void: data.farm=farm.to_dict()
 func _repair()->void:
     if farm.current_cycle.is_empty(): return
     var c:=FarmCycleData.from_dict(farm.current_cycle)
     if c.farm_cycle_id.is_empty() or c.ready_at<c.started_at: farm.current_cycle={}; farm.state=FarmState.IDLE if buildings.is_building_completed("carrot_farm") else FarmState.LOCKED
     elif c.is_harvested or farm.completed_cycle_ids.has(c.farm_cycle_id): farm.current_cycle={}; farm.state=FarmState.IDLE
-func GetFarmState()->String: return get_farm_state()
-func StartFirstGrowthCycle()->Dictionary: return start_first_growth_cycle()
-func StartNextGrowthCycle()->Dictionary: return start_next_growth_cycle()
-func HasActiveGrowthCycle()->bool: return has_active_growth_cycle()
-func IsFarmReady()->bool: return is_farm_ready()
-func GetFarmRemainingSeconds()->float: return get_farm_remaining_seconds()
-func GetFarmReadyTime()->float: return get_farm_ready_time()
-func GetCurrentFarmCycle()->FarmCycleData: return get_current_farm_cycle()
-func CheckFarmReadyState()->bool: return check_farm_ready_state()
-func HarvestCarrots()->HarvestResult: return harvest_carrots()
-func GetCarrotAmount()->int: return get_carrot_amount()
-func GetTotalHarvestCount()->int: return get_total_harvest_count()

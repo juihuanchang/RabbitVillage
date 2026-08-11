@@ -1,7 +1,7 @@
 class_name VillageData
 extends Resource
 
-const FORMAL_BUILDINGS := ["rest_pavilion", "notice_board", "carrot_farm"]
+const FORMAL_BUILDINGS := ["coffee_shop", "rest_pavilion", "notice_board", "carrot_farm"]
 const VALID_SLOTS := ["Slot01", "Slot02", "Slot03", "Slot04", "Slot05", "Slot06", "Slot07", "Slot08", "Slot09"]
 
 @export var progress: VillageProgressData = VillageProgressData.new()
@@ -14,18 +14,16 @@ const VALID_SLOTS := ["Slot01", "Slot02", "Slot03", "Slot04", "Slot05", "Slot06"
 @export var completed_construction_ids: Array[String] = []
 @export var building_interactions: Dictionary = {}
 @export var active_building_interaction: Dictionary = {}
-@export var notices: Array[Dictionary] = []
 @export var daily_notice: Dictionary = {}
 @export var notice_history: Array[Dictionary] = []
 @export var farm: Dictionary = {}
-@export var carrot_amount := 0
 @export var building_history: Array[Dictionary] = []
 @export var construction_records: Array[Dictionary] = []
 @export var building_interaction_records: Array[Dictionary] = []
 @export var farm_cycle_records: Array[Dictionary] = []
 @export var harvest_records: Array[Dictionary] = []
 @export var carrot_inventory: Dictionary = {"food_id": "carrot", "amount": 0, "first_obtained_at": 0.0, "last_obtained_at": 0.0, "total_obtained": 0}
-@export var legacy_test_buildings: Array[Dictionary] = []
+@export var legacy_a_snapshot: Dictionary = {}
 
 func to_dict() -> Dictionary:
     return {
@@ -34,11 +32,11 @@ func to_dict() -> Dictionary:
         "pending_village_events": pending_village_events.duplicate(true), "building_records": building_records.duplicate(true),
         "active_construction": active_construction.duplicate(true), "completed_construction_ids": completed_construction_ids.duplicate(),
         "building_interactions": building_interactions.duplicate(true), "active_building_interaction": active_building_interaction.duplicate(true),
-        "notices": notice_history.duplicate(true), "daily_notice": daily_notice.duplicate(true), "notice_history": notice_history.duplicate(true),
-        "farm": farm.duplicate(true), "carrot_amount": maxi(0, carrot_amount), "building_history": building_history.duplicate(true),
+        "daily_notice": daily_notice.duplicate(true), "notice_history": notice_history.duplicate(true),
+        "farm": farm.duplicate(true), "building_history": building_history.duplicate(true),
         "construction_records": construction_records.duplicate(true), "building_interaction_records": building_interaction_records.duplicate(true),
         "farm_cycle_records": farm_cycle_records.duplicate(true), "harvest_records": harvest_records.duplicate(true),
-        "carrot_inventory": carrot_inventory.duplicate(true), "legacy_test_buildings": legacy_test_buildings.duplicate(true)
+        "carrot_inventory": carrot_inventory.duplicate(true), "legacy_a_snapshot": legacy_a_snapshot.duplicate(true)
     }
 
 static func from_dict(data: Dictionary) -> VillageData:
@@ -76,13 +74,8 @@ static func from_dict(data: Dictionary) -> VillageData:
             if not (raw is Dictionary):
                 continue
             var building_id := str(raw.get("building_id", key))
-            if ["cafe", "coffee_shop"].has(building_id):
-                var legacy = raw.duplicate(true)
-                legacy["building_id"] = building_id
-                legacy["is_legacy_test_data"] = true
-                legacy["slot_id"] = ""
-                v.legacy_test_buildings.append(legacy)
-                continue
+            if building_id == "cafe":
+                building_id = "coffee_shop"
             if not FORMAL_BUILDINGS.has(building_id):
                 continue
             var clean = raw.duplicate(true)
@@ -100,22 +93,23 @@ static func from_dict(data: Dictionary) -> VillageData:
         v.daily_notice = data.get("daily_notice", {}).duplicate(true)
     if data.get("farm", {}) is Dictionary:
         v.farm = _sanitize_farm(data.get("farm", {}))
-    v.carrot_amount = maxi(0, int(data.get("carrot_amount", 0)))
-    _copy_dict_array(data.get("building_history", []), v.building_history)
+    var legacy_carrot_amount := maxi(0, int(data.get("carrot_amount", 0)))
+    for raw_history: Variant in data.get("building_history", []):
+        if raw_history is Dictionary:
+            var history := BuildingHistoryEntry.from_dict(raw_history)
+            if not history.building_id.is_empty():
+                v.building_history.append(history.to_dict())
     _copy_dict_array(data.get("construction_records", []), v.construction_records)
     _copy_dict_array(data.get("building_interaction_records", []), v.building_interaction_records)
     _copy_dict_array(data.get("farm_cycle_records", []), v.farm_cycle_records)
     _copy_dict_array(data.get("harvest_records", []), v.harvest_records)
-    _copy_dict_array(data.get("legacy_test_buildings", []), v.legacy_test_buildings)
-    if data.get("carrot_inventory", {}) is Dictionary:
-        v.carrot_inventory = CarrotInventoryEntry.from_dict(data.get("carrot_inventory", {})).to_dict()
-    else:
-        var inv := CarrotInventoryEntry.new()
-        inv.amount = v.carrot_amount
-        inv.total_obtained = maxi(v.carrot_amount, v.progress.total_carrots_obtained)
-        v.carrot_inventory = inv.to_dict()
-    v.carrot_amount = maxi(v.carrot_amount, int(v.carrot_inventory.get("amount", 0)))
-    v.carrot_inventory["amount"] = v.carrot_amount
+    if data.get("legacy_a_snapshot", {}) is Dictionary:
+        v.legacy_a_snapshot = data.get("legacy_a_snapshot", {}).duplicate(true)
+    var raw_inventory: Dictionary = data.get("carrot_inventory", {}) if data.get("carrot_inventory", {}) is Dictionary else {}
+    var inventory := CarrotInventoryEntry.from_dict(raw_inventory)
+    inventory.amount = maxi(inventory.amount, legacy_carrot_amount)
+    inventory.total_obtained = maxi(inventory.total_obtained, maxi(inventory.amount, v.progress.total_carrots_obtained))
+    v.carrot_inventory = inventory.to_dict()
     return v
 
 static func create_migrated_week3_default() -> VillageData:

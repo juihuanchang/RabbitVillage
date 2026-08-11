@@ -50,7 +50,7 @@ func add_harvest_history(entry: HarvestHistoryEntry) -> bool:
 func add_carrots(amount: int, at_time: float = -1.0) -> CarrotInventoryEntry:
     var inv := get_carrot_inventory()
     inv.add(maxi(0, amount), at_time)
-    data.carrot_inventory = inv.to_dict(); data.carrot_amount = inv.amount
+    data.carrot_inventory = inv.to_dict()
     carrot_inventory_changed.emit(inv); history_changed.emit(); return inv
 func get_carrot_inventory() -> CarrotInventoryEntry:
     return CarrotInventoryEntry.from_dict(data.carrot_inventory) if data != null else CarrotInventoryEntry.new()
@@ -80,12 +80,4 @@ func _merge_building_history(target: BuildingHistoryEntry, source: BuildingHisto
 func _repair_inventory() -> void:
     if data == null: return
     var inv := CarrotInventoryEntry.from_dict(data.carrot_inventory)
-    if inv.amount == 0 and data.carrot_amount > 0:
-        inv.amount = maxi(0, data.carrot_amount); inv.total_obtained = maxi(inv.total_obtained, inv.amount)
-    data.carrot_inventory = inv.to_dict(); data.carrot_amount = inv.amount
-func AddBuildingHistory(entry: BuildingHistoryEntry) -> bool: return add_building_history(entry)
-func AddConstructionHistory(entry: ConstructionHistoryEntry) -> bool: return add_construction_history(entry)
-func AddBuildingUseHistory(entry: BuildingUseHistoryEntry) -> bool: return add_building_use_history(entry)
-func AddFarmCycleHistory(entry: FarmCycleHistoryEntry) -> bool: return add_farm_cycle_history(entry)
-func AddHarvestHistory(entry: HarvestHistoryEntry) -> bool: return add_harvest_history(entry)
-func GetCarrotInventory() -> CarrotInventoryEntry: return get_carrot_inventory()
+    data.carrot_inventory = inv.to_dict()

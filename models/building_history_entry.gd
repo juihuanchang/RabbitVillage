@@ -10,7 +10,6 @@ extends Resource
 @export var first_used_at := 0.0
 @export var last_used_at := 0.0
 @export var use_count := 0
-@export var is_legacy_test_data := false
 
 func to_dict() -> Dictionary:
     return {
@@ -22,8 +21,7 @@ func to_dict() -> Dictionary:
         "completed_at": completed_at,
         "first_used_at": first_used_at,
         "last_used_at": last_used_at,
-        "use_count": use_count,
-        "is_legacy_test_data": is_legacy_test_data
+        "use_count": use_count
     }
 
 static func from_dict(data: Dictionary) -> BuildingHistoryEntry:
@@ -37,5 +35,4 @@ static func from_dict(data: Dictionary) -> BuildingHistoryEntry:
     e.first_used_at = maxf(0.0, float(data.get("first_used_at", 0.0)))
     e.last_used_at = maxf(0.0, float(data.get("last_used_at", 0.0)))
     e.use_count = maxi(0, int(data.get("use_count", 0)))
-    e.is_legacy_test_data = bool(data.get("is_legacy_test_data", false))
     return e

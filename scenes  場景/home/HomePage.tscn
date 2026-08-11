@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://b4jlrlsy831cj" path="res://scenes  場景/home/home_page_mcp.gd" id="1_inkar"]
 [ext_resource type="PackedScene" uid="uid://bqx8n2k7p4mwr" path="res://player/Player.tscn" id="2_6uq7s"]
 [ext_resource type="Texture2D" uid="uid://cann1skmc44sg" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/底圖.png" id="2_inkar"]
-[ext_resource type="Script" uid="uid://dpl2e367u3u70" path="res://systems/building/building_system.gd" id="4_tt2vn"]
 [ext_resource type="Script" uid="uid://bexhx6mnb13op" path="res://scenes  場景/home/week3_a_ui.gd" id="5_2si26"]
 [ext_resource type="Script" uid="uid://djq2rkd8u0s17" path="res://scenes  場景/home/week4_a_ui.gd" id="6_we17s"]
 
@@ -366,9 +365,6 @@ theme_override_font_sizes/font_size = 22
 text = "Amy 回來了！"
 horizontal_alignment = 1
 
-[node name="BuildingSystem" type="Node2D" parent="." unique_id=569378686]
-script = ExtResource("4_tt2vn")
-
 [node name="Week3AUI" type="Node" parent="." unique_id=1977266883]
 script = ExtResource("5_2si26")
 
@@ -383,6 +379,35 @@ offset_bottom = 78.0
 tooltip_text = "展開 Amy 資訊"
 theme_override_font_sizes/font_size = 28
 text = "☰"
+
+[node name="Week4BuildSlots" type="Node2D" parent="."]
+
+[node name="Slot01" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(649, 112)
+
+[node name="Slot02" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(1359, 148)
+
+[node name="Slot03" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(127, 439)
+
+[node name="Slot04" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(520, 458)
+
+[node name="Slot05" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(811, 439)
+
+[node name="Slot06" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(1280, 465)
+
+[node name="Slot07" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(378, 764)
+
+[node name="Slot08" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(860, 758)
+
+[node name="Slot09" type="Marker2D" parent="Week4BuildSlots"]
+position = Vector2(1140, 741)
 
 [node name="Week4AUI" type="Node" parent="." unique_id=1472467627]
 script = ExtResource("6_we17s")

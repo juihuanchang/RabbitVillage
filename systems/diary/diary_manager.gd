@@ -85,11 +85,6 @@ func _has_stage(s:int)->bool:
     return false
 func get_all_journals()->Array[JournalEntry]:
     var out:Array[JournalEntry]=[]; out.assign(_journals); out.sort_custom(func(a,b): return a.created_at>b.created_at); return out
-func get_village_journals()->Array[JournalEntry]:
-    var out:Array[JournalEntry]=[]
-    for e in get_all_journals():
-        if e.is_village_memory or ["village_event","construction","building_complete","building_use","notice","farm_growth","harvest","village_growth"].has(e.journal_type): out.append(e)
-    return out
 func get_latest_journal()->JournalEntry:
     var all:=get_all_journals(); return all[0] if not all.is_empty() else null
 func get_journal_count()->int: return _journals.size()
@@ -97,10 +92,6 @@ func clear_journals()->void: _journals.clear(); journals_changed.emit()
 func to_array()->Array[Dictionary]:
     var out:Array[Dictionary]=[]
     for e in _journals: out.append(e.to_dict())
-    return out
-func get_village_journal_array()->Array[Dictionary]:
-    var out:Array[Dictionary]=[]
-    for e in get_village_journals(): out.append(e.to_dict())
     return out
 func load_from_array(data:Array)->void:
     _journals.clear()
@@ -125,13 +116,3 @@ func _append(e:JournalEntry)->JournalEntry:
     if e==null or not e.is_valid(): return null
     _journals.append(e); journal_added.emit(e); journals_changed.emit(); return e
 func _next_id()->String: return "journal_%03d"%(_journals.size()+1)
-func GenerateVillageEventJournal(eventId:String)->JournalEntry: return generate_village_event_journal(eventId)
-func GenerateConstructionJournal(result:ConstructionResult)->JournalEntry: return generate_construction_journal(result)
-func GenerateBuildingUseJournal(result:BuildingUseResult)->JournalEntry: return generate_building_use_journal(result)
-func GenerateFarmGrowthJournal(cycle:FarmCycleData)->JournalEntry: return generate_farm_growth_journal(cycle)
-func GenerateHarvestJournal(result:HarvestResult)->JournalEntry: return generate_harvest_journal(result)
-func HasJournalForVillageEvent(id:String)->bool: return has_journal_for_village_event(id)
-func HasJournalForConstruction(id:String)->bool: return has_journal_for_construction(id)
-func HasJournalForBuildingUse(id:String)->bool: return has_journal_for_building_use(id)
-func HasJournalForFarmCycle(id:String)->bool: return has_journal_for_farm_cycle(id)
-func HasJournalForHarvest(id:String)->bool: return has_journal_for_harvest(id)
