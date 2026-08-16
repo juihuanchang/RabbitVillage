@@ -7,40 +7,30 @@ signal activity_completed(active_activity: ActiveActivityData)
 signal activity_completed_data(completion_data: Dictionary)
 signal rabbit_returned(rabbit: RabbitData)
 
-const ERROR_ACTIVITY_IN_PROGRESS := "活動進行中"
-const ERROR_ACTIVITY_NOT_FOUND := "找不到活動"
-const ERROR_ACTIVITY_LOCKED := "活動尚未解鎖"
-const ERROR_ENERGY_NOT_ENOUGH := "體力不足"
-const ERROR_TOO_HUNGRY := "Amy 太餓了"
-const ERROR_INVALID_LOCATION := "地點資料錯誤"
-const ERROR_RABBIT_NOT_READY := "Amy 資料尚未準備完成"
-const MIN_HUNGER_TO_START := 10
+const MIN_HUNGER_TO_START := 15
 const VALID_LOCATIONS := ["home", "forest", "lake"]
-
-var active_activity: ActiveActivityData = null
+var active_activity: ActiveActivityData
 var last_error := ""
 var _rabbit: RabbitData
+var _reward_manager: RewardManager
+var _life_event_manager: LifeEventManager
+var _growth_manager: GrowthManager
 var _activities: Dictionary = {}
 var _completed_record_ids: Dictionary = {}
 
 func _init() -> void:
-	register_activity(ActivityData.create_forest_walk())
-	register_activity(ActivityData.create_forest_explore())
-	register_activity(ActivityData.create_fishing())
-	register_activity(ActivityData.create_home_rest())
+	register_activity(ActivityData.create_forest_walk()); register_activity(ActivityData.create_forest_explore())
+	register_activity(ActivityData.create_fishing()); register_activity(ActivityData.create_home_rest())
 
-func setup(rabbit: RabbitData) -> void: _rabbit = rabbit
-
+func setup(rabbit: RabbitData, rewards: RewardManager = null, life_events: LifeEventManager = null, growth: GrowthManager = null) -> void:
+	_rabbit = rabbit; _reward_manager = rewards; _life_event_manager = life_events; _growth_manager = growth
 func register_activity(activity: ActivityData) -> bool:
 	if activity == null or activity.activity_id.is_empty(): return false
-	_activities[activity.activity_id] = activity
-	return true
-
-func get_activity(activity_id: String) -> ActivityData:
-	return _activities.get(activity_id.strip_edges().to_lower()) as ActivityData
-
+	_activities[activity.activity_id] = activity; return true
+func get_activity(activity_id: String) -> ActivityData: return _activities.get(activity_id.strip_edges().to_lower()) as ActivityData
 func get_activity_data(activity_id: String) -> ActivityData: return get_activity(activity_id)
-
+func get_all_activities() -> Array[ActivityData]:
+	var result: Array[ActivityData] = []; result.assign(_activities.values()); return result
 func get_activities_by_location(location_id: String) -> Array[ActivityData]:
 	var result: Array[ActivityData] = []
 	for activity: ActivityData in _activities.values():
@@ -48,56 +38,47 @@ func get_activities_by_location(location_id: String) -> Array[ActivityData]:
 	return result
 
 func can_start_activity(activity_id: String) -> Dictionary:
-	if active_activity != null or (_rabbit != null and not _rabbit.current_activity.is_empty()):
-		return {"ok": false, "reason": ERROR_ACTIVITY_IN_PROGRESS}
+	if active_activity != null or (_rabbit != null and not _rabbit.current_activity.is_empty()): return _check(false, "already_active")
 	var activity := get_activity(activity_id)
-	if activity == null: return {"ok": false, "reason": ERROR_ACTIVITY_NOT_FOUND}
-	if not activity.is_unlocked: return {"ok": false, "reason": ERROR_ACTIVITY_LOCKED}
-	if not VALID_LOCATIONS.has(activity.location_id): return {"ok": false, "reason": ERROR_INVALID_LOCATION}
-	if _rabbit == null: return {"ok": false, "reason": ERROR_RABBIT_NOT_READY}
-	if _rabbit.energy < activity.required_energy: return {"ok": false, "reason": ERROR_ENERGY_NOT_ENOUGH}
-	if _rabbit.hunger < MIN_HUNGER_TO_START: return {"ok": false, "reason": ERROR_TOO_HUNGRY}
-	return {"ok": true, "reason": ""}
+	if activity == null or not activity.is_unlocked or not VALID_LOCATIONS.has(activity.location_id): return _check(false, "invalid_activity")
+	if _rabbit == null: return _check(false, "invalid_activity")
+	if (_life_event_manager != null and _life_event_manager.has_pending_life_event()) or (_growth_manager != null and _growth_manager.has_pending_growth_event()): return _check(false, "invalid_activity")
+	if activity.activity_type != ActivityData.TYPE_HOME and _rabbit.hunger < MIN_HUNGER_TO_START: return _check(false, "too_hungry")
+	if _rabbit.energy < activity.required_energy: return _check(false, "too_tired")
+	return _check(true, "")
+func _check(success: bool, reason: String) -> Dictionary: return {"ok": success, "success": success, "reason": reason}
 
 func start_activity(activity_id: String) -> Dictionary:
 	var check := can_start_activity(activity_id); last_error = str(check.reason)
 	if not check.ok: return check
 	var activity := get_activity(activity_id); var now := TimeManager.get_now()
-	active_activity = ActiveActivityData.new(_rabbit, activity, now)
-	_rabbit.is_away = activity.activity_type == ActivityData.TYPE_OUTDOOR
-	_rabbit.current_activity = activity.activity_id
-	_rabbit.current_state = "休息中" if activity.activity_type == ActivityData.TYPE_HOME else "活動中"
-	activity_started.emit(active_activity)
-	countdown_changed.emit(active_activity, active_activity.get_remaining_seconds(now))
-	return {"ok": true, "reason": "", "active_activity": active_activity}
+	active_activity = ActiveActivityData.new(_rabbit, activity, now); _rabbit.is_away = activity.activity_type == ActivityData.TYPE_OUTDOOR
+	_rabbit.current_activity = activity.activity_id; _rabbit.current_state = "resting" if activity.activity_type == ActivityData.TYPE_HOME else "active"
+	activity_started.emit(active_activity); countdown_changed.emit(active_activity, active_activity.get_remaining_seconds(now))
+	return {"ok": true, "success": true, "reason": "", "active_activity": active_activity}
 
 func has_active_activity() -> bool: return active_activity != null and not active_activity.is_completed
 func get_current_activity() -> ActiveActivityData: return active_activity
 func get_remaining_seconds() -> float: return active_activity.get_remaining_seconds() if active_activity else 0.0
+func get_end_time() -> float: return active_activity.ends_at if active_activity else 0.0
+func is_rabbit_away() -> bool: return _rabbit != null and _rabbit.is_away
 func get_rabbit_data() -> RabbitData: return _rabbit
-
 func restore_activity(restored: ActiveActivityData) -> void:
 	active_activity = restored
-	if restored != null:
-		_rabbit = restored.rabbit
-		var running := not restored.is_completed
-		_rabbit.is_away = running and restored.activity.activity_type == ActivityData.TYPE_OUTDOOR
-		_rabbit.current_activity = restored.activity.activity_id if running else ""
-		_rabbit.current_state = ("休息中" if restored.activity.activity_type == ActivityData.TYPE_HOME else "活動中") if running else ""
-
+	if restored == null: return
+	_rabbit = restored.rabbit; var running := not restored.is_completed
+	_rabbit.is_away = running and restored.activity.activity_type == ActivityData.TYPE_OUTDOOR
+	_rabbit.current_activity = restored.activity.activity_id if running else ""
+	_rabbit.current_state = ("resting" if restored.activity.activity_type == ActivityData.TYPE_HOME else "active") if running else ""
 func set_completed_record_ids(record_ids: Array[String]) -> void:
 	_completed_record_ids.clear()
 	for record_id in record_ids: _completed_record_ids[record_id] = true
-
 func get_completed_record_ids() -> Array[String]:
 	var result: Array[String] = []; result.assign(_completed_record_ids.keys()); return result
-
 func _process(_delta: float) -> void:
 	if not has_active_activity(): return
-	var now := TimeManager.get_now()
-	countdown_changed.emit(active_activity, active_activity.get_remaining_seconds(now))
+	var now := TimeManager.get_now(); countdown_changed.emit(active_activity, active_activity.get_remaining_seconds(now))
 	if now >= active_activity.ends_at: _complete_activity(now)
-
 func check_for_completion() -> bool:
 	if not has_active_activity() or TimeManager.get_now() < active_activity.ends_at: return false
 	_complete_activity(TimeManager.get_now()); return true
@@ -105,21 +86,28 @@ func check_for_completion() -> bool:
 func _complete_activity(completed_time: float) -> void:
 	if active_activity == null or active_activity.is_completed: return
 	var completed := active_activity
-	if _completed_record_ids.has(completed.activity_record_id):
-		active_activity = null
-		return
-	_completed_record_ids[completed.activity_record_id] = true
-	completed.mark_completed(completed_time)
+	if _completed_record_ids.has(completed.activity_record_id): active_activity = null; return
+	_completed_record_ids[completed.activity_record_id] = true; completed.mark_completed(completed_time)
 	var rabbit := completed.rabbit; var activity := completed.activity
 	rabbit.energy += activity.energy_change; rabbit.hunger += activity.hunger_change; rabbit.mood += activity.mood_change
-	rabbit.forest_experience += activity.forest_experience_change
-	rabbit.fishing_experience += activity.fishing_experience_change
-	rabbit.intimacy += activity.intimacy_change
+	rabbit.forest_experience += activity.forest_experience_change; rabbit.fishing_experience += activity.fishing_experience_change; rabbit.intimacy += activity.intimacy_change
 	match activity.location_id:
 		"forest": rabbit.forest_activity_count += 1
 		"lake": rabbit.fishing_activity_count += 1
 		"home": rabbit.home_activity_count += 1
-	rabbit.total_activity_count += 1
-	rabbit.is_away = false; rabbit.current_activity = ""; rabbit.current_state = ""
+	rabbit.total_activity_count += 1; rabbit.is_away = false; rabbit.current_activity = ""; rabbit.current_state = ""
+	if _reward_manager != null:
+		var reward := _reward_manager.generate_activity_reward(activity.activity_id, completed.activity_record_id)
+		if reward != null and not _reward_manager.has_reward_been_applied(completed.activity_record_id): _reward_manager.apply_activity_reward(reward)
 	activity_completed.emit(completed); activity_completed_data.emit(completed.get_completion_data())
 	active_activity = null; rabbit_returned.emit(rabbit)
+
+func StartActivity(activity_id: String) -> Dictionary: return start_activity(activity_id)
+func HasActiveActivity() -> bool: return has_active_activity()
+func GetCurrentActivity() -> ActiveActivityData: return get_current_activity()
+func GetRemainingSeconds() -> float: return get_remaining_seconds()
+func GetEndTime() -> float: return get_end_time()
+func IsRabbitAway() -> bool: return is_rabbit_away()
+func GetRabbitData() -> RabbitData: return get_rabbit_data()
+func GetActivitiesByLocation(location_id: String) -> Array[ActivityData]: return get_activities_by_location(location_id)
+func GetActivityData(activity_id: String) -> ActivityData: return get_activity_data(activity_id)

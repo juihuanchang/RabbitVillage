@@ -7,8 +7,9 @@ var data:VillageData
 var farm:=FarmData.new()
 var buildings:BuildingManager
 var village:VillageManager
-func setup(v:VillageData,b:BuildingManager,vm:VillageManager)->void:
-    data=v; buildings=b; village=vm
+var inventory:InventoryManager
+func setup(v:VillageData,b:BuildingManager,vm:VillageManager,im:InventoryManager=null)->void:
+    data=v; buildings=b; village=vm; inventory=im
     if not data.farm.is_empty(): farm=FarmData.from_dict(data.farm)
     if not buildings.is_building_completed("carrot_farm") and farm.current_cycle.is_empty(): farm.state=FarmState.LOCKED
     elif buildings.is_building_completed("carrot_farm") and farm.state==FarmState.LOCKED: farm.state=FarmState.IDLE
@@ -39,8 +40,10 @@ func harvest_carrots()->HarvestResult:
     check_farm_ready_state(); if not is_farm_ready(): return null
     var c:=get_current_farm_cycle(); if c==null or c.is_harvested or farm.completed_cycle_ids.has(c.farm_cycle_id): return null
     var first:=data.progress.total_harvest_count==0; farm.completed_cycle_ids.append(c.farm_cycle_id); c.is_harvested=true; c.harvested_at=TimeManager.get_now(); farm.state=FarmState.IDLE; farm.current_cycle={}; var amount:=10; village.register_carrot_harvest(amount); village.add_village_experience(10)
-    var r:=HarvestResult.new(); r.harvest_record_id="harvest_%d_%d"%[int(c.harvested_at*1000000.0),randi_range(1000,9999)]; r.farm_cycle_id=c.farm_cycle_id; r.amount=amount; r.harvested_at=c.harvested_at; r.village_experience_reward=10; r.is_first_harvest=first; _sync(); start_next_growth_cycle(); carrots_harvested.emit(r); return r
-func get_carrot_amount()->int: return CarrotInventoryEntry.from_dict(data.carrot_inventory).amount
+    var r:=HarvestResult.new(); r.harvest_record_id="harvest_%d_%d"%[int(c.harvested_at*1000000.0),randi_range(1000,9999)]; r.farm_cycle_id=c.farm_cycle_id; r.amount=amount; r.harvested_at=c.harvested_at; r.village_experience_reward=10; r.is_first_harvest=first
+    if inventory!=null: inventory.add_item("carrot",amount,"farm_harvest",r.harvest_record_id)
+    _sync(); start_next_growth_cycle(); carrots_harvested.emit(r); return r
+func get_carrot_amount()->int: return inventory.get_item_amount("carrot") if inventory!=null else CarrotInventoryEntry.from_dict(data.carrot_inventory).amount
 func get_total_harvest_count()->int: return data.progress.total_harvest_count
 func migrate_legacy_state(legacy_state:String, remaining_seconds:float)->bool:
     if data==null or not buildings.is_building_completed("carrot_farm"): return false

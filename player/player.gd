@@ -29,6 +29,11 @@ var building_interaction_manager := BuildingInteractionManager.new()
 var farm_manager := FarmManager.new()
 var notice_manager := NoticeManager.new()
 var village_history_manager := VillageHistoryManager.new()
+var inventory_manager := InventoryManager.new()
+var currency_manager := CurrencyManager.new()
+var reward_manager := RewardManager.new()
+var life_event_manager := LifeEventManager.new()
+var food_manager := FoodManager.new()
 var village_data: VillageData
 var _save_requested := false
 var _home_tick_elapsed := 0.0
@@ -53,7 +58,7 @@ func _ready() -> void:
 
 
 func _attach_system_managers() -> void:
-	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager]:
+	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager, inventory_manager, currency_manager, reward_manager, life_event_manager, food_manager]:
 		add_child(manager)
 
 
@@ -62,14 +67,20 @@ func load_game_state() -> void:
 	rabbit_data = save_manager.load_or_create(
 		RabbitData.new(rabbit_name, initial_hunger, initial_mood, initial_energy)
 	)
-	activity_manager.setup(rabbit_data)
 	growth_manager.setup(rabbit_data)
 	village_data = VillageData.from_dict(rabbit_data.village_data)
+	inventory_manager.setup({"carrot": village_data.carrot_inventory})
+	currency_manager.setup()
+	life_event_manager.setup(inventory_manager, growth_manager, village_event_manager)
+	reward_manager.setup(inventory_manager, currency_manager)
+	activity_manager.setup(rabbit_data, reward_manager, life_event_manager, growth_manager)
+	rabbit_manager.setup(rabbit_data)
+	food_manager.setup(inventory_manager, rabbit_data, activity_manager, life_event_manager, growth_manager, village_event_manager)
 	village_manager.setup(village_data)
 	building_manager.setup(village_data)
 	construction_manager.setup(village_data, building_manager, village_manager)
 	village_event_manager.setup(village_data, rabbit_data, building_manager, growth_manager)
-	farm_manager.setup(village_data, building_manager, village_manager)
+	farm_manager.setup(village_data, building_manager, village_manager, inventory_manager)
 	building_interaction_manager.setup(village_data, rabbit_data, activity_manager, building_manager, village_manager, growth_manager, village_event_manager)
 	notice_manager.setup(village_data, village_manager, building_manager, construction_manager, farm_manager, growth_manager)
 	village_history_manager.setup(village_data)
@@ -99,6 +110,7 @@ func _connect_system_signals() -> void:
 	rabbit_data.data_changed.connect(_on_data_changed)
 	diary_manager.journal_added.connect(func(_entry: JournalEntry) -> void: _request_save())
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
+	inventory_manager.inventory_changed.connect(func(_item_id: String, _old_amount: int, _new_amount: int, _source_type: String, _source_id: String) -> void: life_event_manager.check_life_events())
 
 
 func _restore_pending_system_state() -> void:
@@ -254,6 +266,13 @@ func harvest_carrots() -> HarvestResult: return farm_manager.harvest_carrots()
 func get_carrot_amount() -> int: return farm_manager.get_carrot_amount()
 func get_total_harvest_count() -> int: return farm_manager.get_total_harvest_count()
 func get_current_farm_cycle() -> FarmCycleData: return farm_manager.get_current_farm_cycle()
+func can_eat_carrot() -> bool: return food_manager.can_eat_carrot()
+func eat_carrot() -> FoodUseResult: return food_manager.eat_carrot()
+func get_item_amount(item_id: String) -> int: return inventory_manager.get_item_amount(item_id)
+func get_coin_amount() -> int: return currency_manager.get_coin_amount()
+func has_pending_life_event() -> bool: return life_event_manager.has_pending_life_event()
+func get_pending_life_event() -> LifeEventData: return life_event_manager.get_pending_life_event()
+func confirm_life_event(event_id: String) -> LifeEventResult: return life_event_manager.confirm_life_event(event_id)
 
 func save_today_notice(record: DailyNoticeRecord) -> bool:
 	var ok := notice_manager.save_today_notice(record)
