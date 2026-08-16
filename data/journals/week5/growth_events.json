@@ -1,0 +1,16 @@
+{
+  "templates": {
+    "growth_leaf_mark_001": {
+      "title": "森林留下的第一個記號",
+      "content": "{rabbit_name} 的森林生活留下了第一個明顯的成長記號。"
+    },
+    "growth_sprout_mark_001": {
+      "title": "森林成長到下一步",
+      "content": "{rabbit_name} 在森林累積的經驗，讓耳旁的成長記號進入了新的階段。"
+    },
+    "growth_lake_interest_001": {
+      "title": "湖畔成為生活的一部分",
+      "content": "{rabbit_name} 對湖畔的興趣不再只是偶然，新的成長路線就這樣開始了。"
+    }
+  }
+}

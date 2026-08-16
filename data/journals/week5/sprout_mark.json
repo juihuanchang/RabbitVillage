@@ -1,0 +1,33 @@
+{
+  "special": {
+    "title": "嫩芽長出來了",
+    "content": "{rabbit_name} 耳朵旁的小葉子又有了新的變化，一點嫩芽悄悄冒了出來。森林留下的痕跡，正在陪著 {rabbit_name} 一起成長。",
+    "illustration_id": "sprout_mark"
+  },
+  "general": [
+    {
+      "title": "嫩芽迎著光",
+      "content": "{rabbit_name} 走過有陽光的地方時，耳邊的嫩芽也跟著亮了起來。"
+    },
+    {
+      "title": "森林裡的新模樣",
+      "content": "回到森林時，{rabbit_name} 耳旁的嫩芽看起來和周圍的綠意格外相襯。"
+    },
+    {
+      "title": "嫩芽輕輕晃著",
+      "content": "風吹過來，{rabbit_name} 耳邊的嫩芽跟著輕輕晃了幾下。"
+    },
+    {
+      "title": "又走進森林",
+      "content": "{rabbit_name} 帶著已經長出的嫩芽再次走進森林，好像比以前更熟悉這裡了。"
+    },
+    {
+      "title": "成長留下的記號",
+      "content": "嫩芽一直留在 {rabbit_name} 身邊，提醒著那些在森林裡累積起來的日子。"
+    },
+    {
+      "title": "今天的嫩芽也很好",
+      "content": "沒有新的大變化，但 {rabbit_name} 耳旁的嫩芽依舊好好地長著。"
+    }
+  ]
+}

@@ -7,7 +7,11 @@ signal entries_changed
 var _entries: Array[GrowthAlbumEntry] = []
 
 func add_album_entry(entry: GrowthAlbumEntry) -> bool:
-	if entry == null or not entry.is_valid() or has_entry_for_growth_mark(entry.growth_mark_id):
+	if entry == null or not entry.is_valid():
+		return false
+	if has_entry_for_growth_mark(entry.growth_mark_id):
+		return false
+	if _is_week5_event_entry(entry) and has_entry_for_growth_event(_event_id_from_album_id(entry.id)):
 		return false
 	_entries.append(entry)
 	sort_by_unlocked_time()
@@ -15,20 +19,63 @@ func add_album_entry(entry: GrowthAlbumEntry) -> bool:
 	entries_changed.emit()
 	return true
 
+func add_week5_growth_entry(
+	growth_mark_id: String,
+	growth_event_id: String,
+	title: String,
+	description: String,
+	growth_path: String,
+	stage: int,
+	unlocked_at: float,
+	journal_id: String,
+	illustration_id: String = ""
+) -> bool:
+	if growth_mark_id.is_empty() or growth_event_id.is_empty():
+		return false
+	if has_entry_for_growth_mark(growth_mark_id) or has_entry_for_growth_event(growth_event_id):
+		return false
+	var entry := GrowthAlbumEntry.new(
+		"album_event_%s" % growth_event_id,
+		growth_mark_id,
+		title,
+		description,
+		growth_path,
+		stage,
+		unlocked_at,
+		journal_id,
+		illustration_id
+	)
+	return add_album_entry(entry)
+
 func get_all_entries() -> Array[GrowthAlbumEntry]:
 	var result: Array[GrowthAlbumEntry] = []
 	result.assign(_entries)
-	result.sort_custom(func(a: GrowthAlbumEntry, b: GrowthAlbumEntry) -> bool: return a.unlocked_at > b.unlocked_at)
+	result.sort_custom(func(a: GrowthAlbumEntry, b: GrowthAlbumEntry) -> bool:
+		return a.unlocked_at > b.unlocked_at
+	)
 	return result
 
 func has_entry_for_growth_mark(growth_mark_id: String) -> bool:
+	if growth_mark_id.is_empty():
+		return false
 	for entry: GrowthAlbumEntry in _entries:
 		if entry.growth_mark_id == growth_mark_id:
 			return true
 	return false
 
+func has_entry_for_growth_event(growth_event_id: String) -> bool:
+	if growth_event_id.is_empty():
+		return false
+	var expected_id := "album_event_%s" % growth_event_id
+	for entry: GrowthAlbumEntry in _entries:
+		if entry.id == expected_id:
+			return true
+	return false
+
 func sort_by_unlocked_time() -> void:
-	_entries.sort_custom(func(a: GrowthAlbumEntry, b: GrowthAlbumEntry) -> bool: return a.unlocked_at > b.unlocked_at)
+	_entries.sort_custom(func(a: GrowthAlbumEntry, b: GrowthAlbumEntry) -> bool:
+		return a.unlocked_at > b.unlocked_at
+	)
 
 func clear_entries() -> void:
 	_entries.clear()
@@ -43,9 +90,19 @@ func to_array() -> Array[Dictionary]:
 func load_from_array(data: Array) -> void:
 	_entries.clear()
 	for raw: Variant in data:
-		if raw is Dictionary:
-			var entry := GrowthAlbumEntry.from_dict(raw)
-			if entry.is_valid() and not has_entry_for_growth_mark(entry.growth_mark_id):
-				_entries.append(entry)
+		if not (raw is Dictionary):
+			continue
+		var entry := GrowthAlbumEntry.from_dict(raw)
+		if not entry.is_valid() or has_entry_for_growth_mark(entry.growth_mark_id):
+			continue
+		if _is_week5_event_entry(entry) and has_entry_for_growth_event(_event_id_from_album_id(entry.id)):
+			continue
+		_entries.append(entry)
 	sort_by_unlocked_time()
 	entries_changed.emit()
+
+func _is_week5_event_entry(entry: GrowthAlbumEntry) -> bool:
+	return entry != null and entry.id.begins_with("album_event_")
+
+func _event_id_from_album_id(album_id: String) -> String:
+	return album_id.trim_prefix("album_event_")

@@ -1,0 +1,33 @@
+{
+  "special": {
+    "title": "開始在意湖畔了",
+    "content": "{rabbit_name} 在湖邊停留得比以前更久。水面的光、風和安靜的聲音，好像都開始變成牠在意的事。",
+    "illustration_id": "lakeside_interest"
+  },
+  "general": [
+    {
+      "title": "又去湖邊看看",
+      "content": "{rabbit_name} 今天又走到湖邊，什麼都不做也願意多待一會兒。"
+    },
+    {
+      "title": "湖面的光",
+      "content": "{rabbit_name} 看著湖面一閃一閃的光，像是在找什麼只有牠知道的東西。"
+    },
+    {
+      "title": "熟悉的湖風",
+      "content": "湖邊的風一吹過來，{rabbit_name} 就安靜了下來。這裡已經慢慢變成熟悉的地方。"
+    },
+    {
+      "title": "湖畔的小停留",
+      "content": "{rabbit_name} 路過湖邊時停了一下。短短的停留，也成了今天的一段生活。"
+    },
+    {
+      "title": "喜歡上的風景",
+      "content": "以前只是來活動的湖邊，現在似乎成了 {rabbit_name} 真正喜歡的風景。"
+    },
+    {
+      "title": "今天也看看湖",
+      "content": "{rabbit_name} 在湖邊坐了一會兒，看著水面發呆。這樣就已經很舒服。"
+    }
+  ]
+}

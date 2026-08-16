@@ -1,0 +1,18 @@
+{
+  "life_leaf_collection_001": {
+    "title": "葉子的收藏盒",
+    "content": "{rabbit_name} 已經收集了不少葉子。原本零散的小發現，現在真的像一個小小收藏了。"
+  },
+  "life_twig_collection_001": {
+    "title": "樹枝越來越多了",
+    "content": "{rabbit_name} 把收集到的小樹枝整理在一起。一路走過森林的痕跡，好像都留在這裡。"
+  },
+  "life_stone_collection_001": {
+    "title": "小石頭收藏",
+    "content": "{rabbit_name} 的小石頭已經不只一顆了。每一顆形狀都不一樣，像各自有自己的故事。"
+  },
+  "life_driftwood_collection_001": {
+    "title": "湖畔留下的痕跡",
+    "content": "漂流木慢慢累積起來，{rabbit_name} 的收藏也開始有了屬於湖畔的一角。"
+  }
+}

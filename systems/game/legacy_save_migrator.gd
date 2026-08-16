@@ -155,3 +155,79 @@ static func _clear_snapshot(player: Variant) -> void:
 
 static func _slot_id_from_index(index: int) -> String:
 	return "Slot%02d" % (clampi(index, 0, 8) + 1)
+
+
+## Week 4 (SaveVersion 5) -> Week 5 permanent resource migration.
+## This function only moves/repairs stored data. It never grants a runtime reward.
+static func migrate_week4_to_week5(save: SaveData) -> SaveData:
+	if save == null:
+		return null
+	_migrate_carrot_inventory_once(save)
+	_migrate_growth_path_progress(save)
+	return save
+
+
+static func _migrate_carrot_inventory_once(save: SaveData) -> void:
+	# If Week 5 already has a valid carrot entry, never copy the legacy value again.
+	if save.inventory.has("carrot") and save.inventory["carrot"] is Dictionary:
+		var current := InventoryEntry.from_dict(save.inventory["carrot"])
+		current.item_id = "carrot"
+		current.amount = maxi(0, current.amount)
+		current.total_obtained = maxi(current.amount, current.total_obtained)
+		save.inventory["carrot"] = current.to_dict()
+		return
+
+	var village := VillageData.from_dict(save.village_data)
+	var legacy := CarrotInventoryEntry.from_dict(village.carrot_inventory)
+	if legacy.amount <= 0 and legacy.total_obtained <= 0:
+		return
+	var migrated := InventoryEntry.new()
+	migrated.item_id = "carrot"
+	migrated.amount = maxi(0, legacy.amount)
+	migrated.total_obtained = maxi(migrated.amount, legacy.total_obtained)
+	migrated.first_obtained_at = maxf(0.0, legacy.first_obtained_at)
+	migrated.last_obtained_at = maxf(0.0, legacy.last_obtained_at)
+	save.inventory["carrot"] = migrated.to_dict()
+
+	# Collection keeps discovery-only information; it intentionally does not copy amount.
+	var has_carrot_collection := false
+	for raw: Dictionary in save.item_collection:
+		if str(raw.get("item_id", "")) == "carrot":
+			has_carrot_collection = true
+			break
+	if not has_carrot_collection and migrated.total_obtained > 0:
+		save.item_collection.append({
+			"item_id": "carrot",
+			"is_discovered": true,
+			"first_obtained_at": migrated.first_obtained_at,
+			"first_source_type": "week4_migration",
+			"first_source_id": "legacy_carrot_inventory"
+		})
+
+
+static func _migrate_growth_path_progress(save: SaveData) -> void:
+	var forest_stage := maxi(0, int(save.growth_path_progress.get("forest_stage", 0)))
+	var lakeside_stage := maxi(0, int(save.growth_path_progress.get("lakeside_stage", 0)))
+	if _save_has_growth_mark(save, "leaf_mark"):
+		forest_stage = maxi(forest_stage, 1)
+	if _save_has_growth_mark(save, "sprout_mark"):
+		forest_stage = maxi(forest_stage, 2)
+	if _save_has_growth_mark(save, "lake_interest") or _save_has_growth_event(save, "growth_lake_interest_001"):
+		lakeside_stage = maxi(lakeside_stage, 1)
+	save.growth_path_progress["forest_stage"] = forest_stage
+	save.growth_path_progress["lakeside_stage"] = lakeside_stage
+	# FishingExperience / FishingCount are deliberately not touched here.
+
+
+static func _save_has_growth_mark(save: SaveData, mark_id: String) -> bool:
+	for raw: Dictionary in save.unlocked_growth_marks:
+		if str(raw.get("id", "")) == mark_id:
+			return true
+	return false
+
+
+static func _save_has_growth_event(save: SaveData, event_id: String) -> bool:
+	for raw: Dictionary in save.journals:
+		if str(raw.get("growth_event_id", "")) == event_id:
+			return true
+	return false

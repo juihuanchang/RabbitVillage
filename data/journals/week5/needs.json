@@ -1,0 +1,58 @@
+{
+  "very_hungry": [
+    {
+      "title": "肚子咕嚕咕嚕",
+      "content": "{rabbit_name} 的肚子已經開始抗議了，看來真的該找點東西吃。"
+    },
+    {
+      "title": "好像真的餓了",
+      "content": "{rabbit_name} 一直往食物的方向看，今天的肚子特別有存在感。"
+    },
+    {
+      "title": "先補充一點體力吧",
+      "content": "{rabbit_name} 顯得有些沒力，肚子空空的時候連走路都慢了一點。"
+    }
+  ],
+  "very_tired": [
+    {
+      "title": "眼皮有點重",
+      "content": "{rabbit_name} 的動作慢了下來，看起來很需要找個地方休息。"
+    },
+    {
+      "title": "今天有點累",
+      "content": "{rabbit_name} 安靜地坐了一會兒，像是在把今天消耗的力氣慢慢補回來。"
+    },
+    {
+      "title": "想休息一下",
+      "content": "{rabbit_name} 打了個小小的哈欠，今天也許不用把每件事都做完。"
+    }
+  ],
+  "very_happy": [
+    {
+      "title": "今天心情很好",
+      "content": "{rabbit_name} 看起來特別開心，走到哪裡都帶著輕快的樣子。"
+    },
+    {
+      "title": "藏不住的好心情",
+      "content": "{rabbit_name} 今天連耳朵都像比平常更有精神，村莊裡好像也跟著明亮了一點。"
+    },
+    {
+      "title": "開心的一天",
+      "content": "沒有特別大的事情發生，但 {rabbit_name} 就是心情很好。這樣的日子也值得記住。"
+    }
+  ],
+  "low_mood": [
+    {
+      "title": "今天安靜了一點",
+      "content": "{rabbit_name} 今天沒有平常那麼有精神，只想安靜待著。"
+    },
+    {
+      "title": "有點悶悶的",
+      "content": "{rabbit_name} 看起來心情低低的，也許陪在旁邊就已經很好。"
+    },
+    {
+      "title": "慢慢來就好",
+      "content": "今天的 {rabbit_name} 不太想做太多事。偶爾有這種時候，也沒關係。"
+    }
+  ]
+}

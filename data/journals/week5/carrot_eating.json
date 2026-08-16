@@ -1,0 +1,41 @@
+{
+  "first_use": {
+    "title": "第一次吃胡蘿蔔",
+    "content": "{rabbit_name} 小心地咬下第一口胡蘿蔔，耳朵跟著輕輕晃了一下。這是村莊生活裡第一個小小的餵食回憶。",
+    "illustration_id": "carrot_first_bite"
+  },
+  "general": [
+    {
+      "title": "今天的胡蘿蔔很脆",
+      "content": "{rabbit_name} 咬著胡蘿蔔，清脆的聲音一下又一下，看起來吃得很滿足。"
+    },
+    {
+      "title": "一口一口慢慢吃",
+      "content": "{rabbit_name} 抱著胡蘿蔔慢慢啃，像是在認真品嚐今天的味道。"
+    },
+    {
+      "title": "胡蘿蔔補給時間",
+      "content": "肚子有點空的 {rabbit_name} 收到一根胡蘿蔔，很快就恢復了一點精神。"
+    },
+    {
+      "title": "橘色的小點心",
+      "content": "{rabbit_name} 看見胡蘿蔔時眼睛亮了一下，今天的點心依然很受歡迎。"
+    },
+    {
+      "title": "吃飽一點再出發",
+      "content": "{rabbit_name} 把胡蘿蔔吃完，肚子舒服多了，等等又能繼續探索村莊。"
+    },
+    {
+      "title": "熟悉的胡蘿蔔香",
+      "content": "熟悉的胡蘿蔔味讓 {rabbit_name} 放鬆下來，這已經成了生活裡普通又安心的一刻。"
+    },
+    {
+      "title": "先填飽肚子",
+      "content": "{rabbit_name} 暫時停下手邊的事，專心把胡蘿蔔吃完，肚子終於不再空空的。"
+    },
+    {
+      "title": "今天也有好好吃飯",
+      "content": "{rabbit_name} 今天也有好好吃下一根胡蘿蔔。平凡的小事，慢慢累積成生活。"
+    }
+  ]
+}
