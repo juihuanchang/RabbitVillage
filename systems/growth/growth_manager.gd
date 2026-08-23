@@ -67,10 +67,21 @@ func _location_count(location_id: String) -> int:
 
 func check_sprout_mark_condition() -> bool:
 	return _rabbit != null and has_growth_mark("leaf_mark") and not has_growth_mark("sprout_mark") \
-		and _rabbit.forest_experience >= 35 and _rabbit.forest_activity_count >= 5 and _activity_count("forest_explore") >= 2
+		and not _has_completed_growth_event("growth_sprout_mark_001") \
+		and _rabbit.forest_experience >= 60 and _rabbit.forest_activity_count >= 8 \
+		and _activity_count("forest_explore") >= 3 and _rabbit.intimacy >= 10
 func check_lakeside_interest_condition() -> bool:
-	return _rabbit != null and not has_growth_mark("lake_interest") and _rabbit.fishing_experience >= 20 \
-		and _activity_count("fishing") >= 3 and _location_count("lake") >= 4
+	return _rabbit != null and not has_growth_mark("lake_interest") \
+		and not _has_completed_growth_event("growth_lake_interest_001") \
+		and _rabbit.fishing_experience >= 40 and _activity_count("fishing") >= 5 \
+		and _location_count("lake") >= 7 and _rabbit.intimacy >= 8
+
+func _has_completed_growth_event(event_id: String) -> bool:
+	if event_id == "growth_sprout_mark_001":
+		return has_growth_mark("sprout_mark")
+	if event_id == "growth_lake_interest_001":
+		return has_growth_mark("lake_interest")
+	return false
 
 func check_growth_path_events() -> GrowthEventData:
 	if has_pending_growth_event(): return get_pending_growth_event()
