@@ -19,8 +19,8 @@ static func from_dict(data: Dictionary) -> GrowthEventData:
 	event.content = str(data.get("content", "")); event.triggered_at = float(data.get("triggered_at", 0.0))
 	event.is_confirmed = bool(data.get("is_confirmed", false)); event.is_applied = bool(data.get("is_applied", false)); return event
 
-static func create(event_id: String, mark_id: String) -> GrowthEventData:
-	var event := GrowthEventData.new(); event.event_id = event_id; event.growth_mark_id = mark_id
+static func create(new_event_id: String, mark_id: String) -> GrowthEventData:
+	var event := GrowthEventData.new(); event.event_id = new_event_id; event.growth_mark_id = mark_id
 	event.triggered_at = TimeManager.get_now(); return event
 
 static func create_leaf_event() -> GrowthEventData: return create("growth_leaf_mark_001", "leaf_mark")

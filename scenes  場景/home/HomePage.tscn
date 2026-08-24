@@ -4,7 +4,9 @@
 [ext_resource type="PackedScene" uid="uid://bqx8n2k7p4mwr" path="res://player/Player.tscn" id="2_6uq7s"]
 [ext_resource type="Texture2D" uid="uid://cann1skmc44sg" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/底圖.png" id="2_inkar"]
 [ext_resource type="Script" uid="uid://bexhx6mnb13op" path="res://scenes  場景/home/week3_a_ui.gd" id="5_2si26"]
+[ext_resource type="Script" uid="uid://cdvoa0ogb8q0i" path="res://scenes  場景/home/week5_a_ui.gd" id="6_qsqyk"]
 [ext_resource type="Script" uid="uid://djq2rkd8u0s17" path="res://scenes  場景/home/week4_a_ui.gd" id="6_we17s"]
+[ext_resource type="Script" path="res://scenes  場景/home/week6_a_ui.gd" id="7_week6"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
 script = ExtResource("1_inkar")
@@ -380,34 +382,40 @@ tooltip_text = "展開 Amy 資訊"
 theme_override_font_sizes/font_size = 28
 text = "☰"
 
-[node name="Week4BuildSlots" type="Node2D" parent="."]
+[node name="Week4BuildSlots" type="Node2D" parent="." unique_id=171999871]
 
-[node name="Slot01" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot01" type="Marker2D" parent="Week4BuildSlots" unique_id=94899974]
 position = Vector2(649, 112)
 
-[node name="Slot02" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot02" type="Marker2D" parent="Week4BuildSlots" unique_id=1260660692]
 position = Vector2(1359, 148)
 
-[node name="Slot03" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot03" type="Marker2D" parent="Week4BuildSlots" unique_id=39241299]
 position = Vector2(127, 439)
 
-[node name="Slot04" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot04" type="Marker2D" parent="Week4BuildSlots" unique_id=1913422782]
 position = Vector2(520, 458)
 
-[node name="Slot05" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot05" type="Marker2D" parent="Week4BuildSlots" unique_id=2140173459]
 position = Vector2(811, 439)
 
-[node name="Slot06" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot06" type="Marker2D" parent="Week4BuildSlots" unique_id=443168463]
 position = Vector2(1280, 465)
 
-[node name="Slot07" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot07" type="Marker2D" parent="Week4BuildSlots" unique_id=468435545]
 position = Vector2(378, 764)
 
-[node name="Slot08" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot08" type="Marker2D" parent="Week4BuildSlots" unique_id=1966899040]
 position = Vector2(860, 758)
 
-[node name="Slot09" type="Marker2D" parent="Week4BuildSlots"]
+[node name="Slot09" type="Marker2D" parent="Week4BuildSlots" unique_id=348805924]
 position = Vector2(1140, 741)
 
 [node name="Week4AUI" type="Node" parent="." unique_id=1472467627]
 script = ExtResource("6_we17s")
+
+[node name="Week5AUI" type="Node" parent="." unique_id=238999449]
+script = ExtResource("6_qsqyk")
+
+[node name="Week6AUI" type="Node" parent="."]
+script = ExtResource("7_week6")

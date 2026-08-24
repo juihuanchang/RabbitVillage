@@ -129,10 +129,19 @@ func _signed_value(value: int) -> String:
 	return "+%d" % value if value >= 0 else str(value)
 
 
+func _activity_rejection_text(reason: String) -> String:
+	match reason:
+		"too_hungry": return "Amy 現在太餓了，先讓牠吃點東西吧。"
+		"too_tired": return "Amy 現在有點累，先讓牠休息一下吧。"
+		"already_active": return "Amy 已經在進行其他活動了。"
+		"invalid_activity": return "找不到這個活動。"
+		_: return reason if not reason.is_empty() else "現在無法開始活動。"
+
+
 func _open_activity_popup(activity_id: String) -> void:
 	var check := player.activity_manager.can_start_activity(activity_id)
 	if not bool(check.get("ok", false)):
-		_show_toast(str(check.get("reason", "無法開始活動")))
+		_show_toast(_activity_rejection_text(str(check.get("reason", ""))))
 		return
 	var activity := player.activity_manager.get_activity(activity_id)
 	if activity == null:
@@ -164,8 +173,8 @@ func _open_activity_popup(activity_id: String) -> void:
 func _start_selected_activity() -> void:
 	var result := player.start_activity(_selected_activity_id)
 	if not bool(result.get("ok", false)):
-		popup_message.text = str(result.get("reason", "無法開始活動"))
-		start_button.disabled = result.get("reason", "") == "體力不足"
+		popup_message.text = _activity_rejection_text(str(result.get("reason", "")))
+		start_button.disabled = str(result.get("reason", "")) in ["too_hungry", "too_tired", "already_active"]
 		return
 	popup.hide()
 	var started_activity := player.activity_manager.get_activity(_selected_activity_id)

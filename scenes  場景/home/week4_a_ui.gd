@@ -86,7 +86,7 @@ func _show_first_village_event() -> void:
 		func(): pass
 	)
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var now := Time.get_unix_time_from_system()
 	var formal_player := _player()
 	if formal_player != null and formal_player.has_active_construction():

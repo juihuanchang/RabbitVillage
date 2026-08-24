@@ -346,8 +346,8 @@ static func _has_growth_mark(marks: Array[Dictionary], mark_id: String) -> bool:
 			return true
 	return false
 
-static func _has_growth_event_journal(journals: Array[Dictionary], event_id: String) -> bool:
-	for journal: Dictionary in journals:
+static func _has_growth_event_journal(journal_entries: Array[Dictionary], event_id: String) -> bool:
+	for journal: Dictionary in journal_entries:
 		if str(journal.get("growth_event_id", "")) == event_id:
 			return true
 	return false

@@ -131,7 +131,11 @@ func confirm_growth_event(event_id: String) -> bool:
 	var new_stage := get_forest_growth_stage() if path == "forest" else get_lakeside_growth_stage()
 	event.is_confirmed = true; event.is_applied = true; _progress.last_updated_at = TimeManager.get_now(); _rabbit.pending_growth_event = {}
 	growth_mark_unlocked.emit(_marks[event.growth_mark_id], event); growth_path_updated.emit(path, old_stage, new_stage, event.event_id)
-	growth_event_confirmed.emit(event); growth_progress_changed.emit(); return true
+	growth_event_confirmed.emit(event)
+	growth_progress_changed.emit()
+	# 若森林與湖畔條件同時成立，確認目前事件後自動建立下一個 pending。
+	call_deferred("check_growth_path_events")
+	return true
 
 func get_forest_growth_stage() -> int: return _progress.forest_stage
 func get_lakeside_growth_stage() -> int: return _progress.lakeside_stage

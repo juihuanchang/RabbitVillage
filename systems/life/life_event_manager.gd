@@ -55,7 +55,10 @@ func confirm_life_event(event_id: String) -> LifeEventResult:
 	event.confirmed_at = TimeManager.get_now(); _pending_event_id = ""
 	var result := LifeEventResult.new(); result.event_id = event_id
 	result.confirmed_at = event.confirmed_at; result.is_applied = true
-	life_event_confirmed.emit(result); return result
+	life_event_confirmed.emit(result)
+	# 已達標的其他生活事件會在目前確認流程結束後依序排入，不必等待下一次物品變動。
+	call_deferred("check_life_events")
+	return result
 
 func has_completed_life_event(event_id: String) -> bool:
 	var event := _events.get(event_id) as LifeEventData

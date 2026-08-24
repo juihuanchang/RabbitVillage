@@ -1,6 +1,8 @@
 class_name SaveManager
 extends Node
 
+signal save_failed(message: String)
+
 const SAVE_PATH := "user://save.json"
 const SAVE_BACKUP_PATH := "user://save_backup.json"
 const SAVE_TEMP_PATH := "user://save_temp.json"
@@ -78,6 +80,8 @@ func save_game() -> bool:
 	var ok := _write(save)
 	if ok:
 		_loaded_save = save
+	else:
+		save_failed.emit("存檔失敗，請確認儲存空間或檔案權限。")
 	return ok
 
 func load_or_create(default_rabbit: RabbitData) -> RabbitData:

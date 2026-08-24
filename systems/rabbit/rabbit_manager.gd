@@ -34,23 +34,23 @@ func clear_rabbits() -> void:
 
 func get_hunger_state() -> String:
 	var value := _current_rabbit.hunger if _current_rabbit != null else 0
-	if value < 15: return "critical"
+	if value < 20: return "critical"
 	if value < 40: return "low"
-	if value < 75: return "normal"
+	if value < 80: return "normal"
 	return "full"
 
 func get_energy_state() -> String:
 	var value := _current_rabbit.energy if _current_rabbit != null else 0
-	if value < 15: return "critical"
-	if value < 40: return "low"
-	if value < 75: return "normal"
+	if value < 10: return "critical"
+	if value < 30: return "low"
+	if value < 70: return "normal"
 	return "high"
 
 func get_mood_state() -> String:
 	var value := _current_rabbit.mood if _current_rabbit != null else 0
-	if value < 15: return "critical"
+	if value < 20: return "critical"
 	if value < 40: return "low"
-	if value < 75: return "normal"
+	if value < 70: return "normal"
 	return "happy"
 
 func get_overall_need_state() -> String:

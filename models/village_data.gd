@@ -140,18 +140,18 @@ static func _sanitize_construction(raw: Dictionary) -> Dictionary:
     return result
 
 static func _sanitize_farm(raw: Dictionary) -> Dictionary:
-    var farm := FarmData.from_dict(raw)
+    var farm_data := FarmData.from_dict(raw)
     var valid_states := [FarmState.LOCKED, FarmState.IDLE, FarmState.GROWING, FarmState.READY]
-    if not valid_states.has(farm.state):
-        farm.state = FarmState.LOCKED
-    if not farm.current_cycle.is_empty():
-        var cycle := FarmCycleData.from_dict(farm.current_cycle)
+    if not valid_states.has(farm_data.state):
+        farm_data.state = FarmState.LOCKED
+    if not farm_data.current_cycle.is_empty():
+        var cycle := FarmCycleData.from_dict(farm_data.current_cycle)
         if cycle.farm_cycle_id.is_empty() or cycle.ready_at < cycle.started_at:
-            farm.current_cycle = {}
-            farm.state = FarmState.IDLE
+            farm_data.current_cycle = {}
+            farm_data.state = FarmState.IDLE
         else:
-            farm.current_cycle = cycle.to_dict()
-    return farm.to_dict()
+            farm_data.current_cycle = cycle.to_dict()
+    return farm_data.to_dict()
 
 static func _copy_dict_array(source: Variant, target: Array[Dictionary]) -> void:
     if not (source is Array):

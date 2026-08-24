@@ -110,6 +110,7 @@ func _connect_system_signals() -> void:
 	rabbit_data.data_changed.connect(_on_data_changed)
 	diary_manager.journal_added.connect(func(_entry: JournalEntry) -> void: _request_save())
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
+	growth_manager.growth_event_confirmed.connect(func(_event: GrowthEventData) -> void: life_event_manager.call_deferred("check_life_events"))
 	inventory_manager.inventory_changed.connect(func(_item_id: String, _old_amount: int, _new_amount: int, _source_type: String, _source_id: String) -> void: life_event_manager.check_life_events())
 
 
@@ -327,7 +328,8 @@ func _on_c_harvested(result: HarvestResult) -> void:
 	if result == null: return
 	diary_manager.generate_harvest_journal(result, rabbit_data.rabbit_name, village_manager.get_village_level())
 	var h := HarvestHistoryEntry.new(); h.harvest_record_id = result.harvest_record_id; h.farm_cycle_id = result.farm_cycle_id; h.harvested_at = result.harvested_at; h.harvest_amount = result.amount; h.is_first_harvest = result.is_first_harvest
-	village_history_manager.add_harvest_history(h); village_history_manager.mark_farm_cycle_harvested(result.farm_cycle_id, result.harvested_at, result.amount); village_history_manager.add_carrots(result.amount, result.harvested_at)
+	village_history_manager.add_harvest_history(h)
+	village_history_manager.mark_farm_cycle_harvested(result.farm_cycle_id, result.harvested_at, result.amount)
 func _on_c_notice_read(notice: DailyNoticeRecord) -> void:
 	if notice == null: return
 	diary_manager.generate_notice_journal(DailyNoticeRecord.from_dict(notice.to_dict()), rabbit_data.rabbit_name, village_manager.get_village_level())

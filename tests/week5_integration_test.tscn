@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://x8qihqbepluo"]
+
+[ext_resource type="Script" uid="uid://gtjfoyun45e" path="res://tests/week5_integration_test.gd" id="1_3382v"]
+
+[node name="Week5IntegrationTest" type="Node" unique_id=64937524]
+script = ExtResource("1_3382v")
