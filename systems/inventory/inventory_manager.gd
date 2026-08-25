@@ -13,6 +13,14 @@ func _init() -> void:
 	_register_item(ItemData.create("twig", "Twig", "material"))
 	_register_item(ItemData.create("small_stone", "Small Stone", "material"))
 	_register_item(ItemData.create("driftwood", "Driftwood", "material"))
+	_register_item(ItemData.create("apple", "Apple", "food", true))
+	_register_item(ItemData.create("bread", "Bread", "food", true))
+	_register_item(ItemData.create("berry_juice", "Berry Juice", "food", true))
+	_register_item(ItemData.create("small_snack", "Small Snack", "food", true))
+	_register_item(ItemData.create("carrot_sandwich", "Carrot Sandwich", "cooked_food", true))
+	_register_item(ItemData.create("forest_salad", "Forest Salad", "cooked_food", true))
+	_register_item(ItemData.create("berry_toast", "Berry Toast", "cooked_food", true))
+	_register_item(ItemData.create("picnic_snack", "Picnic Snack", "cooked_food", true))
 
 func setup(saved_entries: Dictionary = {}) -> void:
 	for item_id: String in saved_entries:
@@ -50,6 +58,13 @@ func remove_item(item_id: String, amount: int, source_type: String, source_id: S
 	var entry := _entries.get(item_id) as InventoryEntry
 	if entry == null or amount <= 0 or entry.amount < amount: return false
 	var old_amount := entry.amount; entry.amount -= amount
+	inventory_changed.emit(item_id, old_amount, entry.amount, source_type, source_id); return true
+
+## Transaction rollback only restores current amount; it must not increase total_obtained.
+func rollback_removed_item(item_id: String, amount: int, source_type: String, source_id: String) -> bool:
+	var entry := _entries.get(item_id) as InventoryEntry
+	if entry == null or amount <= 0: return false
+	var old_amount := entry.amount; entry.amount += amount
 	inventory_changed.emit(item_id, old_amount, entry.amount, source_type, source_id); return true
 
 func get_items_by_category(category: String) -> Array[InventoryEntry]:

@@ -21,3 +21,8 @@ func spend_coins(amount: int, source_type: String, source_id: String) -> bool:
 	if amount <= 0 or not can_spend_coins(amount): return false
 	var old_amount := data.amount; data.amount -= amount; data.total_spent += amount
 	currency_changed.emit(old_amount, data.amount, source_type, source_id); return true
+
+func rollback_spend(amount: int, source_type: String, source_id: String) -> bool:
+	if amount <= 0 or data.total_spent < amount: return false
+	var old_amount := data.amount; data.amount += amount; data.total_spent -= amount
+	currency_changed.emit(old_amount, data.amount, source_type, source_id); return true

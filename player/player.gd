@@ -34,6 +34,10 @@ var currency_manager := CurrencyManager.new()
 var reward_manager := RewardManager.new()
 var life_event_manager := LifeEventManager.new()
 var food_manager := FoodManager.new()
+var daily_shop_manager := DailyShopManager.new()
+var shop_manager := ShopManager.new()
+var cooking_manager := CookingManager.new()
+var life_location_manager := LifeLocationManager.new()
 var village_data: VillageData
 var _save_requested := false
 var _home_tick_elapsed := 0.0
@@ -58,7 +62,7 @@ func _ready() -> void:
 
 
 func _attach_system_managers() -> void:
-	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager, inventory_manager, currency_manager, reward_manager, life_event_manager, food_manager]:
+	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager, inventory_manager, currency_manager, reward_manager, life_event_manager, food_manager, daily_shop_manager, shop_manager, cooking_manager, life_location_manager]:
 		add_child(manager)
 
 
@@ -76,6 +80,11 @@ func load_game_state() -> void:
 	activity_manager.setup(rabbit_data, reward_manager, life_event_manager, growth_manager)
 	rabbit_manager.setup(rabbit_data)
 	food_manager.setup(inventory_manager, rabbit_data, activity_manager, life_event_manager, growth_manager, village_event_manager)
+	shop_manager.setup(inventory_manager, currency_manager, daily_shop_manager)
+	cooking_manager.setup(inventory_manager)
+	life_location_manager.setup(rabbit_data, food_manager)
+	life_event_manager.setup_week6(shop_manager, cooking_manager, life_location_manager, food_manager)
+	shop_manager.refresh_product_unlocks(rabbit_data.mood, life_event_manager.get_completed_event_ids())
 	village_manager.setup(village_data)
 	building_manager.setup(village_data)
 	construction_manager.setup(village_data, building_manager, village_manager)
@@ -112,6 +121,12 @@ func _connect_system_signals() -> void:
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
 	growth_manager.growth_event_confirmed.connect(func(_event: GrowthEventData) -> void: life_event_manager.call_deferred("check_life_events"))
 	inventory_manager.inventory_changed.connect(func(_item_id: String, _old_amount: int, _new_amount: int, _source_type: String, _source_id: String) -> void: life_event_manager.check_life_events())
+	shop_manager.purchase_completed.connect(func(_result: PurchaseResult) -> void: life_event_manager.check_life_events(); _request_save())
+	cooking_manager.cooking_completed.connect(func(_result: CookingResult) -> void: life_event_manager.check_life_events(); _request_save())
+	life_location_manager.life_location_activity_completed.connect(func(_result: LifeLocationResult) -> void: life_event_manager.check_life_events(); _request_save())
+	daily_shop_manager.daily_shop_refreshed.connect(func(_day: String, _offers: Array[DailyShopOfferData]) -> void: _request_save())
+	shop_manager.product_unlocked.connect(func(_product: ShopProductData) -> void: _request_save())
+	cooking_manager.recipe_unlocked.connect(func(_recipe: RecipeData) -> void: _request_save())
 
 
 func _restore_pending_system_state() -> void:
@@ -271,6 +286,18 @@ func can_eat_carrot() -> bool: return food_manager.can_eat_carrot()
 func eat_carrot() -> FoodUseResult: return food_manager.eat_carrot()
 func get_item_amount(item_id: String) -> int: return inventory_manager.get_item_amount(item_id)
 func get_coin_amount() -> int: return currency_manager.get_coin_amount()
+func get_shop_catalog() -> ShopCatalogData: return shop_manager.get_catalog()
+func get_daily_shop_offers() -> Array[DailyShopOfferData]: return daily_shop_manager.get_daily_offers()
+func can_purchase(product_id: String, quantity: int) -> Dictionary: return shop_manager.can_purchase(product_id, quantity)
+func purchase(product_id: String, quantity: int) -> PurchaseResult: return shop_manager.purchase(product_id, quantity)
+func get_purchase_price(product_id: String, quantity: int) -> int: return shop_manager.get_purchase_price(product_id, quantity)
+func get_recipes() -> Array[RecipeData]: return cooking_manager.get_recipes()
+func get_unlocked_recipes() -> Array[RecipeData]: return cooking_manager.get_unlocked_recipes()
+func can_cook(recipe_id: String) -> Dictionary: return cooking_manager.can_cook(recipe_id)
+func cook(recipe_id: String) -> CookingResult: return cooking_manager.cook(recipe_id)
+func use_food(item_id: String) -> FoodUseResult: return food_manager.use_food(item_id)
+func perform_picnic_activity(activity_id: String, food_item_id := "") -> LifeLocationResult:
+	return life_location_manager.perform_activity("picnic_area", activity_id, food_item_id)
 func has_pending_life_event() -> bool: return life_event_manager.has_pending_life_event()
 func get_pending_life_event() -> LifeEventData: return life_event_manager.get_pending_life_event()
 func confirm_life_event(event_id: String) -> LifeEventResult: return life_event_manager.confirm_life_event(event_id)

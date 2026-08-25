@@ -2,7 +2,8 @@ class_name SaveData
 extends Resource
 
 const CURRENT_VERSION := 6
-const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood"]
+const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread",
+	"berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 
 var save_version := CURRENT_VERSION
 var rabbits: Array[Dictionary] = []
@@ -40,6 +41,10 @@ var pending_life_events: Array[Dictionary] = []
 var completed_life_event_ids: Array[String] = []
 var last_food_journal_date := ""
 var last_needs_journal_date := ""
+var shop_state: Dictionary = {}
+var cooking_state: Dictionary = {}
+var food_runtime_state: Dictionary = {}
+var life_location_state: Dictionary = {}
 
 func to_dict() -> Dictionary:
 	return {
@@ -76,7 +81,9 @@ func to_dict() -> Dictionary:
 		"pending_life_events": pending_life_events.duplicate(true),
 		"completed_life_event_ids": completed_life_event_ids.duplicate(),
 		"last_food_journal_date": last_food_journal_date,
-		"last_needs_journal_date": last_needs_journal_date
+		"last_needs_journal_date": last_needs_journal_date,
+		"shop_state": shop_state.duplicate(true), "cooking_state": cooking_state.duplicate(true),
+		"food_runtime_state": food_runtime_state.duplicate(true), "life_location_state": life_location_state.duplicate(true)
 	}
 
 static func from_dict(data: Dictionary) -> SaveData:
@@ -131,6 +138,10 @@ static func from_dict(data: Dictionary) -> SaveData:
 			result.completed_life_event_ids.append(event_id)
 	result.last_food_journal_date = str(data.get("last_food_journal_date", ""))
 	result.last_needs_journal_date = str(data.get("last_needs_journal_date", ""))
+	if data.get("shop_state", {}) is Dictionary: result.shop_state = data.get("shop_state", {}).duplicate(true)
+	if data.get("cooking_state", {}) is Dictionary: result.cooking_state = data.get("cooking_state", {}).duplicate(true)
+	if data.get("food_runtime_state", {}) is Dictionary: result.food_runtime_state = data.get("food_runtime_state", {}).duplicate(true)
+	if data.get("life_location_state", {}) is Dictionary: result.life_location_state = data.get("life_location_state", {}).duplicate(true)
 	_repair_growth_progress(result)
 	return result
 
@@ -274,7 +285,7 @@ static func _load_food_use_history(source: Variant, target: Array[Dictionary]) -
 		if not (raw is Dictionary):
 			continue
 		var entry := FoodUseHistoryEntry.from_dict(raw)
-		if entry.food_use_record_id.is_empty() or entry.food_id != "carrot" or seen.has(entry.food_use_record_id):
+		if entry.food_use_record_id.is_empty() or not VALID_ITEM_IDS.has(entry.food_id) or seen.has(entry.food_use_record_id):
 			continue
 		seen[entry.food_use_record_id] = true
 		target.append(entry.to_dict())

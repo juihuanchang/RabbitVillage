@@ -18,6 +18,10 @@ var _currency_manager: CurrencyManager
 var _reward_manager: RewardManager
 var _life_event_manager: LifeEventManager
 var _food_manager: FoodManager
+var _shop_manager: ShopManager
+var _daily_shop_manager: DailyShopManager
+var _cooking_manager: CookingManager
+var _life_location_manager: LifeLocationManager
 
 var resource_history_manager := ResourceHistoryManager.new()
 var life_history_manager := LifeHistoryManager.new()
@@ -175,6 +179,10 @@ func _discover_week5_runtime_managers() -> void:
 	var reward_variant: Variant = parent_node.get("reward_manager")
 	var life_variant: Variant = parent_node.get("life_event_manager")
 	var food_variant: Variant = parent_node.get("food_manager")
+	var shop_variant: Variant = parent_node.get("shop_manager")
+	var daily_shop_variant: Variant = parent_node.get("daily_shop_manager")
+	var cooking_variant: Variant = parent_node.get("cooking_manager")
+	var location_variant: Variant = parent_node.get("life_location_manager")
 	if inventory_variant is InventoryManager:
 		_inventory_manager = inventory_variant
 	if currency_variant is CurrencyManager:
@@ -185,6 +193,10 @@ func _discover_week5_runtime_managers() -> void:
 		_life_event_manager = life_variant
 	if food_variant is FoodManager:
 		_food_manager = food_variant
+	if shop_variant is ShopManager: _shop_manager = shop_variant
+	if daily_shop_variant is DailyShopManager: _daily_shop_manager = daily_shop_variant
+	if cooking_variant is CookingManager: _cooking_manager = cooking_variant
+	if location_variant is LifeLocationManager: _life_location_manager = location_variant
 
 func _connect_week5_signals() -> void:
 	if _week5_signals_connected:
@@ -224,6 +236,15 @@ func _apply_loaded_week5_runtime() -> void:
 		_inventory_manager.setup(_loaded_save.inventory)
 	if _currency_manager != null:
 		_currency_manager.setup(_loaded_save.currency_data)
+	if _food_manager != null:
+		_food_manager.restore_successful_food_use_count(int(_loaded_save.food_runtime_state.get("successful_food_use_count", 0)))
+		_food_manager.restore_used_food_ids(_loaded_save.food_runtime_state.get("used_food_ids", []))
+	if _shop_manager != null and _daily_shop_manager != null:
+		_shop_manager.setup(_inventory_manager, _currency_manager, _daily_shop_manager, _loaded_save.shop_state)
+	if _cooking_manager != null: _cooking_manager.setup(_inventory_manager, _loaded_save.cooking_state)
+	if _life_location_manager != null:
+		var rabbits := _rabbit_manager.get_all_rabbits()
+		if not rabbits.is_empty(): _life_location_manager.setup(rabbits[0], _food_manager, _loaded_save.life_location_state)
 	_apply_growth_progress(_loaded_save.growth_path_progress)
 	_restore_reward_guard(_loaded_save.reward_history)
 	_restore_life_event_state(_loaded_save)
@@ -325,6 +346,10 @@ func _capture_week5_runtime(save: SaveData) -> void:
 	save.completed_life_event_ids = _capture_completed_life_event_ids()
 	save.last_food_journal_date = _diary_manager.get_last_food_journal_date()
 	save.last_needs_journal_date = _diary_manager.get_last_needs_journal_date()
+	if _shop_manager != null: save.shop_state = _shop_manager.to_dict()
+	if _cooking_manager != null: save.cooking_state = _cooking_manager.to_dict()
+	if _food_manager != null: save.food_runtime_state = _food_manager.to_dict()
+	if _life_location_manager != null: save.life_location_state = _life_location_manager.to_dict()
 
 func _capture_week5_from_loaded(save: SaveData) -> void:
 	if _loaded_save == null:
@@ -337,6 +362,10 @@ func _capture_week5_from_loaded(save: SaveData) -> void:
 	save.item_collection = _loaded_save.item_collection.duplicate(true)
 	save.item_discovery_history = _loaded_save.item_discovery_history.duplicate(true)
 	save.food_use_history = _loaded_save.food_use_history.duplicate(true)
+	save.shop_state = _loaded_save.shop_state.duplicate(true)
+	save.cooking_state = _loaded_save.cooking_state.duplicate(true)
+	save.food_runtime_state = _loaded_save.food_runtime_state.duplicate(true)
+	save.life_location_state = _loaded_save.life_location_state.duplicate(true)
 	save.growth_path_progress = _loaded_save.growth_path_progress.duplicate(true)
 	save.growth_path_history = _loaded_save.growth_path_history.duplicate(true)
 	save.life_event_history = _loaded_save.life_event_history.duplicate(true)
