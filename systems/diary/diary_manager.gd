@@ -7,6 +7,9 @@ signal journals_changed
 var _journals: Array[JournalEntry] = []
 var _last_food_journal_date := ""
 var _last_needs_journal_date := ""
+var _last_shopping_journal_date := ""
+var _last_cooking_journal_date := ""
+var _last_picnic_journal_date := ""
 
 func create_journal_from_activity(active: ActiveActivityData) -> JournalEntry:
 	if active == null or active.activity_record_id.is_empty() or has_activity_record_id(active.activity_record_id):
@@ -145,6 +148,138 @@ func generate_growth_lifestyle_journal(
 	if growth_path == "lakeside" and growth_stage < 1:
 		return null
 	return _append(JournalGenerator.generate_growth_lifestyle_journal(rabbit_name, _next_id(), growth_path, growth_stage, source_record_id, at))
+
+
+# ---------------- Week 6 ----------------
+
+func setup_week6_limits(last_shopping_date: String, last_cooking_date: String, last_picnic_date: String) -> void:
+	_last_shopping_journal_date = last_shopping_date
+	_last_cooking_journal_date = last_cooking_date
+	_last_picnic_journal_date = last_picnic_date
+	_rebuild_week6_dates_from_journals()
+
+func generate_first_purchase_journal(result: PurchaseResult, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.purchase_record_id.is_empty() or _has_type("first_purchase"):
+		return null
+	return _append(JournalGenerator.generate_first_purchase_journal(rabbit_name, _next_id(), result))
+
+func generate_shopping_journal(result: PurchaseResult, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.purchase_record_id.is_empty() or has_journal_for_purchase(result.purchase_record_id):
+		return null
+	var day_key := _date_key(result.purchased_at)
+	if day_key.is_empty() or _last_shopping_journal_date == day_key:
+		return null
+	var entry := _append(JournalGenerator.generate_shopping_journal(rabbit_name, _next_id(), result))
+	if entry != null:
+		_last_shopping_journal_date = day_key
+	return entry
+
+func generate_product_unlock_journal(product: ShopProductData, rabbit_name := "Amy") -> JournalEntry:
+	if product == null or product.product_id.is_empty() or has_journal_for_product_unlock(product.product_id):
+		return null
+	return _append(JournalGenerator.generate_product_unlock_journal(rabbit_name, _next_id(), product))
+
+func generate_week6_food_journal(result: FoodUseResult, rabbit_name := "Amy", first_use := false) -> JournalEntry:
+	if result == null or result.food_use_record_id.is_empty() or result.food_id == "carrot":
+		return null
+	if has_journal_for_food_use(result.food_use_record_id):
+		return null
+	return _append(JournalGenerator.generate_week6_food_journal(rabbit_name, _next_id(), result, first_use))
+
+func generate_first_cooking_journal(result: CookingResult, recipe_id: String, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.cooking_record_id.is_empty() or _has_type("first_cooking"):
+		return null
+	return _append(JournalGenerator.generate_first_cooking_journal(rabbit_name, _next_id(), result, recipe_id))
+
+func generate_cooking_journal(result: CookingResult, recipe_id: String, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.cooking_record_id.is_empty() or has_journal_for_cooking(result.cooking_record_id):
+		return null
+	var day_key := _date_key(result.cooked_at)
+	if day_key.is_empty() or _last_cooking_journal_date == day_key:
+		return null
+	var entry := _append(JournalGenerator.generate_cooking_journal(rabbit_name, _next_id(), result, recipe_id))
+	if entry != null:
+		_last_cooking_journal_date = day_key
+	return entry
+
+func generate_recipe_discovery_journal(result: CookingResult, recipe_id: String, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.cooking_record_id.is_empty() or recipe_id.is_empty() or has_journal_for_recipe(recipe_id):
+		return null
+	return _append(JournalGenerator.generate_recipe_discovery_journal(rabbit_name, _next_id(), result, recipe_id))
+
+func generate_picnic_journal(result: LifeLocationResult, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.location_record_id.is_empty() or has_journal_for_life_location(result.location_record_id):
+		return null
+	var day_key := _date_key(result.completed_at)
+	if day_key.is_empty() or _last_picnic_journal_date == day_key:
+		return null
+	var entry := _append(JournalGenerator.generate_picnic_journal(rabbit_name, _next_id(), result))
+	if entry != null:
+		_last_picnic_journal_date = day_key
+	return entry
+
+func generate_picnic_food_journal(result: LifeLocationResult, food_id: String, rabbit_name := "Amy") -> JournalEntry:
+	if result == null or result.location_record_id.is_empty() or food_id.is_empty() or has_picnic_food_journal_for_location(result.location_record_id):
+		return null
+	return _append(JournalGenerator.generate_picnic_food_journal(rabbit_name, _next_id(), result, food_id))
+
+func generate_week6_event_journal(event_id: String, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if event_id.is_empty() or has_journal_for_week6_event(event_id):
+		return null
+	return _append(JournalGenerator.generate_week6_event_journal(rabbit_name, _next_id(), event_id, at))
+
+func get_last_shopping_journal_date() -> String:
+	return _last_shopping_journal_date
+
+func get_last_cooking_journal_date() -> String:
+	return _last_cooking_journal_date
+
+func get_last_picnic_journal_date() -> String:
+	return _last_picnic_journal_date
+
+func has_journal_for_purchase(record_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.purchase_record_id == record_id and entry.journal_type in ["first_purchase", "shopping"]:
+			return true
+	return false
+
+func has_journal_for_product_unlock(product_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "product_unlock" and entry.product_id == product_id:
+			return true
+	return false
+
+func has_journal_for_cooking(record_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.cooking_record_id == record_id and entry.journal_type in ["first_cooking", "cooking", "recipe_discovery"]:
+			return true
+	return false
+
+func has_journal_for_recipe(recipe_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "recipe_discovery" and entry.recipe_id == recipe_id:
+			return true
+	return false
+
+func has_journal_for_life_location(record_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.life_location_id == record_id and entry.journal_type == "picnic":
+			return true
+	return false
+
+func has_picnic_food_journal_for_location(record_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.life_location_id == record_id and entry.journal_type == "picnic_food":
+			return true
+	return false
+
+func has_journal_for_week6_event(event_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.shop_event_id == event_id or entry.cooking_event_id == event_id or entry.picnic_event_id == event_id:
+			return true
+		if entry.journal_type == "week6_finale" and entry.life_event_id == event_id:
+			return true
+	return false
 
 func get_last_food_journal_date() -> String:
 	return _last_food_journal_date
@@ -293,6 +428,9 @@ func clear_journals() -> void:
 	_journals.clear()
 	_last_food_journal_date = ""
 	_last_needs_journal_date = ""
+	_last_shopping_journal_date = ""
+	_last_cooking_journal_date = ""
+	_last_picnic_journal_date = ""
 	journals_changed.emit()
 
 func to_array() -> Array[Dictionary]:
@@ -309,6 +447,7 @@ func load_from_array(data: Array) -> void:
 			if entry.is_valid() and not _duplicate(entry):
 				_journals.append(entry)
 	_rebuild_week5_dates_from_journals()
+	_rebuild_week6_dates_from_journals()
 	journals_changed.emit()
 
 func _duplicate(entry: JournalEntry) -> bool:
@@ -343,6 +482,28 @@ func _duplicate(entry: JournalEntry) -> bool:
 			return has_journal_for_growth_event(entry.growth_event_id)
 		"growth_lifestyle":
 			return has_growth_lifestyle_for_source(entry.activity_record_id)
+		"first_purchase", "shopping":
+			return has_journal_for_purchase(entry.purchase_record_id)
+		"product_unlock":
+			return has_journal_for_product_unlock(entry.product_id)
+		"new_food", "food_reaction":
+			return has_journal_for_food_use(entry.food_use_record_id)
+		"first_cooking", "cooking":
+			return has_journal_for_cooking(entry.cooking_record_id)
+		"recipe_discovery":
+			return has_journal_for_recipe(entry.recipe_id)
+		"picnic":
+			return has_journal_for_life_location(entry.life_location_id)
+		"picnic_food":
+			return has_picnic_food_journal_for_location(entry.life_location_id)
+		"shop_event":
+			return has_journal_for_week6_event(entry.shop_event_id)
+		"cooking_event":
+			return has_journal_for_week6_event(entry.cooking_event_id)
+		"picnic_event":
+			return has_journal_for_week6_event(entry.picnic_event_id)
+		"week6_finale":
+			return has_journal_for_week6_event(entry.life_event_id)
 	return false
 
 func _append(entry: JournalEntry) -> JournalEntry:
@@ -404,3 +565,22 @@ func _date_key(timestamp: float) -> String:
 		return ""
 	var date := TimeManager.get_local_datetime(timestamp)
 	return "%04d-%02d-%02d" % [date.year, date.month, date.day]
+
+
+func _rebuild_week6_dates_from_journals() -> void:
+	var newest_shopping_at := -1.0
+	var newest_cooking_at := -1.0
+	var newest_picnic_at := -1.0
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "shopping" and entry.created_at > newest_shopping_at:
+			newest_shopping_at = entry.created_at
+		if entry.journal_type == "cooking" and entry.created_at > newest_cooking_at:
+			newest_cooking_at = entry.created_at
+		if entry.journal_type == "picnic" and entry.created_at > newest_picnic_at:
+			newest_picnic_at = entry.created_at
+	if newest_shopping_at > 0.0:
+		_last_shopping_journal_date = _date_key(newest_shopping_at)
+	if newest_cooking_at > 0.0:
+		_last_cooking_journal_date = _date_key(newest_cooking_at)
+	if newest_picnic_at > 0.0:
+		_last_picnic_journal_date = _date_key(newest_picnic_at)

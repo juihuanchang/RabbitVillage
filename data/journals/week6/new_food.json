@@ -1,0 +1,24 @@
+{
+  "foods": {
+    "apple": {
+      "id": "new_food_apple",
+      "title": "第一次吃蘋果",
+      "content": "{rabbit_name} 小心咬了一口蘋果，脆脆的聲音讓她自己都愣了一下。"
+    },
+    "bread": {
+      "id": "new_food_bread",
+      "title": "第一次吃麵包",
+      "content": "麵包的香味很簡單，{rabbit_name} 卻吃得很專心，像是發現了一種適合日常的味道。"
+    },
+    "berry_juice": {
+      "id": "new_food_berry_juice",
+      "title": "第一次喝莓果汁",
+      "content": "酸酸甜甜的莓果汁讓 {rabbit_name} 眼睛亮了一下。這個味道她大概會記很久。"
+    },
+    "small_snack": {
+      "id": "new_food_small_snack",
+      "title": "第一次吃小點心",
+      "content": "{rabbit_name} 把小點心吃得乾乾淨淨，最後還像是在確認袋子裡真的沒有剩下。"
+    }
+  }
+}

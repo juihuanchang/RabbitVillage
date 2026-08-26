@@ -1,0 +1,54 @@
+{
+  "general": [
+    {
+      "id": "cooking_01",
+      "title": "廚房裡的一會兒",
+      "content": "{rabbit_name} 在廚房裡忙了一陣子，材料慢慢變成了今天要吃的料理。"
+    },
+    {
+      "id": "cooking_02",
+      "title": "今天做點吃的",
+      "content": "比起直接拿東西吃，今天的 {rabbit_name} 想多花一點時間準備。"
+    },
+    {
+      "id": "cooking_03",
+      "title": "料理完成",
+      "content": "桌上的材料少了，換成一份剛做好的料理。{rabbit_name} 看起來相當滿意。"
+    },
+    {
+      "id": "cooking_04",
+      "title": "有模有樣",
+      "content": "{rabbit_name} 越來越熟悉準備料理的節奏，今天也順利做完了。"
+    },
+    {
+      "id": "cooking_05",
+      "title": "廚房的小日常",
+      "content": "沒有特別隆重，只是平常的一次料理，卻讓村莊的生活感又多了一點。"
+    },
+    {
+      "id": "cooking_06",
+      "title": "廚房裡的一會兒",
+      "content": "{rabbit_name} 在廚房裡忙了一陣子，材料慢慢變成了今天要吃的料理。"
+    },
+    {
+      "id": "cooking_07",
+      "title": "今天做點吃的",
+      "content": "比起直接拿東西吃，今天的 {rabbit_name} 想多花一點時間準備。"
+    },
+    {
+      "id": "cooking_08",
+      "title": "料理完成",
+      "content": "桌上的材料少了，換成一份剛做好的料理。{rabbit_name} 看起來相當滿意。"
+    },
+    {
+      "id": "cooking_09",
+      "title": "有模有樣",
+      "content": "{rabbit_name} 越來越熟悉準備料理的節奏，今天也順利做完了。"
+    },
+    {
+      "id": "cooking_10",
+      "title": "廚房的小日常",
+      "content": "沒有特別隆重，只是平常的一次料理，卻讓村莊的生活感又多了一點。"
+    }
+  ]
+}

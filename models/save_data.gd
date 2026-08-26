@@ -1,9 +1,12 @@
 class_name SaveData
 extends Resource
 
-const CURRENT_VERSION := 6
+const CURRENT_VERSION := 7
 const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread",
 	"berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
+const VALID_PRODUCT_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack"]
+const VALID_RECIPE_IDS := ["recipe_carrot_sandwich", "recipe_forest_salad", "recipe_berry_toast", "recipe_picnic_snack"]
+const VALID_FOOD_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 
 var save_version := CURRENT_VERSION
 var rabbits: Array[Dictionary] = []
@@ -46,6 +49,21 @@ var cooking_state: Dictionary = {}
 var food_runtime_state: Dictionary = {}
 var life_location_state: Dictionary = {}
 
+# Week 6 permanent shop / cooking / life-location data.
+var daily_shop_state: Dictionary = {}
+var purchase_history: Array[Dictionary] = []
+var daily_shop_history: Array[Dictionary] = []
+var product_unlock_history: Array[Dictionary] = []
+var shop_event_history: Array[Dictionary] = []
+var recipe_collection: Array[Dictionary] = []
+var cooking_history: Array[Dictionary] = []
+var recipe_unlock_history: Array[Dictionary] = []
+var food_variety_records: Array[Dictionary] = []
+var life_location_history: Array[Dictionary] = []
+var last_shopping_journal_date := ""
+var last_cooking_journal_date := ""
+var last_picnic_journal_date := ""
+
 func to_dict() -> Dictionary:
 	return {
 		"save_version": save_version,
@@ -82,8 +100,23 @@ func to_dict() -> Dictionary:
 		"completed_life_event_ids": completed_life_event_ids.duplicate(),
 		"last_food_journal_date": last_food_journal_date,
 		"last_needs_journal_date": last_needs_journal_date,
-		"shop_state": shop_state.duplicate(true), "cooking_state": cooking_state.duplicate(true),
-		"food_runtime_state": food_runtime_state.duplicate(true), "life_location_state": life_location_state.duplicate(true)
+		"shop_state": shop_state.duplicate(true),
+		"daily_shop_state": daily_shop_state.duplicate(true),
+		"purchase_history": purchase_history.duplicate(true),
+		"daily_shop_history": daily_shop_history.duplicate(true),
+		"product_unlock_history": product_unlock_history.duplicate(true),
+		"shop_event_history": shop_event_history.duplicate(true),
+		"recipe_collection": recipe_collection.duplicate(true),
+		"cooking_history": cooking_history.duplicate(true),
+		"recipe_unlock_history": recipe_unlock_history.duplicate(true),
+		"food_variety_records": food_variety_records.duplicate(true),
+		"life_location_history": life_location_history.duplicate(true),
+		"last_shopping_journal_date": last_shopping_journal_date,
+		"last_cooking_journal_date": last_cooking_journal_date,
+		"last_picnic_journal_date": last_picnic_journal_date,
+		"cooking_state": cooking_state.duplicate(true),
+		"food_runtime_state": food_runtime_state.duplicate(true),
+		"life_location_state": life_location_state.duplicate(true)
 	}
 
 static func from_dict(data: Dictionary) -> SaveData:
@@ -138,11 +171,25 @@ static func from_dict(data: Dictionary) -> SaveData:
 			result.completed_life_event_ids.append(event_id)
 	result.last_food_journal_date = str(data.get("last_food_journal_date", ""))
 	result.last_needs_journal_date = str(data.get("last_needs_journal_date", ""))
-	if data.get("shop_state", {}) is Dictionary: result.shop_state = data.get("shop_state", {}).duplicate(true)
-	if data.get("cooking_state", {}) is Dictionary: result.cooking_state = data.get("cooking_state", {}).duplicate(true)
+	result.shop_state = _load_shop_state(data.get("shop_state", {}))
+	result.daily_shop_state = _load_daily_shop_state(data.get("daily_shop_state", result.shop_state))
+	_load_purchase_history(data.get("purchase_history", []), result.purchase_history)
+	_load_daily_shop_history(data.get("daily_shop_history", []), result.daily_shop_history)
+	_load_product_unlock_history(data.get("product_unlock_history", []), result.product_unlock_history)
+	_load_shop_event_history(data.get("shop_event_history", []), result.shop_event_history)
+	result.recipe_collection = _load_recipe_collection(data.get("recipe_collection", []))
+	_load_cooking_history(data.get("cooking_history", []), result.cooking_history)
+	_load_recipe_unlock_history(data.get("recipe_unlock_history", []), result.recipe_unlock_history)
+	result.food_variety_records = _load_food_variety_records(data.get("food_variety_records", []))
+	_load_life_location_history(data.get("life_location_history", []), result.life_location_history)
+	result.last_shopping_journal_date = str(data.get("last_shopping_journal_date", ""))
+	result.last_cooking_journal_date = str(data.get("last_cooking_journal_date", ""))
+	result.last_picnic_journal_date = str(data.get("last_picnic_journal_date", ""))
+	result.cooking_state = _load_cooking_state(data.get("cooking_state", {}))
 	if data.get("food_runtime_state", {}) is Dictionary: result.food_runtime_state = data.get("food_runtime_state", {}).duplicate(true)
 	if data.get("life_location_state", {}) is Dictionary: result.life_location_state = data.get("life_location_state", {}).duplicate(true)
 	_repair_growth_progress(result)
+	_repair_week6_transaction_guards(result)
 	return result
 
 func is_supported_version() -> bool:
@@ -338,6 +385,283 @@ static func _load_pending_life_events(source: Variant, target: Array[Dictionary]
 			continue
 		seen[event_id] = true
 		target.append(raw.duplicate(true))
+
+static func _load_shop_state(source: Variant) -> Dictionary:
+	var raw: Dictionary = source.duplicate(true) if source is Dictionary else {}
+	var offers: Array[Dictionary] = []
+	var seen_products := {}
+	for value: Variant in raw.get("daily_offers", []):
+		if not (value is Dictionary):
+			continue
+		var product_id := str(value.get("product_id", ""))
+		if not VALID_PRODUCT_IDS.has(product_id) or seen_products.has(product_id):
+			continue
+		seen_products[product_id] = true
+		var offer := DailyShopOfferData.from_dict(value)
+		offers.append(offer.to_dict())
+	raw["daily_offers"] = offers
+	var purchase_amounts := {}
+	var raw_amounts: Variant = raw.get("daily_purchase_amounts", {})
+	if raw_amounts is Dictionary:
+		for raw_id: Variant in raw_amounts.keys():
+			var product_id := str(raw_id)
+			if VALID_PRODUCT_IDS.has(product_id):
+				purchase_amounts[product_id] = maxi(0, int(raw_amounts[raw_id]))
+	raw["daily_purchase_amounts"] = purchase_amounts
+	var unlocked: Array[String] = []
+	for raw_id: Variant in raw.get("unlocked_product_ids", []):
+		var product_id := str(raw_id)
+		if VALID_PRODUCT_IDS.has(product_id) and not unlocked.has(product_id):
+			unlocked.append(product_id)
+	raw["unlocked_product_ids"] = unlocked
+	var applied: Array[String] = []
+	for raw_id: Variant in raw.get("applied_purchase_ids", []):
+		var record_id := str(raw_id)
+		if not record_id.is_empty() and not applied.has(record_id):
+			applied.append(record_id)
+	raw["applied_purchase_ids"] = applied
+	return raw
+
+static func _load_daily_shop_state(source: Variant) -> Dictionary:
+	var shop := _load_shop_state(source)
+	return {
+		"day_key": str(shop.get("day_key", "")),
+		"daily_offers": shop.get("daily_offers", []).duplicate(true),
+		"daily_purchase_amounts": shop.get("daily_purchase_amounts", {}).duplicate(true)
+	}
+
+static func _load_purchase_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := PurchaseHistoryEntry.from_dict(raw)
+		if entry.purchase_record_id.is_empty() or not VALID_PRODUCT_IDS.has(entry.product_id) or seen.has(entry.purchase_record_id):
+			continue
+		seen[entry.purchase_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_daily_shop_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var merged := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := DailyShopHistoryEntry.from_dict(raw)
+		if entry.day_key.is_empty():
+			continue
+		var clean_offers: Array[Dictionary] = []
+		var seen_products := {}
+		for offer_raw: Dictionary in entry.offers:
+			var product_id := str(offer_raw.get("product_id", ""))
+			if not VALID_PRODUCT_IDS.has(product_id) or seen_products.has(product_id):
+				continue
+			seen_products[product_id] = true
+			clean_offers.append(DailyShopOfferData.from_dict(offer_raw).to_dict())
+		entry.offers = clean_offers
+		var clean_counts := {}
+		for raw_id: Variant in entry.purchase_counts.keys():
+			var product_id := str(raw_id)
+			if VALID_PRODUCT_IDS.has(product_id):
+				clean_counts[product_id] = maxi(0, int(entry.purchase_counts[raw_id]))
+		entry.purchase_counts = clean_counts
+		if not merged.has(entry.day_key):
+			merged[entry.day_key] = entry
+		else:
+			var current := merged[entry.day_key] as DailyShopHistoryEntry
+			if entry.offers.size() > current.offers.size():
+				current.offers = entry.offers.duplicate(true)
+			current.refreshed_at = maxf(current.refreshed_at, entry.refreshed_at)
+			current.refresh_count = maxi(current.refresh_count, entry.refresh_count)
+			for product_id: String in entry.purchase_counts:
+				current.purchase_counts[product_id] = maxi(int(current.purchase_counts.get(product_id, 0)), int(entry.purchase_counts[product_id]))
+	for entry: DailyShopHistoryEntry in merged.values():
+		target.append(entry.to_dict())
+
+static func _load_product_unlock_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var merged := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := ProductUnlockHistoryEntry.from_dict(raw)
+		if not VALID_PRODUCT_IDS.has(entry.product_id):
+			continue
+		var current := merged.get(entry.product_id) as ProductUnlockHistoryEntry
+		if current == null or _time_is_earlier(entry.unlocked_at, current.unlocked_at):
+			merged[entry.product_id] = entry
+	for entry: ProductUnlockHistoryEntry in merged.values():
+		target.append(entry.to_dict())
+
+static func _load_shop_event_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := ShopEventHistoryEntry.from_dict(raw)
+		if entry.shop_event_id.is_empty() or not entry.shop_event_id.begins_with("shop_") or seen.has(entry.shop_event_id):
+			continue
+		seen[entry.shop_event_id] = true
+		target.append(entry.to_dict())
+
+static func _canonical_recipe_id(recipe_id: String) -> String:
+	match recipe_id:
+		"carrot_sandwich": return "recipe_carrot_sandwich"
+		"forest_salad": return "recipe_forest_salad"
+		"berry_toast": return "recipe_berry_toast"
+		"picnic_snack": return "recipe_picnic_snack"
+	return recipe_id
+
+static func _load_recipe_collection(source: Variant) -> Array[Dictionary]:
+	var merged := {}
+	if not (source is Array):
+		var empty: Array[Dictionary] = []
+		return empty
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := RecipeCollectionEntry.from_dict(raw)
+		entry.recipe_id = _canonical_recipe_id(entry.recipe_id)
+		if not VALID_RECIPE_IDS.has(entry.recipe_id) or not entry.is_discovered:
+			continue
+		var current := merged.get(entry.recipe_id) as RecipeCollectionEntry
+		if current == null:
+			merged[entry.recipe_id] = entry
+		else:
+			if _time_is_earlier(entry.first_cooked_at, current.first_cooked_at):
+				current.first_cooked_at = entry.first_cooked_at
+				current.first_source_type = entry.first_source_type
+				current.first_source_id = entry.first_source_id
+			current.total_cook_count = maxi(current.total_cook_count, entry.total_cook_count)
+	var result: Array[Dictionary] = []
+	for entry: RecipeCollectionEntry in merged.values():
+		result.append(entry.to_dict())
+	return result
+
+static func _load_cooking_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := CookingHistoryEntry.from_dict(raw)
+		entry.recipe_id = _canonical_recipe_id(entry.recipe_id)
+		if entry.cooking_record_id.is_empty() or not VALID_RECIPE_IDS.has(entry.recipe_id) or seen.has(entry.cooking_record_id):
+			continue
+		seen[entry.cooking_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_recipe_unlock_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var merged := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := RecipeUnlockHistoryEntry.from_dict(raw)
+		entry.recipe_id = _canonical_recipe_id(entry.recipe_id)
+		if not VALID_RECIPE_IDS.has(entry.recipe_id):
+			continue
+		var current := merged.get(entry.recipe_id) as RecipeUnlockHistoryEntry
+		if current == null or _time_is_earlier(entry.unlocked_at, current.unlocked_at):
+			merged[entry.recipe_id] = entry
+	for entry: RecipeUnlockHistoryEntry in merged.values():
+		target.append(entry.to_dict())
+
+static func _load_food_variety_records(source: Variant) -> Array[Dictionary]:
+	var merged := {}
+	if not (source is Array):
+		var empty: Array[Dictionary] = []
+		return empty
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := FoodVarietyRecord.from_dict(raw)
+		if not VALID_FOOD_IDS.has(entry.food_id):
+			continue
+		var current := merged.get(entry.food_id) as FoodVarietyRecord
+		if current == null:
+			merged[entry.food_id] = entry
+		else:
+			if _time_is_earlier(entry.first_used_at, current.first_used_at):
+				current.first_used_at = entry.first_used_at
+			current.last_used_at = maxf(current.last_used_at, entry.last_used_at)
+			current.use_count = maxi(current.use_count, entry.use_count)
+	var result: Array[Dictionary] = []
+	for entry: FoodVarietyRecord in merged.values():
+		result.append(entry.to_dict())
+	return result
+
+static func _load_life_location_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := LifeLocationHistoryEntry.from_dict(raw)
+		if entry.location_record_id.is_empty() or entry.location_id != "picnic_area" or not ["picnic_rest", "picnic_eat", "picnic_relax"].has(entry.activity_id) or seen.has(entry.location_record_id):
+			continue
+		seen[entry.location_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_cooking_state(source: Variant) -> Dictionary:
+	var raw: Dictionary = source.duplicate(true) if source is Dictionary else {}
+	var discovered: Array[String] = []
+	for raw_id: Variant in raw.get("discovered_recipe_ids", []):
+		var id := str(raw_id)
+		if id in ["carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"] and not discovered.has(id):
+			discovered.append(id)
+	raw["discovered_recipe_ids"] = discovered
+	var unlocked: Array[String] = []
+	for raw_id: Variant in raw.get("unlocked_recipe_ids", []):
+		var id := str(raw_id)
+		if id in ["carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"] and not unlocked.has(id):
+			unlocked.append(id)
+	raw["unlocked_recipe_ids"] = unlocked
+	var applied: Array[String] = []
+	for raw_id: Variant in raw.get("applied_cooking_ids", []):
+		var id := str(raw_id)
+		if not id.is_empty() and not applied.has(id):
+			applied.append(id)
+	raw["applied_cooking_ids"] = applied
+	return raw
+
+static func _repair_week6_transaction_guards(data: SaveData) -> void:
+	var purchase_ids: Array[String] = []
+	for raw: Dictionary in data.purchase_history:
+		var id := str(raw.get("purchase_record_id", ""))
+		if not id.is_empty() and not purchase_ids.has(id):
+			purchase_ids.append(id)
+	var applied_purchase: Array = []
+	var raw_applied_purchase: Variant = data.shop_state.get("applied_purchase_ids", [])
+	if raw_applied_purchase is Array:
+		applied_purchase = raw_applied_purchase.duplicate()
+	for id: String in purchase_ids:
+		if not applied_purchase.has(id):
+			applied_purchase.append(id)
+	data.shop_state["applied_purchase_ids"] = applied_purchase
+
+	var cooking_ids: Array[String] = []
+	for raw: Dictionary in data.cooking_history:
+		var id := str(raw.get("cooking_record_id", ""))
+		if not id.is_empty() and not cooking_ids.has(id):
+			cooking_ids.append(id)
+	var applied_cooking: Array = []
+	var raw_applied_cooking: Variant = data.cooking_state.get("applied_cooking_ids", [])
+	if raw_applied_cooking is Array:
+		applied_cooking = raw_applied_cooking.duplicate()
+	for id: String in cooking_ids:
+		if not applied_cooking.has(id):
+			applied_cooking.append(id)
+	data.cooking_state["applied_cooking_ids"] = applied_cooking
 
 static func _repair_growth_progress(data: SaveData) -> void:
 	var forest_stage := maxi(0, int(data.growth_path_progress.get("forest_stage", 0)))

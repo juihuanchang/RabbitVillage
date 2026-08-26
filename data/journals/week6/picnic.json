@@ -1,0 +1,54 @@
+{
+  "general": [
+    {
+      "id": "picnic_01",
+      "title": "在野餐區坐一會兒",
+      "content": "{rabbit_name} 在野餐區找了個舒服的位置坐下，什麼都不急著做。"
+    },
+    {
+      "id": "picnic_02",
+      "title": "今天適合慢一點",
+      "content": "風吹過野餐區，{rabbit_name} 也跟著把步調放慢了一點。"
+    },
+    {
+      "id": "picnic_03",
+      "title": "野餐區的午後",
+      "content": "今天沒有特別的行程，光是在這裡待一會兒就已經很舒服。"
+    },
+    {
+      "id": "picnic_04",
+      "title": "坐在外面看看",
+      "content": "{rabbit_name} 看著周圍的景色發了一會兒呆，似乎也不覺得浪費時間。"
+    },
+    {
+      "id": "picnic_05",
+      "title": "休憩野餐區",
+      "content": "這個小小的生活場所，漸漸變成 {rabbit_name} 願意常來坐坐的地方。"
+    },
+    {
+      "id": "picnic_06",
+      "title": "在野餐區坐一會兒",
+      "content": "{rabbit_name} 在野餐區找了個舒服的位置坐下，什麼都不急著做。"
+    },
+    {
+      "id": "picnic_07",
+      "title": "今天適合慢一點",
+      "content": "風吹過野餐區，{rabbit_name} 也跟著把步調放慢了一點。"
+    },
+    {
+      "id": "picnic_08",
+      "title": "野餐區的午後",
+      "content": "今天沒有特別的行程，光是在這裡待一會兒就已經很舒服。"
+    },
+    {
+      "id": "picnic_09",
+      "title": "坐在外面看看",
+      "content": "{rabbit_name} 看著周圍的景色發了一會兒呆，似乎也不覺得浪費時間。"
+    },
+    {
+      "id": "picnic_10",
+      "title": "休憩野餐區",
+      "content": "這個小小的生活場所，漸漸變成 {rabbit_name} 願意常來坐坐的地方。"
+    }
+  ]
+}

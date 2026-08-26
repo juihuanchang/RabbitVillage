@@ -1,0 +1,12 @@
+{
+  "events": {
+    "cooking_first_dish_001": {
+      "title": "第一次做飯",
+      "content": "從第一次完成料理開始，廚房終於不只是放材料的地方了。"
+    },
+    "cooking_variety_001": {
+      "title": "最近好像很會準備吃的了",
+      "content": "能做出的料理越來越多，{rabbit_name} 的日常也多了不少可以自己決定的味道。"
+    }
+  }
+}

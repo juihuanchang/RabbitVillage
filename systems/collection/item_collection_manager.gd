@@ -4,7 +4,7 @@ extends Node
 signal collection_changed
 signal item_registered(entry: ItemCollectionEntry)
 
-const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood"]
+const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread", "berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 
 var _entries: Dictionary = {}
 

@@ -23,6 +23,22 @@ const LAKESIDE_PATH := "res://data/journals/week5/lakeside_interest.json"
 const GROWTH_EVENTS_PATH := "res://data/journals/week5/growth_events.json"
 const FINALE_PATH := "res://data/journals/week5/week5_finale.json"
 
+# Week 6 journal templates.
+const FIRST_PURCHASE_PATH := "res://data/journals/week6/first_purchase.json"
+const SHOPPING_PATH := "res://data/journals/week6/shopping.json"
+const PRODUCT_UNLOCK_PATH := "res://data/journals/week6/product_unlock.json"
+const NEW_FOOD_PATH := "res://data/journals/week6/new_food.json"
+const FOOD_REACTIONS_PATH := "res://data/journals/week6/food_reactions.json"
+const FIRST_COOKING_PATH := "res://data/journals/week6/first_cooking.json"
+const COOKING_PATH := "res://data/journals/week6/cooking.json"
+const RECIPE_DISCOVERY_PATH := "res://data/journals/week6/recipe_discovery.json"
+const PICNIC_PATH := "res://data/journals/week6/picnic.json"
+const PICNIC_FOOD_PATH := "res://data/journals/week6/picnic_food.json"
+const SHOP_EVENTS_PATH := "res://data/journals/week6/shop_events.json"
+const COOKING_EVENTS_PATH := "res://data/journals/week6/cooking_events.json"
+const PICNIC_EVENTS_PATH := "res://data/journals/week6/picnic_events.json"
+const WEEK6_FINALE_PATH := "res://data/journals/week6/week6_finale.json"
+
 static func generate(active: ActiveActivityData, journal_id: String) -> JournalEntry:
 	if active == null or active.rabbit == null or active.activity == null:
 		return null
@@ -308,6 +324,205 @@ static func generate_growth_lifestyle_journal(
 	entry.growth_path = growth_path
 	entry.growth_stage = maxi(0, growth_stage)
 	entry.growth_mark_id = "sprout_mark" if growth_path == "forest" else "lake_interest"
+	return entry
+
+
+# ---------------- Week 6 ----------------
+
+static func generate_first_purchase_journal(rabbit_name: String, journal_id: String, result: PurchaseResult) -> JournalEntry:
+	if result == null or result.purchase_record_id.is_empty():
+		return null
+	var data := _load_json(FIRST_PURCHASE_PATH)
+	var template: Variant = data.get("template", {})
+	if not (template is Dictionary) or template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "first_purchase", result.purchased_at, str(template.get("title", "第一次購物")), str(template.get("content", "")))
+	entry.purchase_record_id = result.purchase_record_id
+	entry.shop_id = "village_shop"
+	entry.product_id = result.product_id
+	entry.item_id = result.item_id
+	entry.items = ["%s:+%d" % [result.item_id, maxi(0, result.quantity)]]
+	entry.is_special_memory = true
+	entry.is_life_memory = true
+	return entry
+
+static func generate_shopping_journal(rabbit_name: String, journal_id: String, result: PurchaseResult) -> JournalEntry:
+	if result == null or result.purchase_record_id.is_empty():
+		return null
+	var data := _load_json(SHOPPING_PATH)
+	var template := _pick_dictionary(data.get("general", []))
+	if template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "shopping", result.purchased_at, str(template.get("title", "今天的小店")), str(template.get("content", "")))
+	entry.purchase_record_id = result.purchase_record_id
+	entry.shop_id = "village_shop"
+	entry.product_id = result.product_id
+	entry.item_id = result.item_id
+	entry.items = ["%s:+%d" % [result.item_id, maxi(0, result.quantity)]]
+	return entry
+
+static func generate_product_unlock_journal(rabbit_name: String, journal_id: String, product: ShopProductData) -> JournalEntry:
+	if product == null or product.product_id.is_empty():
+		return null
+	var data := _load_json(PRODUCT_UNLOCK_PATH)
+	var templates: Variant = data.get("products", {})
+	if not (templates is Dictionary) or not templates.has(product.product_id) or not (templates[product.product_id] is Dictionary):
+		return null
+	var template: Dictionary = templates[product.product_id]
+	var entry := _base(journal_id, rabbit_name, "product_unlock", product.unlocked_at, str(template.get("title", "小店的新商品")), str(template.get("content", "")))
+	entry.shop_id = "village_shop"
+	entry.product_id = product.product_id
+	entry.item_id = product.item_id
+	entry.is_special_memory = true
+	entry.is_life_memory = true
+	return entry
+
+static func generate_week6_food_journal(rabbit_name: String, journal_id: String, result: FoodUseResult, first_use: bool) -> JournalEntry:
+	if result == null or result.food_use_record_id.is_empty() or result.food_id == "carrot":
+		return null
+	var path := NEW_FOOD_PATH if first_use else FOOD_REACTIONS_PATH
+	var data := _load_json(path)
+	var foods: Variant = data.get("foods", {})
+	if not (foods is Dictionary) or not foods.has(result.food_id):
+		return null
+	var template: Dictionary = {}
+	if first_use and foods[result.food_id] is Dictionary:
+		template = foods[result.food_id]
+	elif not first_use and foods[result.food_id] is Array:
+		template = _pick_dictionary(foods[result.food_id])
+	if template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "new_food" if first_use else "food_reaction", result.used_at, str(template.get("title", "新的味道")), str(template.get("content", "")))
+	entry.food_use_record_id = result.food_use_record_id
+	entry.food_id = result.food_id
+	entry.item_id = result.food_id
+	entry.stat_changes = {"hunger": result.hunger_change, "energy": result.energy_change, "mood": result.mood_change}
+	entry.items = ["%s:-%d" % [result.food_id, maxi(0, result.amount_used)]]
+	entry.is_special_memory = first_use
+	entry.is_life_memory = first_use
+	return entry
+
+static func generate_first_cooking_journal(rabbit_name: String, journal_id: String, result: CookingResult, recipe_id: String) -> JournalEntry:
+	if result == null or result.cooking_record_id.is_empty():
+		return null
+	var data := _load_json(FIRST_COOKING_PATH)
+	var template: Variant = data.get("template", {})
+	if not (template is Dictionary) or template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "first_cooking", result.cooked_at, str(template.get("title", "第一次料理")), str(template.get("content", "")))
+	entry.cooking_record_id = result.cooking_record_id
+	entry.recipe_id = recipe_id
+	entry.item_id = result.result_item_id
+	entry.items = ["%s:+%d" % [result.result_item_id, maxi(0, result.result_amount)]]
+	entry.is_special_memory = true
+	entry.is_life_memory = true
+	return entry
+
+static func generate_cooking_journal(rabbit_name: String, journal_id: String, result: CookingResult, recipe_id: String) -> JournalEntry:
+	if result == null or result.cooking_record_id.is_empty():
+		return null
+	var data := _load_json(COOKING_PATH)
+	var template := _pick_dictionary(data.get("general", []))
+	if template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "cooking", result.cooked_at, str(template.get("title", "料理完成")), str(template.get("content", "")))
+	entry.cooking_record_id = result.cooking_record_id
+	entry.recipe_id = recipe_id
+	entry.item_id = result.result_item_id
+	entry.items = ["%s:+%d" % [result.result_item_id, maxi(0, result.result_amount)]]
+	return entry
+
+static func generate_recipe_discovery_journal(rabbit_name: String, journal_id: String, result: CookingResult, recipe_id: String) -> JournalEntry:
+	if result == null or result.cooking_record_id.is_empty() or recipe_id.is_empty():
+		return null
+	var data := _load_json(RECIPE_DISCOVERY_PATH)
+	var recipes: Variant = data.get("recipes", {})
+	if not (recipes is Dictionary) or not recipes.has(recipe_id):
+		return null
+	var template := _pick_dictionary(recipes[recipe_id])
+	if template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "recipe_discovery", result.cooked_at, str(template.get("title", "新的料理")), str(template.get("content", "")))
+	entry.cooking_record_id = result.cooking_record_id
+	entry.recipe_id = recipe_id
+	entry.item_id = result.result_item_id
+	entry.is_special_memory = true
+	entry.is_life_memory = true
+	return entry
+
+static func generate_picnic_journal(rabbit_name: String, journal_id: String, result: LifeLocationResult) -> JournalEntry:
+	if result == null or result.location_record_id.is_empty():
+		return null
+	var data := _load_json(PICNIC_PATH)
+	var template := _pick_dictionary(data.get("general", []))
+	if template.is_empty():
+		return null
+	var entry := _base(journal_id, rabbit_name, "picnic", result.completed_at, str(template.get("title", "野餐區的時間")), str(template.get("content", "")))
+	entry.life_location_id = result.location_record_id
+	entry.life_location_activity_id = result.activity_id
+	entry.location_id = result.location_id
+	entry.location_name = "休憩野餐區"
+	entry.stat_changes = {"energy": result.energy_change, "mood": result.mood_change, "intimacy": result.intimacy_change}
+	return entry
+
+static func generate_picnic_food_journal(rabbit_name: String, journal_id: String, result: LifeLocationResult, food_id: String) -> JournalEntry:
+	if result == null or result.location_record_id.is_empty() or food_id.is_empty():
+		return null
+	var data := _load_json(PICNIC_FOOD_PATH)
+	var foods: Variant = data.get("foods", {})
+	if not (foods is Dictionary) or not foods.has(food_id) or not (foods[food_id] is Dictionary):
+		return null
+	var template: Dictionary = foods[food_id]
+	var entry := _base(journal_id, rabbit_name, "picnic_food", result.completed_at, str(template.get("title", "野餐時吃點東西")), str(template.get("content", "")))
+	entry.life_location_id = result.location_record_id
+	entry.life_location_activity_id = result.activity_id
+	entry.location_id = result.location_id
+	entry.location_name = "休憩野餐區"
+	entry.food_id = food_id
+	entry.item_id = food_id
+	return entry
+
+static func generate_week6_event_journal(rabbit_name: String, journal_id: String, event_id: String, at: float) -> JournalEntry:
+	if event_id.is_empty():
+		return null
+	var path := ""
+	var journal_type := ""
+	if event_id.begins_with("shop_"):
+		path = SHOP_EVENTS_PATH
+		journal_type = "shop_event"
+	elif event_id.begins_with("cooking_"):
+		path = COOKING_EVENTS_PATH
+		journal_type = "cooking_event"
+	elif event_id.begins_with("picnic_"):
+		path = PICNIC_EVENTS_PATH
+		journal_type = "picnic_event"
+	elif event_id == "village_daily_life_001":
+		var finale_data := _load_json(WEEK6_FINALE_PATH)
+		if not finale_data.has(event_id) or not (finale_data[event_id] is Dictionary):
+			return null
+		var finale_template: Dictionary = finale_data[event_id]
+		var finale := _base(journal_id, rabbit_name, "week6_finale", at, str(finale_template.get("title", "村莊的日常")), str(finale_template.get("content", "")))
+		finale.life_event_id = event_id
+		finale.is_special_memory = true
+		finale.is_life_memory = true
+		return finale
+	else:
+		return null
+	var data := _load_json(path)
+	var events: Variant = data.get("events", {})
+	if not (events is Dictionary) or not events.has(event_id) or not (events[event_id] is Dictionary):
+		return null
+	var template: Dictionary = events[event_id]
+	var entry := _base(journal_id, rabbit_name, journal_type, at, str(template.get("title", "生活事件")), str(template.get("content", "")))
+	entry.life_event_id = event_id
+	if journal_type == "shop_event":
+		entry.shop_event_id = event_id
+	elif journal_type == "cooking_event":
+		entry.cooking_event_id = event_id
+	else:
+		entry.picnic_event_id = event_id
+	entry.is_special_memory = true
+	entry.is_life_memory = true
 	return entry
 
 static func _base(id: String, rabbit_name: String, journal_type: String, at: float, title: String, content: String) -> JournalEntry:

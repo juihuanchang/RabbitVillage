@@ -1,0 +1,52 @@
+{
+  "recipes": {
+    "recipe_carrot_sandwich": [
+      {
+        "id": "recipe_carrot_sandwich_discovery_1",
+        "title": "第一次做出胡蘿蔔三明治",
+        "content": "{rabbit_name} 看著剛完成的胡蘿蔔三明治，很快就把這個做法記住了。"
+      },
+      {
+        "id": "recipe_carrot_sandwich_discovery_2",
+        "title": "新的料理：胡蘿蔔三明治",
+        "content": "材料換了一種組合，最後竟然變成了胡蘿蔔三明治。{rabbit_name} 的料理收藏又多了一頁。"
+      }
+    ],
+    "recipe_forest_salad": [
+      {
+        "id": "recipe_forest_salad_discovery_1",
+        "title": "第一次做出森林沙拉",
+        "content": "{rabbit_name} 看著剛完成的森林沙拉，很快就把這個做法記住了。"
+      },
+      {
+        "id": "recipe_forest_salad_discovery_2",
+        "title": "新的料理：森林沙拉",
+        "content": "材料換了一種組合，最後竟然變成了森林沙拉。{rabbit_name} 的料理收藏又多了一頁。"
+      }
+    ],
+    "recipe_berry_toast": [
+      {
+        "id": "recipe_berry_toast_discovery_1",
+        "title": "第一次做出莓果吐司",
+        "content": "{rabbit_name} 看著剛完成的莓果吐司，很快就把這個做法記住了。"
+      },
+      {
+        "id": "recipe_berry_toast_discovery_2",
+        "title": "新的料理：莓果吐司",
+        "content": "材料換了一種組合，最後竟然變成了莓果吐司。{rabbit_name} 的料理收藏又多了一頁。"
+      }
+    ],
+    "recipe_picnic_snack": [
+      {
+        "id": "recipe_picnic_snack_discovery_1",
+        "title": "第一次做出野餐小點",
+        "content": "{rabbit_name} 看著剛完成的野餐小點，很快就把這個做法記住了。"
+      },
+      {
+        "id": "recipe_picnic_snack_discovery_2",
+        "title": "新的料理：野餐小點",
+        "content": "材料換了一種組合，最後竟然變成了野餐小點。{rabbit_name} 的料理收藏又多了一頁。"
+      }
+    ]
+  }
+}

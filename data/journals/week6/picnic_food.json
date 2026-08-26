@@ -1,0 +1,44 @@
+{
+  "foods": {
+    "apple": {
+      "id": "picnic_food_apple",
+      "title": "野餐時的蘋果",
+      "content": "坐在野餐區吃蘋果，好像連平常的味道都變得更清爽了一點。"
+    },
+    "bread": {
+      "id": "picnic_food_bread",
+      "title": "帶麵包來野餐",
+      "content": "{rabbit_name} 把麵包帶到野餐區，慢慢吃著，也慢慢看著周圍。"
+    },
+    "berry_juice": {
+      "id": "picnic_food_berry_juice",
+      "title": "野餐配莓果汁",
+      "content": "莓果汁在野餐時特別合適，{rabbit_name} 一邊喝，一邊享受難得的悠閒。"
+    },
+    "small_snack": {
+      "id": "picnic_food_small_snack",
+      "title": "野餐小點心",
+      "content": "帶一點小點心來這裡，剛好能陪 {rabbit_name} 多坐一會兒。"
+    },
+    "carrot_sandwich": {
+      "id": "picnic_food_carrot_sandwich",
+      "title": "胡蘿蔔三明治野餐",
+      "content": "自己做的胡蘿蔔三明治帶到野餐區，好像比在家裡吃更有成就感。"
+    },
+    "forest_salad": {
+      "id": "picnic_food_forest_salad",
+      "title": "森林沙拉的野餐時間",
+      "content": "森林沙拉和周圍的綠意意外地很搭，{rabbit_name} 吃得格外開心。"
+    },
+    "berry_toast": {
+      "id": "picnic_food_berry_toast",
+      "title": "莓果吐司帶出門",
+      "content": "莓果吐司成了今天野餐的一部分，甜甜的味道讓休息時間更完整。"
+    },
+    "picnic_snack": {
+      "id": "picnic_food_picnic_snack",
+      "title": "真正的野餐小點",
+      "content": "名字就叫野餐小點的料理，終於真的被帶到野餐區吃掉了。{rabbit_name} 看起來很滿意。"
+    }
+  }
+}

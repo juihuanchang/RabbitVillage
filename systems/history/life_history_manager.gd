@@ -6,11 +6,13 @@ signal history_changed
 var _food_use_history: Array[FoodUseHistoryEntry] = []
 var _growth_path_history: Array[GrowthPathHistoryEntry] = []
 var _life_event_history: Array[LifeEventHistoryEntry] = []
+var _food_variety_records: Dictionary = {}
 
-func setup(food_use_history: Array = [], growth_path_history: Array = [], life_event_history: Array = []) -> void:
+func setup(food_use_history: Array = [], growth_path_history: Array = [], life_event_history: Array = [], food_variety_records: Array = []) -> void:
 	_food_use_history.clear()
 	_growth_path_history.clear()
 	_life_event_history.clear()
+	_food_variety_records.clear()
 
 	for raw: Variant in food_use_history:
 		if raw is Dictionary:
@@ -30,6 +32,21 @@ func setup(food_use_history: Array = [], growth_path_history: Array = [], life_e
 			if not entry.life_event_id.is_empty() and not has_life_event_history(entry.life_event_id):
 				_life_event_history.append(entry)
 
+	for raw: Variant in food_variety_records:
+		if not (raw is Dictionary):
+			continue
+		var entry := FoodVarietyRecord.from_dict(raw)
+		if entry.food_id.is_empty():
+			continue
+		var current := _food_variety_records.get(entry.food_id) as FoodVarietyRecord
+		if current == null:
+			_food_variety_records[entry.food_id] = entry
+		else:
+			if current.first_used_at <= 0.0 or (entry.first_used_at > 0.0 and entry.first_used_at < current.first_used_at):
+				current.first_used_at = entry.first_used_at
+			current.last_used_at = maxf(current.last_used_at, entry.last_used_at)
+			current.use_count = maxi(current.use_count, entry.use_count)
+
 	history_changed.emit()
 
 func record_food_use(result: FoodUseResult) -> FoodUseHistoryEntry:
@@ -45,10 +62,13 @@ func record_food_use(result: FoodUseResult) -> FoodUseHistoryEntry:
 	entry.amount_used = maxi(0, result.amount_used)
 	entry.hunger_before = clampi(result.hunger_before, 0, 100)
 	entry.hunger_after = clampi(result.hunger_after, 0, 100)
+	entry.energy_change = result.energy_change
+	entry.mood_change = result.mood_change
 	# B's FoodManager is runtime-only, so C derives the permanent first-use flag
 	# from already-saved history instead of trusting a session-local boolean.
 	entry.is_first_use = not has_food_use_for_food(result.food_id)
 	_food_use_history.append(entry)
+	record_food_variety(result.food_id, entry.used_at)
 	history_changed.emit()
 	return entry
 
@@ -137,5 +157,35 @@ func growth_path_history_to_array() -> Array[Dictionary]:
 func life_event_history_to_array() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for entry: LifeEventHistoryEntry in _life_event_history:
+		result.append(entry.to_dict())
+	return result
+
+
+func record_food_variety(food_id: String, used_at: float) -> FoodVarietyRecord:
+	if food_id.is_empty():
+		return null
+	var entry := _food_variety_records.get(food_id) as FoodVarietyRecord
+	var timestamp := TimeManager.get_now() if used_at <= 0.0 else used_at
+	if entry == null:
+		entry = FoodVarietyRecord.new()
+		entry.food_id = food_id
+		entry.first_used_at = timestamp
+		entry.last_used_at = timestamp
+		entry.use_count = 1
+		_food_variety_records[food_id] = entry
+	else:
+		if entry.first_used_at <= 0.0:
+			entry.first_used_at = timestamp
+		entry.last_used_at = maxf(entry.last_used_at, timestamp)
+		entry.use_count += 1
+	history_changed.emit()
+	return entry
+
+func get_food_variety_record(food_id: String) -> FoodVarietyRecord:
+	return _food_variety_records.get(food_id) as FoodVarietyRecord
+
+func food_variety_records_to_array() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for entry: FoodVarietyRecord in _food_variety_records.values():
 		result.append(entry.to_dict())
 	return result

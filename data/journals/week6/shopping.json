@@ -1,0 +1,54 @@
+{
+  "general": [
+    {
+      "id": "shopping_01",
+      "title": "今天的小店",
+      "content": "{rabbit_name} 在小店前停了一會兒，挑了需要的東西，也順便看看今天有什麼新鮮貨。"
+    },
+    {
+      "id": "shopping_02",
+      "title": "慢慢挑選",
+      "content": "貨架上的東西不多，{rabbit_name} 還是認真比較了一陣子，最後才滿意地把東西帶回家。"
+    },
+    {
+      "id": "shopping_03",
+      "title": "帶點東西回家",
+      "content": "今天從小店帶回來的東西，讓回家的路看起來也比平常更有生活感。"
+    },
+    {
+      "id": "shopping_04",
+      "title": "小店的一趟",
+      "content": "{rabbit_name} 熟門熟路地走進小店，買完東西後還在門口多站了一下。"
+    },
+    {
+      "id": "shopping_05",
+      "title": "今天買這個",
+      "content": "看了好一會兒，{rabbit_name} 終於決定今天就帶這個回家。"
+    },
+    {
+      "id": "shopping_06",
+      "title": "今天的小店",
+      "content": "{rabbit_name} 在小店前停了一會兒，挑了需要的東西，也順便看看今天有什麼新鮮貨。"
+    },
+    {
+      "id": "shopping_07",
+      "title": "慢慢挑選",
+      "content": "貨架上的東西不多，{rabbit_name} 還是認真比較了一陣子，最後才滿意地把東西帶回家。"
+    },
+    {
+      "id": "shopping_08",
+      "title": "帶點東西回家",
+      "content": "今天從小店帶回來的東西，讓回家的路看起來也比平常更有生活感。"
+    },
+    {
+      "id": "shopping_09",
+      "title": "小店的一趟",
+      "content": "{rabbit_name} 熟門熟路地走進小店，買完東西後還在門口多站了一下。"
+    },
+    {
+      "id": "shopping_10",
+      "title": "今天買這個",
+      "content": "看了好一會兒，{rabbit_name} 終於決定今天就帶這個回家。"
+    }
+  ]
+}

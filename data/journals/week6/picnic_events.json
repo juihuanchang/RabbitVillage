@@ -1,0 +1,12 @@
+{
+  "events": {
+    "picnic_first_visit_001": {
+      "title": "第一次來到野餐區",
+      "content": "{rabbit_name} 第一次真正停在野餐區休息。這裡也許會變成新的生活角落。"
+    },
+    "picnic_slow_day_001": {
+      "title": "今天什麼都沒有趕",
+      "content": "在野餐區待久了，{rabbit_name} 好像也慢慢學會，有些日子不需要一直往前趕。"
+    }
+  }
+}

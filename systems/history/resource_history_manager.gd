@@ -3,7 +3,7 @@ extends Node
 
 signal history_changed
 
-const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood"]
+const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread", "berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 
 var _inventory_history: Array[InventoryHistoryEntry] = []
 var _currency_history: Array[CurrencyHistoryEntry] = []

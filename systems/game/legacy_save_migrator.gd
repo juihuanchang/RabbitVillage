@@ -231,3 +231,59 @@ static func _save_has_growth_event(save: SaveData, event_id: String) -> bool:
 		if str(raw.get("growth_event_id", "")) == event_id:
 			return true
 	return false
+
+
+## Week 5 (SaveVersion 6) -> Week 6 shop / cooking / life-location migration.
+## Only stored permanent data is normalized here. Runtime game rules stay owned by B.
+static func migrate_week5_to_week6(save: SaveData) -> SaveData:
+	if save == null:
+		return null
+	_migrate_week6_shop_unlock(save)
+	_migrate_week6_food_history(save)
+	_migrate_week6_recipe_collection(save)
+	_repair_week6_transaction_guards(save)
+	return save
+
+
+static func _migrate_week6_shop_unlock(save: SaveData) -> void:
+	if save.completed_life_event_ids.has("village_life_expands_001"):
+		save.shop_state["village_shop_unlocked"] = true
+
+
+static func _migrate_week6_food_history(save: SaveData) -> void:
+	for index: int in save.food_use_history.size():
+		var raw := save.food_use_history[index].duplicate(true)
+		if not raw.has("energy_change"):
+			raw["energy_change"] = 0
+		if not raw.has("mood_change"):
+			raw["mood_change"] = 0
+		save.food_use_history[index] = raw
+
+
+static func _migrate_week6_recipe_collection(save: SaveData) -> void:
+	# Week 5 legitimately has no recipe collection. SaveData already initializes it as an empty array.
+	# This function intentionally does not invent recipe discoveries during migration.
+	if save.recipe_collection.is_empty():
+		return
+
+
+static func _repair_week6_transaction_guards(save: SaveData) -> void:
+	var applied_purchase_ids: Array = []
+	var raw_purchase_ids: Variant = save.shop_state.get("applied_purchase_ids", [])
+	if raw_purchase_ids is Array:
+		applied_purchase_ids = raw_purchase_ids.duplicate()
+	for raw: Dictionary in save.purchase_history:
+		var record_id := str(raw.get("purchase_record_id", ""))
+		if not record_id.is_empty() and not applied_purchase_ids.has(record_id):
+			applied_purchase_ids.append(record_id)
+	save.shop_state["applied_purchase_ids"] = applied_purchase_ids
+
+	var applied_cooking_ids: Array = []
+	var raw_cooking_ids: Variant = save.cooking_state.get("applied_cooking_ids", [])
+	if raw_cooking_ids is Array:
+		applied_cooking_ids = raw_cooking_ids.duplicate()
+	for raw: Dictionary in save.cooking_history:
+		var record_id := str(raw.get("cooking_record_id", ""))
+		if not record_id.is_empty() and not applied_cooking_ids.has(record_id):
+			applied_cooking_ids.append(record_id)
+	save.cooking_state["applied_cooking_ids"] = applied_cooking_ids

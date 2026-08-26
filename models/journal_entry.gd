@@ -44,6 +44,18 @@ extends Resource
 @export var growth_event_id := ""
 @export var is_life_memory := false
 
+# Week 6 shop / cooking / life-location fields.
+@export var purchase_record_id := ""
+@export var shop_id := ""
+@export var product_id := ""
+@export var cooking_record_id := ""
+@export var recipe_id := ""
+@export var life_location_id := ""
+@export var life_location_activity_id := ""
+@export var shop_event_id := ""
+@export var cooking_event_id := ""
+@export var picnic_event_id := ""
+
 func _init(
 	initial_journal_id := "",
 	initial_record_id := "",
@@ -122,7 +134,17 @@ func to_dict() -> Dictionary:
 		"growth_path": growth_path,
 		"growth_stage": growth_stage,
 		"growth_event_id": growth_event_id,
-		"is_life_memory": is_life_memory
+		"is_life_memory": is_life_memory,
+		"purchase_record_id": purchase_record_id,
+		"shop_id": shop_id,
+		"product_id": product_id,
+		"cooking_record_id": cooking_record_id,
+		"recipe_id": recipe_id,
+		"life_location_id": life_location_id,
+		"life_location_activity_id": life_location_activity_id,
+		"shop_event_id": shop_event_id,
+		"cooking_event_id": cooking_event_id,
+		"picnic_event_id": picnic_event_id
 	}
 
 static func from_dict(data: Dictionary) -> JournalEntry:
@@ -190,6 +212,16 @@ static func from_dict(data: Dictionary) -> JournalEntry:
 	entry.growth_stage = maxi(0, int(data.get("growth_stage", data.get("GrowthStage", 0))))
 	entry.growth_event_id = str(data.get("growth_event_id", data.get("GrowthEventId", "")))
 	entry.is_life_memory = bool(data.get("is_life_memory", data.get("IsLifeMemory", false)))
+	entry.purchase_record_id = str(data.get("purchase_record_id", data.get("PurchaseRecordId", "")))
+	entry.shop_id = str(data.get("shop_id", data.get("ShopId", "")))
+	entry.product_id = str(data.get("product_id", data.get("ProductId", "")))
+	entry.cooking_record_id = str(data.get("cooking_record_id", data.get("CookingRecordId", "")))
+	entry.recipe_id = str(data.get("recipe_id", data.get("RecipeId", "")))
+	entry.life_location_id = str(data.get("life_location_id", data.get("LifeLocationId", "")))
+	entry.life_location_activity_id = str(data.get("life_location_activity_id", data.get("LifeLocationActivityId", "")))
+	entry.shop_event_id = str(data.get("shop_event_id", data.get("ShopEventId", "")))
+	entry.cooking_event_id = str(data.get("cooking_event_id", data.get("CookingEventId", "")))
+	entry.picnic_event_id = str(data.get("picnic_event_id", data.get("PicnicEventId", "")))
 	return entry
 
 func is_valid() -> bool:
@@ -226,4 +258,22 @@ func is_valid() -> bool:
 			return not growth_event_id.is_empty() or not growth_mark_id.is_empty()
 		"growth_lifestyle":
 			return not growth_path.is_empty() and growth_stage > 0
+		"first_purchase", "shopping":
+			return not purchase_record_id.is_empty()
+		"product_unlock":
+			return not product_id.is_empty()
+		"new_food", "food_reaction":
+			return not food_use_record_id.is_empty() and not food_id.is_empty()
+		"first_cooking", "cooking", "recipe_discovery":
+			return not cooking_record_id.is_empty() and not recipe_id.is_empty()
+		"picnic", "picnic_food":
+			return not life_location_id.is_empty() and not life_location_activity_id.is_empty()
+		"shop_event":
+			return not shop_event_id.is_empty()
+		"cooking_event":
+			return not cooking_event_id.is_empty()
+		"picnic_event":
+			return not picnic_event_id.is_empty()
+		"week6_finale":
+			return not life_event_id.is_empty()
 	return true

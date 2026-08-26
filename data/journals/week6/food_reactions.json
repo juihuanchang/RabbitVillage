@@ -1,0 +1,72 @@
+{
+  "foods": {
+    "apple": [
+      {
+        "id": "food_reaction_apple_1",
+        "title": "脆脆的蘋果",
+        "content": "{rabbit_name} 咬著蘋果，清脆的口感讓她吃得特別慢。"
+      },
+      {
+        "id": "food_reaction_apple_2",
+        "title": "蘋果時間",
+        "content": "今天的蘋果剛剛好，{rabbit_name} 吃完後看起來精神也亮了一點。"
+      },
+      {
+        "id": "food_reaction_apple_3",
+        "title": "最後一口蘋果",
+        "content": "{rabbit_name} 把最後一口蘋果吃掉，像完成了一件很小但很滿足的事。"
+      }
+    ],
+    "bread": [
+      {
+        "id": "food_reaction_bread_1",
+        "title": "麵包的香味",
+        "content": "麵包一拿出來，{rabbit_name} 就被香味吸引過來。"
+      },
+      {
+        "id": "food_reaction_bread_2",
+        "title": "慢慢吃麵包",
+        "content": "{rabbit_name} 一口一口把麵包吃完，今天好像特別適合這種簡單的味道。"
+      },
+      {
+        "id": "food_reaction_bread_3",
+        "title": "剛好的麵包",
+        "content": "沒有太多花樣的麵包，反而讓 {rabbit_name} 吃得很安心。"
+      }
+    ],
+    "berry_juice": [
+      {
+        "id": "food_reaction_berry_juice_1",
+        "title": "莓果汁的酸甜",
+        "content": "{rabbit_name} 喝了一口莓果汁，先皺了一下鼻子，接著又忍不住喝第二口。"
+      },
+      {
+        "id": "food_reaction_berry_juice_2",
+        "title": "一口莓果汁",
+        "content": "冰涼的莓果汁讓今天多了一點清爽的味道。"
+      },
+      {
+        "id": "food_reaction_berry_juice_3",
+        "title": "杯底也喝乾淨了",
+        "content": "{rabbit_name} 把莓果汁喝到杯底，心情看起來也跟著輕了一點。"
+      }
+    ],
+    "small_snack": [
+      {
+        "id": "food_reaction_small_snack_1",
+        "title": "小點心時間",
+        "content": "{rabbit_name} 把小點心捧在手裡，像是在享受今天特別留給自己的幾分鐘。"
+      },
+      {
+        "id": "food_reaction_small_snack_2",
+        "title": "剛好有點嘴饞",
+        "content": "小點心的份量不多，卻剛好滿足了 {rabbit_name} 想吃點東西的心情。"
+      },
+      {
+        "id": "food_reaction_small_snack_3",
+        "title": "一下就吃完了",
+        "content": "{rabbit_name} 很快就把小點心吃完，還露出一副意猶未盡的樣子。"
+      }
+    ]
+  }
+}

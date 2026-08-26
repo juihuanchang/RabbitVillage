@@ -1,0 +1,29 @@
+{
+  "products": {
+    "carrot": {
+      "id": "product_unlock_carrot",
+      "title": "小店開始賣胡蘿蔔了",
+      "content": "小店的貨架上多了胡蘿蔔。{rabbit_name} 很快就注意到了這個新選擇。"
+    },
+    "apple": {
+      "id": "product_unlock_apple",
+      "title": "小店開始賣蘋果了",
+      "content": "小店的貨架上多了蘋果。{rabbit_name} 很快就注意到了這個新選擇。"
+    },
+    "bread": {
+      "id": "product_unlock_bread",
+      "title": "小店開始賣麵包了",
+      "content": "小店的貨架上多了麵包。{rabbit_name} 很快就注意到了這個新選擇。"
+    },
+    "berry_juice": {
+      "id": "product_unlock_berry_juice",
+      "title": "小店開始賣莓果汁了",
+      "content": "小店的貨架上多了莓果汁。{rabbit_name} 很快就注意到了這個新選擇。"
+    },
+    "small_snack": {
+      "id": "product_unlock_small_snack",
+      "title": "小店開始賣小點心了",
+      "content": "小店的貨架上多了小點心。{rabbit_name} 很快就注意到了這個新選擇。"
+    }
+  }
+}

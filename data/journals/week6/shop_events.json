@@ -1,0 +1,24 @@
+{
+  "events": {
+    "shop_first_purchase_001": {
+      "title": "第一次在村莊小店買東西",
+      "content": "第一次購物之後，小店不再只是路過的地方，而成了生活的一部分。"
+    },
+    "shop_regular_customer_001": {
+      "title": "最近常常來小店",
+      "content": "{rabbit_name} 已經熟悉小店每天的樣子，偶爾甚至會期待今天貨架上有什麼。"
+    },
+    "shop_big_spender_001": {
+      "title": "村莊裡的生活消費",
+      "content": "買過這麼多日常用品後，{rabbit_name} 的生活也比以前豐富了許多。"
+    },
+    "shop_daily_browser_001": {
+      "title": "每天都想看看今天賣什麼",
+      "content": "小店每天的商品成了 {rabbit_name} 生活裡一個小小的期待。"
+    },
+    "shop_all_foods_discovered_001": {
+      "title": "小店的食物都認識了",
+      "content": "貨架上的食物幾乎都試過了，{rabbit_name} 已經很清楚自己喜歡哪些味道。"
+    }
+  }
+}

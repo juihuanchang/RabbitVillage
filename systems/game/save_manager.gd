@@ -26,6 +26,10 @@ var _life_location_manager: LifeLocationManager
 var resource_history_manager := ResourceHistoryManager.new()
 var life_history_manager := LifeHistoryManager.new()
 var item_collection_manager := ItemCollectionManager.new()
+var shop_history_manager := ShopHistoryManager.new()
+var cooking_history_manager := CookingHistoryManager.new()
+var life_location_history_manager := LifeLocationHistoryManager.new()
+var recipe_collection_manager := RecipeCollectionManager.new()
 
 var _loaded_save: SaveData
 var _week5_runtime_ready := false
@@ -80,6 +84,7 @@ func save_game() -> bool:
 		_capture_week5_runtime(save)
 	else:
 		_capture_week5_from_loaded(save)
+	_capture_week6_persistent(save)
 	_backup_valid_primary()
 	var ok := _write(save)
 	if ok:
@@ -111,6 +116,7 @@ func load_or_create(default_rabbit: RabbitData) -> RabbitData:
 	_activity_manager.set_completed_record_ids(save.completed_activity_ids)
 	_diary_manager.load_from_array(save.journals)
 	_diary_manager.setup_week5_limits(save.last_food_journal_date, save.last_needs_journal_date)
+	_diary_manager.setup_week6_limits(save.last_shopping_journal_date, save.last_cooking_journal_date, save.last_picnic_journal_date)
 	for raw: Dictionary in save.rabbits:
 		var rabbit := RabbitData.from_dict(raw)
 		rabbit.village_data = VillageData.from_dict(rabbit.village_data).to_dict() if not rabbit.village_data.is_empty() else save.village_data.duplicate(true)
@@ -143,6 +149,7 @@ func migrate_save_data(save: SaveData) -> SaveData:
 	# a missing carrot entry without ever double-copying a valid one.
 	if original_version <= SaveData.CURRENT_VERSION:
 		save = LegacySaveMigrator.migrate_week4_to_week5(save)
+		save = LegacySaveMigrator.migrate_week5_to_week6(save)
 	save.save_version = SaveData.CURRENT_VERSION
 	return save
 
@@ -158,15 +165,32 @@ func get_life_history_manager() -> LifeHistoryManager:
 func get_item_collection_manager() -> ItemCollectionManager:
 	return item_collection_manager
 
+func get_shop_history_manager() -> ShopHistoryManager:
+	return shop_history_manager
+
+func get_cooking_history_manager() -> CookingHistoryManager:
+	return cooking_history_manager
+
+func get_life_location_history_manager() -> LifeLocationHistoryManager:
+	return life_location_history_manager
+
+func get_recipe_collection_manager() -> RecipeCollectionManager:
+	return recipe_collection_manager
+
 func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	resource_history_manager.setup(save.inventory_history, save.currency_history, save.reward_history, save.item_discovery_history)
-	life_history_manager.setup(save.food_use_history, save.growth_path_history, save.life_event_history)
+	life_history_manager.setup(save.food_use_history, save.growth_path_history, save.life_event_history, save.food_variety_records)
 	item_collection_manager.setup(save.item_collection)
+	shop_history_manager.setup(save.purchase_history, save.daily_shop_history, save.product_unlock_history, save.shop_event_history)
+	cooking_history_manager.setup(save.cooking_history, save.recipe_unlock_history)
+	life_location_history_manager.setup(save.life_location_history)
+	recipe_collection_manager.setup(save.recipe_collection)
 	if _diary_manager != null:
 		_diary_manager.setup_week5_limits(save.last_food_journal_date, save.last_needs_journal_date)
+		_diary_manager.setup_week6_limits(save.last_shopping_journal_date, save.last_cooking_journal_date, save.last_picnic_journal_date)
 
 func _ensure_week5_managers() -> void:
-	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager]:
+	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager]:
 		if manager.get_parent() == null:
 			add_child(manager)
 
@@ -226,6 +250,17 @@ func _connect_week5_signals() -> void:
 		_growth_album_manager.album_entry_added.connect(_on_growth_album_updated)
 	if _diary_manager != null:
 		_diary_manager.journal_added.connect(_on_journal_created)
+	if _shop_manager != null:
+		_shop_manager.purchase_completed.connect(_on_purchase_completed)
+		_shop_manager.product_unlocked.connect(_on_product_unlocked)
+	if _daily_shop_manager != null:
+		_daily_shop_manager.daily_shop_refreshed.connect(_on_daily_shop_refreshed)
+	if _cooking_manager != null:
+		_cooking_manager.cooking_completed.connect(_on_cooking_completed)
+		_cooking_manager.recipe_discovered.connect(_on_recipe_discovered)
+		_cooking_manager.recipe_unlocked.connect(_on_recipe_unlocked)
+	if _life_location_manager != null:
+		_life_location_manager.life_location_activity_completed.connect(_on_life_location_completed)
 	_week5_signals_connected = true
 
 func _apply_loaded_week5_runtime() -> void:
@@ -251,6 +286,7 @@ func _apply_loaded_week5_runtime() -> void:
 	_repair_collection_from_inventory()
 	_repair_discovery_dependencies()
 	_repair_reward_history_dependencies()
+	_repair_week6_dependencies()
 	_week5_runtime_ready = true
 	_on_rabbit_need_state_changed(_rabbit_manager.get_hunger_state(), _rabbit_manager.get_energy_state(), _rabbit_manager.get_mood_state())
 	save_game()
@@ -346,7 +382,9 @@ func _capture_week5_runtime(save: SaveData) -> void:
 	save.completed_life_event_ids = _capture_completed_life_event_ids()
 	save.last_food_journal_date = _diary_manager.get_last_food_journal_date()
 	save.last_needs_journal_date = _diary_manager.get_last_needs_journal_date()
-	if _shop_manager != null: save.shop_state = _shop_manager.to_dict()
+	if _shop_manager != null:
+		save.shop_state = _shop_manager.to_dict()
+		save.daily_shop_state = _extract_daily_shop_state(save.shop_state)
 	if _cooking_manager != null: save.cooking_state = _cooking_manager.to_dict()
 	if _food_manager != null: save.food_runtime_state = _food_manager.to_dict()
 	if _life_location_manager != null: save.life_location_state = _life_location_manager.to_dict()
@@ -363,6 +401,7 @@ func _capture_week5_from_loaded(save: SaveData) -> void:
 	save.item_discovery_history = _loaded_save.item_discovery_history.duplicate(true)
 	save.food_use_history = _loaded_save.food_use_history.duplicate(true)
 	save.shop_state = _loaded_save.shop_state.duplicate(true)
+	save.daily_shop_state = _loaded_save.daily_shop_state.duplicate(true)
 	save.cooking_state = _loaded_save.cooking_state.duplicate(true)
 	save.food_runtime_state = _loaded_save.food_runtime_state.duplicate(true)
 	save.life_location_state = _loaded_save.life_location_state.duplicate(true)
@@ -373,6 +412,9 @@ func _capture_week5_from_loaded(save: SaveData) -> void:
 	save.completed_life_event_ids = _loaded_save.completed_life_event_ids.duplicate()
 	save.last_food_journal_date = _diary_manager.get_last_food_journal_date() if _diary_manager != null else _loaded_save.last_food_journal_date
 	save.last_needs_journal_date = _diary_manager.get_last_needs_journal_date() if _diary_manager != null else _loaded_save.last_needs_journal_date
+	save.last_shopping_journal_date = _diary_manager.get_last_shopping_journal_date() if _diary_manager != null else _loaded_save.last_shopping_journal_date
+	save.last_cooking_journal_date = _diary_manager.get_last_cooking_journal_date() if _diary_manager != null else _loaded_save.last_cooking_journal_date
+	save.last_picnic_journal_date = _diary_manager.get_last_picnic_journal_date() if _diary_manager != null else _loaded_save.last_picnic_journal_date
 
 func _capture_growth_progress() -> Dictionary:
 	if _growth_manager == null:
@@ -448,6 +490,7 @@ func _on_food_use_completed(result: FoodUseResult) -> void:
 	life_history_manager.record_food_use(result)
 	if _diary_manager != null:
 		_diary_manager.generate_food_use_journal(result, _current_rabbit_name(), is_first_recorded_use)
+		_diary_manager.generate_week6_food_journal(result, _current_rabbit_name(), is_first_recorded_use)
 	save_game()
 
 func _on_inventory_changed(item_id: String, old_amount: int, new_amount: int, source_type: String, source_id: String) -> void:
@@ -495,8 +538,13 @@ func _on_life_event_confirmed(result: LifeEventResult) -> void:
 	if result == null:
 		return
 	life_history_manager.record_life_event(result)
+	if result.event_id.begins_with("shop_"):
+		shop_history_manager.record_shop_event(result.event_id, result.confirmed_at)
 	if _diary_manager != null:
-		_diary_manager.generate_life_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
+		if result.event_id.begins_with("shop_") or result.event_id.begins_with("cooking_") or result.event_id.begins_with("picnic_") or result.event_id == "village_daily_life_001":
+			_diary_manager.generate_week6_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
+		else:
+			_diary_manager.generate_life_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
 	save_game()
 
 func _on_growth_event_pending(_event: GrowthEventData) -> void:
@@ -542,6 +590,165 @@ func _on_rabbit_need_state_changed(hunger_state: String, energy_state: String, m
 	var rabbit := _current_rabbit()
 	if rabbit != null:
 		_diary_manager.generate_needs_journal_from_states(rabbit, hunger_state, energy_state, mood_state, rabbit.rabbit_name)
+
+func _capture_week6_persistent(save: SaveData) -> void:
+	save.purchase_history = shop_history_manager.purchase_history_to_array()
+	save.daily_shop_history = shop_history_manager.daily_shop_history_to_array()
+	save.product_unlock_history = shop_history_manager.product_unlock_history_to_array()
+	save.shop_event_history = shop_history_manager.shop_event_history_to_array()
+	save.cooking_history = cooking_history_manager.cooking_history_to_array()
+	save.recipe_unlock_history = cooking_history_manager.recipe_unlock_history_to_array()
+	save.recipe_collection = recipe_collection_manager.to_array()
+	save.food_variety_records = life_history_manager.food_variety_records_to_array()
+	save.life_location_history = life_location_history_manager.to_array()
+	if _week5_runtime_ready and _daily_shop_manager != null:
+		save.daily_shop_state = _extract_daily_shop_state(_daily_shop_manager.to_dict())
+	elif _loaded_save != null:
+		save.daily_shop_state = _loaded_save.daily_shop_state.duplicate(true)
+	if _diary_manager != null:
+		save.last_shopping_journal_date = _diary_manager.get_last_shopping_journal_date()
+		save.last_cooking_journal_date = _diary_manager.get_last_cooking_journal_date()
+		save.last_picnic_journal_date = _diary_manager.get_last_picnic_journal_date()
+
+func _extract_daily_shop_state(raw: Dictionary) -> Dictionary:
+	return {
+		"day_key": str(raw.get("day_key", "")),
+		"daily_offers": raw.get("daily_offers", []).duplicate(true) if raw.get("daily_offers", []) is Array else [],
+		"daily_purchase_amounts": raw.get("daily_purchase_amounts", {}).duplicate(true) if raw.get("daily_purchase_amounts", {}) is Dictionary else {}
+	}
+
+func _on_daily_shop_refreshed(day_key: String, offers: Array[DailyShopOfferData]) -> void:
+	shop_history_manager.record_daily_refresh(day_key, offers)
+	save_game()
+
+func _on_purchase_completed(result: PurchaseResult) -> void:
+	if result == null or not result.success:
+		return
+	var is_first_purchase := shop_history_manager.get_purchase_count() == 0
+	var history := shop_history_manager.record_purchase(result)
+	if history == null:
+		return
+	if _diary_manager != null:
+		if is_first_purchase:
+			_diary_manager.generate_first_purchase_journal(result, _current_rabbit_name())
+		_diary_manager.generate_shopping_journal(result, _current_rabbit_name())
+	save_game()
+
+func _on_product_unlocked(product: ShopProductData) -> void:
+	if product == null:
+		return
+	var source_type := "shop_unlock"
+	var source_id := ""
+	if product.unlock_condition != null:
+		source_type = product.unlock_condition.condition_type
+		source_id = product.unlock_condition.target_id
+	var history := shop_history_manager.record_product_unlock(product, source_type, source_id)
+	if history != null and _diary_manager != null:
+		_diary_manager.generate_product_unlock_journal(product, _current_rabbit_name())
+	save_game()
+
+func _on_recipe_unlocked(recipe: RecipeData) -> void:
+	if recipe == null:
+		return
+	var source_id := ""
+	for ingredient: RecipeIngredientData in recipe.ingredients:
+		if not source_id.is_empty():
+			source_id += ","
+		source_id += ingredient.item_id
+	cooking_history_manager.record_recipe_unlock(recipe.recipe_id, recipe.unlocked_at, "ingredient_discovery", source_id)
+	save_game()
+
+func _on_recipe_discovered(_recipe: RecipeData) -> void:
+	# CookingResult owns the stable transaction id, so the permanent collection is
+	# committed when cooking_completed arrives a moment later.
+	save_game()
+
+func _on_cooking_completed(result: CookingResult) -> void:
+	if result == null or not result.success:
+		return
+	if cooking_history_manager.has_cooking(result.cooking_record_id):
+		# A repeated signal for the same transaction must never increase permanent cook counters a second time.
+		save_game()
+		return
+	var canonical_recipe_id := CookingHistoryManager.canonical_recipe_id(result.recipe_id)
+	var ingredients := _ingredients_for_runtime_recipe(result.recipe_id)
+	var is_first_cooking := cooking_history_manager.cooking_history_to_array().is_empty()
+	var is_first_recipe := not recipe_collection_manager.has_discovered_recipe(canonical_recipe_id)
+	var history := cooking_history_manager.record_cooking(result, ingredients)
+	if history == null:
+		return
+	recipe_collection_manager.record_cook(canonical_recipe_id, result.cooked_at, "cooking", result.cooking_record_id)
+	if _diary_manager != null:
+		if is_first_cooking:
+			_diary_manager.generate_first_cooking_journal(result, canonical_recipe_id, _current_rabbit_name())
+		_diary_manager.generate_cooking_journal(result, canonical_recipe_id, _current_rabbit_name())
+		if is_first_recipe:
+			_diary_manager.generate_recipe_discovery_journal(result, canonical_recipe_id, _current_rabbit_name())
+	save_game()
+
+func _ingredients_for_runtime_recipe(recipe_id: String) -> Dictionary:
+	var result := {}
+	if _cooking_manager == null:
+		return result
+	var runtime_id := CookingHistoryManager.runtime_recipe_id(recipe_id)
+	var recipe := _cooking_manager.get_recipe(runtime_id)
+	if recipe == null:
+		return result
+	for ingredient: RecipeIngredientData in recipe.ingredients:
+		result[ingredient.item_id] = ingredient.required_amount
+	return result
+
+func _on_life_location_completed(result: LifeLocationResult) -> void:
+	if result == null or not result.success:
+		return
+	var food_id := ""
+	if not result.food_use_record_id.is_empty():
+		var food_history := life_history_manager.get_food_use(result.food_use_record_id)
+		if food_history != null:
+			food_id = food_history.food_id
+	var history := life_location_history_manager.record_activity(result, food_id)
+	if history == null:
+		return
+	if _diary_manager != null:
+		_diary_manager.generate_picnic_journal(result, _current_rabbit_name())
+		if result.activity_id == "picnic_eat" and not food_id.is_empty():
+			_diary_manager.generate_picnic_food_journal(result, food_id, _current_rabbit_name())
+	save_game()
+
+func _repair_week6_dependencies() -> void:
+	if _shop_manager != null:
+		var state := _shop_manager.to_dict()
+		var day_key := str(state.get("day_key", ""))
+		if not day_key.is_empty():
+			var raw_offers: Array = []
+			var offers_variant: Variant = state.get("daily_offers", [])
+			if offers_variant is Array:
+				raw_offers = offers_variant
+			var purchase_counts: Dictionary = {}
+			var counts_variant: Variant = state.get("daily_purchase_amounts", {})
+			if counts_variant is Dictionary:
+				purchase_counts = counts_variant
+			shop_history_manager.record_daily_state(day_key, raw_offers, purchase_counts, _loaded_save.last_saved_at if _loaded_save != null else -1.0)
+		for product: ShopProductData in _shop_manager.get_catalog().products:
+			if product.unlock_state == ShopProductData.UNLOCKED and shop_history_manager.get_product_unlock(product.product_id) == null:
+				shop_history_manager.record_product_unlock_values(product.product_id, product.unlocked_at, "repair", "shop_state")
+				if _diary_manager != null:
+					_diary_manager.generate_product_unlock_journal(product, _current_rabbit_name())
+	var recipe_counts := {}
+	var recipe_first_at := {}
+	var recipe_first_record := {}
+	for raw: Dictionary in cooking_history_manager.cooking_history_to_array():
+		var entry := CookingHistoryEntry.from_dict(raw)
+		recipe_counts[entry.recipe_id] = int(recipe_counts.get(entry.recipe_id, 0)) + 1
+		if not recipe_first_at.has(entry.recipe_id) or float(recipe_first_at[entry.recipe_id]) <= 0.0 or (entry.cooked_at > 0.0 and entry.cooked_at < float(recipe_first_at[entry.recipe_id])):
+			recipe_first_at[entry.recipe_id] = entry.cooked_at
+			recipe_first_record[entry.recipe_id] = entry.cooking_record_id
+	for recipe_id: String in recipe_counts:
+		recipe_collection_manager.ensure_minimum_cook_count(recipe_id, int(recipe_counts[recipe_id]), float(recipe_first_at.get(recipe_id, 0.0)), "repair", str(recipe_first_record.get(recipe_id, "cooking_history")))
+	if _cooking_manager != null:
+		for recipe: RecipeData in _cooking_manager.get_recipes():
+			if recipe.is_unlocked and cooking_history_manager.get_recipe_unlock(recipe.recipe_id) == null:
+				cooking_history_manager.record_recipe_unlock(recipe.recipe_id, recipe.unlocked_at, "repair", "cooking_state")
 
 func _growth_mark_for_event(event_id: String) -> String:
 	match event_id:
