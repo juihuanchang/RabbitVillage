@@ -1,12 +1,13 @@
 [gd_scene format=3 uid="uid://5fes2biebjed"]
 
-[ext_resource type="Script" uid="uid://b4jlrlsy831cj" path="res://scenes  場景/home/home_page_mcp.gd" id="1_inkar"]
+[ext_resource type="Script" uid="uid://cvbrkc4pbjmaj" path="res://scenes  場景/home/home_page.gd" id="1_inkar"]
 [ext_resource type="PackedScene" uid="uid://bqx8n2k7p4mwr" path="res://player/Player.tscn" id="2_6uq7s"]
 [ext_resource type="Texture2D" uid="uid://cann1skmc44sg" path="res://assets 美術、音效等素材(不放程式)/backgrounds 背景圖/底圖.png" id="2_inkar"]
-[ext_resource type="Script" uid="uid://bexhx6mnb13op" path="res://scenes  場景/home/week3_a_ui.gd" id="5_2si26"]
-[ext_resource type="Script" uid="uid://cdvoa0ogb8q0i" path="res://scenes  場景/home/week5_a_ui.gd" id="6_qsqyk"]
-[ext_resource type="Script" uid="uid://djq2rkd8u0s17" path="res://scenes  場景/home/week4_a_ui.gd" id="6_we17s"]
-[ext_resource type="Script" path="res://scenes  場景/home/week6_a_ui.gd" id="7_week6"]
+[ext_resource type="Script" uid="uid://dx03hstie4r1w" path="res://scenes  場景/home/home_activity_ui.gd" id="5_2si26"]
+[ext_resource type="Script" uid="uid://qlsduro5wjbi" path="res://scenes  場景/home/rabbit_life_ui.gd" id="6_qsqyk"]
+[ext_resource type="Script" uid="uid://wr044glhr77k" path="res://scenes  場景/home/village_building_ui.gd" id="6_we17s"]
+[ext_resource type="Script" uid="uid://dryawo3t8jrqq" path="res://scenes  場景/home/village_economy_ui.gd" id="7_economy"]
+[ext_resource type="Script" uid="uid://bm53lcwih1gl" path="res://scenes  場景/home/village_expansion_ui.gd" id="8_expansion"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
 script = ExtResource("1_inkar")
@@ -367,7 +368,7 @@ theme_override_font_sizes/font_size = 22
 text = "Amy 回來了！"
 horizontal_alignment = 1
 
-[node name="Week3AUI" type="Node" parent="." unique_id=1977266883]
+[node name="HomeActivityUI" type="Node" parent="." unique_id=1977266883]
 script = ExtResource("5_2si26")
 
 [node name="HUDMenuLayer" type="CanvasLayer" parent="." unique_id=2108136075]
@@ -382,40 +383,43 @@ tooltip_text = "展開 Amy 資訊"
 theme_override_font_sizes/font_size = 28
 text = "☰"
 
-[node name="Week4BuildSlots" type="Node2D" parent="." unique_id=171999871]
+[node name="BuildingSlots" type="Node2D" parent="." unique_id=171999871]
 
-[node name="Slot01" type="Marker2D" parent="Week4BuildSlots" unique_id=94899974]
+[node name="Slot01" type="Marker2D" parent="BuildingSlots" unique_id=94899974]
 position = Vector2(649, 112)
 
-[node name="Slot02" type="Marker2D" parent="Week4BuildSlots" unique_id=1260660692]
+[node name="Slot02" type="Marker2D" parent="BuildingSlots" unique_id=1260660692]
 position = Vector2(1359, 148)
 
-[node name="Slot03" type="Marker2D" parent="Week4BuildSlots" unique_id=39241299]
+[node name="Slot03" type="Marker2D" parent="BuildingSlots" unique_id=39241299]
 position = Vector2(127, 439)
 
-[node name="Slot04" type="Marker2D" parent="Week4BuildSlots" unique_id=1913422782]
+[node name="Slot04" type="Marker2D" parent="BuildingSlots" unique_id=1913422782]
 position = Vector2(520, 458)
 
-[node name="Slot05" type="Marker2D" parent="Week4BuildSlots" unique_id=2140173459]
+[node name="Slot05" type="Marker2D" parent="BuildingSlots" unique_id=2140173459]
 position = Vector2(811, 439)
 
-[node name="Slot06" type="Marker2D" parent="Week4BuildSlots" unique_id=443168463]
+[node name="Slot06" type="Marker2D" parent="BuildingSlots" unique_id=443168463]
 position = Vector2(1280, 465)
 
-[node name="Slot07" type="Marker2D" parent="Week4BuildSlots" unique_id=468435545]
+[node name="Slot07" type="Marker2D" parent="BuildingSlots" unique_id=468435545]
 position = Vector2(378, 764)
 
-[node name="Slot08" type="Marker2D" parent="Week4BuildSlots" unique_id=1966899040]
+[node name="Slot08" type="Marker2D" parent="BuildingSlots" unique_id=1966899040]
 position = Vector2(860, 758)
 
-[node name="Slot09" type="Marker2D" parent="Week4BuildSlots" unique_id=348805924]
+[node name="Slot09" type="Marker2D" parent="BuildingSlots" unique_id=348805924]
 position = Vector2(1140, 741)
 
-[node name="Week4AUI" type="Node" parent="." unique_id=1472467627]
+[node name="VillageBuildingUI" type="Node" parent="." unique_id=1472467627]
 script = ExtResource("6_we17s")
 
-[node name="Week5AUI" type="Node" parent="." unique_id=238999449]
+[node name="RabbitLifeUI" type="Node" parent="." unique_id=238999449]
 script = ExtResource("6_qsqyk")
 
-[node name="Week6AUI" type="Node" parent="."]
-script = ExtResource("7_week6")
+[node name="VillageEconomyUI" type="Node" parent="." unique_id=180245479]
+script = ExtResource("7_economy")
+
+[node name="VillageExpansionUI" type="Node" parent="." unique_id=1287838183]
+script = ExtResource("8_expansion")

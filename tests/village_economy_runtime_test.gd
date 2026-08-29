@@ -6,7 +6,7 @@ func _init() -> void:
 	_test_shop_reload_and_cross_day()
 	_test_cooking_atomic_and_replay()
 	_test_generic_food_and_picnic()
-	if failures.is_empty(): print("WEEK6_B_TESTS_OK"); quit(0)
+	if failures.is_empty(): print("VILLAGE_ECONOMY_RUNTIME_TESTS_OK"); quit(0)
 	else:
 		for message: String in failures: push_error(message)
 		quit(1)

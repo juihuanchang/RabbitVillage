@@ -72,7 +72,7 @@ var _show_scheduled := false
 func _ready() -> void:
 	player = get_parent().get_node_or_null("Background/Player")
 	if player == null:
-		push_error("Week6AUI 找不到 Background/Player")
+		push_error("VillageEconomyUI 找不到 Background/Player")
 		return
 	_create_layers()
 	_create_hub()
@@ -87,11 +87,11 @@ func _ready() -> void:
 
 func _create_layers() -> void:
 	layer = CanvasLayer.new()
-	layer.name = "Week6HUDLayer"
+	layer.name = "VillageEconomyHUDLayer"
 	layer.layer = 27
 	add_child(layer)
 	modal_layer = CanvasLayer.new()
-	modal_layer.name = "Week6ModalLayer"
+	modal_layer.name = "VillageEconomyModalLayer"
 	modal_layer.layer = 110
 	add_child(modal_layer)
 
@@ -102,7 +102,7 @@ func _create_hub() -> void:
 	hub.add_theme_stylebox_override("panel", UIStyleFactory.panel(Color("#fff8e9ee"), Color("#a97946"), 22, 2, 10))
 	layer.add_child(hub)
 	var box := _margin_vbox(hub, 18)
-	var title := _label("第六週 · 村莊生活", 24, Color("#59402c"))
+	var title := _label("村莊生活", 24, Color("#59402c"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	var shop := _button("🏪  村莊小店")
@@ -122,7 +122,7 @@ func _create_hub() -> void:
 	box.add_child(collection)
 
 func _create_shop_window() -> void:
-	shop_window = _window_root("Week6ShopWindow")
+	shop_window = _window_root("ShopWindow")
 	var card := _card(shop_window, Vector2(305, 105), Vector2(1310, 860))
 	var layout := _margin_vbox(card, 28)
 	var header := HBoxContainer.new()
@@ -179,7 +179,7 @@ func _create_shop_window() -> void:
 	detail_box.add_child(shop_buy_button)
 
 func _create_cooking_window() -> void:
-	cooking_window = _window_root("Week6CookingWindow")
+	cooking_window = _window_root("CookingWindow")
 	var card := _card(cooking_window, Vector2(345, 115), Vector2(1230, 840))
 	var layout := _margin_vbox(card, 28)
 	var header := HBoxContainer.new()
@@ -218,7 +218,7 @@ func _create_cooking_window() -> void:
 	detail_box.add_child(cook_button)
 
 func _create_picnic_window() -> void:
-	picnic_window = _window_root("Week6PicnicWindow")
+	picnic_window = _window_root("PicnicWindow")
 	var card := _card(picnic_window, Vector2(455, 120), Vector2(1010, 820))
 	var layout := _margin_vbox(card, 30)
 	var header := HBoxContainer.new()
@@ -249,7 +249,7 @@ func _create_picnic_window() -> void:
 	scroll.add_child(picnic_food_list)
 
 func _create_food_window() -> void:
-	food_window = _window_root("Week6FoodWindow")
+	food_window = _window_root("FoodWindow")
 	var card := _card(food_window, Vector2(430, 130), Vector2(1060, 800))
 	var layout := _margin_vbox(card, 28)
 	var header := HBoxContainer.new()
@@ -276,7 +276,7 @@ func _create_food_window() -> void:
 	var detail_box := _margin_vbox(detail, 24)
 	food_title = _label("選擇食物", 28, Color("#59402c"))
 	detail_box.add_child(food_title)
-	food_body = _label("第五週與第六週的食物都會顯示在這裡。", 20, Color("#51483d"))
+	food_body = _label("目前收集到的食物都會顯示在這裡。", 20, Color("#51483d"))
 	food_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	food_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	detail_box.add_child(food_body)
@@ -286,12 +286,12 @@ func _create_food_window() -> void:
 	detail_box.add_child(food_use_button)
 
 func _create_collection_window() -> void:
-	collection_window = _window_root("Week6CollectionWindow")
+	collection_window = _window_root("LifeCollectionWindow")
 	var card := _card(collection_window, Vector2(540, 190), Vector2(840, 660))
 	var layout := _margin_vbox(card, 30)
 	var header := HBoxContainer.new()
 	layout.add_child(header)
-	var title := _label("第六週生活收藏", 32, Color("#5b3f2a"))
+	var title := _label("生活收藏", 32, Color("#5b3f2a"))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	header.add_child(_close_button(collection_window))
@@ -357,7 +357,7 @@ func _confirm_purchase() -> void:
 func _purchase_selected() -> void:
 	var manager := _manager("shop_manager")
 	if manager == null or not manager.has_method("purchase"):
-		_enqueue_modal("A 介面預覽", "商店介面已完成；等待 B 的 ShopManager 接入後才會正式扣除金幣。", 80)
+		_enqueue_modal("商店尚未開放", "目前無法完成交易，請稍後再試。", 80)
 		return
 	var coin_before := _coin_amount()
 	var result: Variant = manager.call("purchase", selected_product, purchase_quantity)
@@ -404,7 +404,7 @@ func _cook_selected() -> void:
 		return
 	var manager := _manager("cooking_manager")
 	if manager == null or not manager.has_method("cook"):
-		_enqueue_modal("A 介面預覽", "料理介面已完成；等待 B 的 CookingManager 接入後才會正式扣除材料。", 80)
+		_enqueue_modal("料理尚未開放", "目前無法製作料理，請稍後再試。", 80)
 		return
 	if manager.has_method("can_cook"):
 		var check: Variant = manager.call("can_cook", selected_recipe)
@@ -459,7 +459,7 @@ func _use_selected_food() -> void:
 	elif selected_food == "carrot" and player.has_method("eat_carrot"):
 		result = player.call("eat_carrot")
 	else:
-		_enqueue_modal("A 介面預覽", "多食物介面已完成；等待 B 擴充 FoodManager.use_food() 後即可正式使用。", 80)
+		_enqueue_modal("現在無法食用", "這項食物目前尚不能使用。", 80)
 		return
 	if result == null or not _result_success(result):
 		_enqueue_modal("現在不能吃", FAILURE_TEXT.get(_result_reason(result), "現在使用這份食物不會產生效果。"), 80)
@@ -494,7 +494,7 @@ func _picnic_eat(food_id: String) -> void:
 func _run_picnic(activity_id: String, food_id: String) -> void:
 	var manager := _manager("life_location_manager")
 	if manager == null:
-		_enqueue_modal("A 介面預覽", "野餐區介面已完成；等待 B 的 LifeLocationManager 接入後才會套用生活效果。", 80)
+		_enqueue_modal("野餐活動尚未開放", "目前無法開始這項野餐活動。", 80)
 		return
 	var result: Variant
 	if manager.has_method("perform_activity"):
@@ -576,16 +576,16 @@ func _refresh_all() -> void:
 		_refresh_collection()
 
 func _attach_backpack_cooking_button() -> void:
-	var week5 := get_parent().get_node_or_null("Week5AUI")
-	if week5 == null:
+	var life_ui := get_parent().get_node_or_null("RabbitLifeUI")
+	if life_ui == null:
 		return
-	var root: Variant = week5.get("inventory_window")
+	var root: Variant = life_ui.get("inventory_window")
 	if not (root is Control):
 		return
-	if root.get_node_or_null("Week6CookingShortcut") != null:
+	if root.get_node_or_null("CookingShortcut") != null:
 		return
 	var shortcut := _button("🍳  料理")
-	shortcut.name = "Week6CookingShortcut"
+	shortcut.name = "CookingShortcut"
 	shortcut.position = Vector2(1225, 175)
 	shortcut.size = Vector2(150, 48)
 	shortcut.pressed.connect(_open_cooking)

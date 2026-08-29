@@ -1,10 +1,10 @@
 class_name UIModalPresenter
 extends RefCounted
 
-const MODAL_NODE_NAME := "Week4Modal"
+const MODAL_NODE_NAME := "SharedModal"
 
 
-## 建立第四週共用訊息、確認與雙按鈕視窗。
+## 建立共用訊息、確認與雙按鈕視窗。
 static func show_actions(
 	layer: CanvasLayer,
 	title: String,

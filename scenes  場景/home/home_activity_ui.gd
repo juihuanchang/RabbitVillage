@@ -124,7 +124,7 @@ func _create_map_location_buttons() -> void:
 
 func _create_overlay_layer() -> void:
 	layer = CanvasLayer.new()
-	layer.name = "Week3AUI"
+	layer.name = "HomeActivityLayer"
 	layer.layer = 18
 	add_child(layer)
 
@@ -216,7 +216,7 @@ func _open_location(location_id: String) -> void:
 		button.custom_minimum_size = Vector2(0, 66)
 		button.add_theme_font_size_override("font_size", 20)
 		if activity == null:
-			button.text = "%s　（等待 B 的活動資料）" % ACTIVITY_NAMES[activity_id]
+			button.text = "%s　（尚未開放）" % ACTIVITY_NAMES[activity_id]
 			button.disabled = true
 		else:
 			button.text = "%s　·　%d 秒" % [activity.activity_name, int(activity.duration_seconds)]

@@ -35,7 +35,7 @@ static func migrate_rabbit_village_data(data: Dictionary) -> Dictionary:
 	return village.to_dict()
 
 
-## 匯入早期第四週 A 版快照，並回傳 UI 顯示仍需要的暫存資料。
+## 匯入早期介面版本的村莊快照，並回傳畫面仍需要的暫存資料。
 static func import_week4_snapshot(player: Variant, saved: Dictionary) -> Dictionary:
 	var states: Dictionary = saved.get("states", {}).duplicate(true) if saved.get("states", {}) is Dictionary else {}
 	var placements: Dictionary = saved.get("placements", {}).duplicate(true) if saved.get("placements", {}) is Dictionary else {}

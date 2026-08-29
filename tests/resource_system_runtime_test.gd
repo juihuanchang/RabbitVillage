@@ -10,7 +10,7 @@ func _init() -> void:
 	_test_life_event()
 	_test_growth_paths()
 	if failures.is_empty():
-		print("WEEK5_B_TESTS_OK")
+		print("RESOURCE_SYSTEM_RUNTIME_TESTS_OK")
 		quit(0)
 	else:
 		for failure: String in failures:

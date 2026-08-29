@@ -47,14 +47,14 @@ func _ready() -> void:
 	_load_slot_positions()
 	_load_village_state()
 	visual_root = Node2D.new()
-	visual_root.name = "Week4Buildings"
+	visual_root.name = "VillageBuildings"
 	get_parent().add_child.call_deferred(visual_root)
 	_create_layers()
 	_create_toolbar()
 	_create_carrot_counter()
 	_create_construction_status()
 	_refresh_all()
-	# Older A-side week-four saves may already have completed buildings but no C journals.
+	# Older saves may already have completed buildings but no matching journal records.
 	call_deferred("_backfill_c_building_journals")
 	call_deferred("_backfill_c_village_event_journals")
 	if rest_left <= 0.0:
@@ -62,9 +62,9 @@ func _ready() -> void:
 
 
 func _load_slot_positions() -> void:
-	var slot_root := get_parent().get_node_or_null("Week4BuildSlots")
+	var slot_root := get_parent().get_node_or_null("BuildingSlots")
 	if slot_root == null:
-		push_error("HomePage 缺少 Week4BuildSlots 節點")
+		push_error("HomePage 缺少 BuildingSlots 節點")
 		return
 	for marker: Node in slot_root.get_children():
 		if marker is Marker2D:
@@ -163,7 +163,7 @@ func _load_village_state() -> void:
 	_sync_formal_buildings_to_view()
 
 func _sync_formal_buildings_to_view() -> void:
-	# B is authoritative for building quantity, placement and construction state.
+	# Runtime building data is authoritative for quantity, placement and construction state.
 	# The legacy snapshot remains available during the staged migration.
 	var player := _player()
 	if player == null or player.village_data == null:
@@ -191,18 +191,18 @@ func _save_village_state() -> void:
 	var player := _player()
 	if player == null or player.rabbit_data == null:
 		return
-	# Old A snapshots are read above for migration, but new saves use formal B/C data only.
+	# Legacy UI snapshots are read above for migration; new saves use the formal runtime data.
 	player.village_data.legacy_a_snapshot = {}
 	player.rabbit_data.village_data = player.village_data.to_dict()
 	player.save_now()
 
 func _create_layers() -> void:
 	slot_layer = CanvasLayer.new()
-	slot_layer.name = "Week4SlotLayer"
+	slot_layer.name = "BuildingSlotLayer"
 	slot_layer.layer = 15
 	add_child(slot_layer)
 	modal_layer = CanvasLayer.new()
-	modal_layer.name = "Week4ModalLayer"
+	modal_layer.name = "BuildingModalLayer"
 	modal_layer.layer = 40
 	add_child(modal_layer)
 
@@ -638,7 +638,7 @@ func _backfill_c_village_event_journals() -> void:
 	var player := _player()
 	if player == null:
 		return
-	# Existing A-side saves can already have buildings unlocked/completed without the C event journal.
+	# Existing saves can have unlocked or completed buildings without the matching event journal.
 	var event_by_building := {
 		"rest_pavilion": "village_rest_pavilion_001",
 		"notice_board": "village_notice_board_001",

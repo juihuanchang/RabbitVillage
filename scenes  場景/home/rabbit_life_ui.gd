@@ -64,7 +64,7 @@ var _seen_pending_life := ""
 func _ready() -> void:
 	player = get_parent().get_node_or_null("Background/Player") as RabbitCharacter
 	if player == null:
-		push_error("Week5AUI 找不到 Background/Player")
+		push_error("RabbitLifeUI 找不到 Background/Player")
 		return
 	_create_layers()
 	_create_toolbar()
@@ -78,11 +78,11 @@ func _ready() -> void:
 
 func _create_layers() -> void:
 	hud_layer = CanvasLayer.new()
-	hud_layer.name = "Week5HUDLayer"
+	hud_layer.name = "RabbitLifeHUDLayer"
 	hud_layer.layer = 25
 	add_child(hud_layer)
 	modal_layer = CanvasLayer.new()
-	modal_layer.name = "Week5ModalLayer"
+	modal_layer.name = "RabbitLifeModalLayer"
 	modal_layer.layer = 90
 	add_child(modal_layer)
 
@@ -458,11 +458,11 @@ func _confirm_growth(event_id: String) -> void:
 	_check_pending_events()
 
 func _release_legacy_growth_modal() -> void:
-	var week3 := get_parent().get_node_or_null("Week3AUI")
-	if week3 == null:
+	var activity_ui := get_parent().get_node_or_null("HomeActivityUI")
+	if activity_ui == null:
 		return
-	week3.set("interaction_locked", false)
-	var legacy_popup: Variant = week3.get("growth_popup")
+	activity_ui.set("interaction_locked", false)
+	var legacy_popup: Variant = activity_ui.get("growth_popup")
 	if legacy_popup is CanvasItem:
 		legacy_popup.hide()
 
@@ -475,7 +475,7 @@ func _on_growth_mark_unlocked(mark: GrowthMarkData, _event: GrowthEventData) -> 
 	if mark.id == "sprout_mark":
 		_enqueue_modal("嫩芽", "Amy 的森林成長印記變成了嫩芽。\n角色外觀已切換為嫩芽階段。", 90)
 	elif mark.id == "lake_interest":
-		_enqueue_modal("最近總是在看水面", "這段湖畔傾向已收藏進成長相簿。\n第五週不改變 Amy 的外觀。", 85)
+		_enqueue_modal("最近總是在看水面", "這段湖畔傾向已收藏進成長相簿。\nAmy 的外觀暫時維持原樣。", 85)
 	_refresh_album()
 
 func _enqueue_modal(title: String, body: String, priority := 50, action: Callable = Callable()) -> void:
