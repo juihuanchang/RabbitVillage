@@ -287,11 +287,11 @@ func _confirm_placement() -> void:
 	if not _formal_cafe_runtime_ready():
 		return
 	var runtime_slot := _runtime_slot_id(selected_slot_id)
-	var check: Dictionary = player.can_place_building("cafe", runtime_slot)
+	var check: Dictionary = player.can_place_building("coffee_shop", runtime_slot)
 	if not bool(check.get("ok", false)):
 		_enqueue_modal("無法建造", _reason_text(str(check.get("reason", "現在無法放置咖啡廳"))), 100)
 		return
-	var placed: Dictionary = player.place_building("cafe", runtime_slot)
+	var placed: Dictionary = player.place_building("coffee_shop", runtime_slot)
 	if not bool(placed.get("ok", false)):
 		_enqueue_modal("放置失敗", _reason_text(str(placed.get("reason", "位置沒有保存"))), 100)
 		return

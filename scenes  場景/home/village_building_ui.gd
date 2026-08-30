@@ -387,13 +387,7 @@ func _finish_build_at_slot(building_id: String, index: int) -> void:
 	if not bool(placed.get("ok", false)):
 		hint.text = str(placed.get("reason", "Unable to place building"))
 		return
-	if not built_once.get(building_id, false):
-		var started := player.start_construction(building_id)
-		if not bool(started.get("ok", false)):
-			player.reclaim_building(building_id)
-			hint.text = str(started.get("reason", "Unable to start construction"))
-			return
-		construction_end[building_id] = player.get_construction_end_time()
+	if not built_once.get(building_id, false): construction_end[building_id] = player.get_construction_end_time()
 	placements[building_id] = index
 	selected_id = ""
 	build_mode = false
@@ -419,7 +413,7 @@ func _place_coffee(index: int) -> void:
 		hint.text = str(result.get("reason", "無法放置咖啡廳"))
 		return
 	placements["coffee_shop"] = index
-	states.coffee_shop = BuildingState.COMPLETED
+	states.coffee_shop = BuildingState.CONSTRUCTING
 	selected_id = ""
 	build_mode = false
 	hint.text = "咖啡廳已建造，庫存變為 ×0。"

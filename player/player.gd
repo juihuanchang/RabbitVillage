@@ -88,6 +88,11 @@ func load_game_state() -> void:
 	village_manager.setup(village_data)
 	building_manager.setup(village_data)
 	construction_manager.setup(village_data, building_manager, village_manager)
+	building_manager.setup_economy(currency_manager, inventory_manager, construction_manager)
+	activity_manager.setup_cafe(building_manager, currency_manager)
+	village_manager.setup_snapshot_sources(building_manager, growth_manager, life_event_manager)
+	life_event_manager.setup_week7(building_manager, activity_manager, village_manager, currency_manager)
+	growth_manager.set_completed_life_event_ids(life_event_manager.get_completed_event_ids())
 	village_event_manager.setup(village_data, rabbit_data, building_manager, growth_manager)
 	farm_manager.setup(village_data, building_manager, village_manager, inventory_manager)
 	building_interaction_manager.setup(village_data, rabbit_data, activity_manager, building_manager, village_manager, growth_manager, village_event_manager)
@@ -120,6 +125,8 @@ func _connect_system_signals() -> void:
 	diary_manager.journal_added.connect(func(_entry: JournalEntry) -> void: _request_save())
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
 	growth_manager.growth_event_confirmed.connect(func(_event: GrowthEventData) -> void: life_event_manager.call_deferred("check_life_events"))
+	life_event_manager.life_event_confirmed.connect(func(_result: LifeEventResult) -> void: growth_manager.set_completed_life_event_ids(life_event_manager.get_completed_event_ids()); growth_manager.call_deferred("check_growth_path_events"))
+	construction_manager.construction_completed.connect(func(_result: ConstructionResult) -> void: life_event_manager.call_deferred("check_life_events"))
 	inventory_manager.inventory_changed.connect(func(_item_id: String, _old_amount: int, _new_amount: int, _source_type: String, _source_id: String) -> void: life_event_manager.check_life_events())
 	shop_manager.purchase_completed.connect(func(_result: PurchaseResult) -> void: life_event_manager.check_life_events(); _request_save())
 	cooking_manager.cooking_completed.connect(func(_result: CookingResult) -> void: life_event_manager.check_life_events(); _request_save())
@@ -401,6 +408,7 @@ func get_all_activity_records() -> Array[Dictionary]: return growth_manager.get_
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
 	_update_character_visibility()
 	rabbit_status_changed.emit(returned_rabbit)
+	life_event_manager.check_life_events()
 	save_manager.save_game()
 
 func _on_data_changed() -> void:

@@ -10,6 +10,9 @@ var village_manager: VillageManager
 func setup(village_data: VillageData, buildings: BuildingManager, village: VillageManager) -> void:
 	data = village_data; building_manager = buildings; village_manager = village
 func start_construction(building_id: String) -> Dictionary:
+	if building_id == "cafe": building_id = "coffee_shop"
+	var existing := get_active_construction()
+	if existing != null and existing.building_id == building_id: return {"ok": true, "reason": "", "record": existing}
 	if has_active_construction(): return {"ok": false, "reason": "目前已有建築施工中"}
 	if not building_manager.has_building(building_id): return {"ok": false, "reason": "建築狀態錯誤"}
 	if building_manager.get_building_state(building_id) != BuildingState.PLACED: return {"ok": false, "reason": "建築狀態錯誤"}
@@ -31,11 +34,12 @@ func check_construction_completion() -> ConstructionResult:
 	var record := get_active_construction()
 	if record == null or TimeManager.get_now() < record.ends_at: return null
 	if data.completed_construction_ids.has(record.construction_record_id): data.active_construction = {}; return null
-	data.completed_construction_ids.append(record.construction_record_id); record.is_completed = true; record.completed_at = TimeManager.get_now()
 	var raw: Dictionary = data.building_records.get(record.building_id, {})
 	if raw.is_empty() or raw.get("state") != BuildingState.CONSTRUCTING: data.active_construction = {}; return null
+	record.is_completed = true; record.completed_at = TimeManager.get_now()
 	var first := village_manager.register_building_completed(record.building_id); raw["state"] = BuildingState.COMPLETED; raw["completed_at"] = record.completed_at; data.building_records[record.building_id] = raw
 	var result := ConstructionResult.new(); result.construction_record_id = record.construction_record_id; result.building_id = record.building_id; result.slot_id = record.slot_id; result.started_at = record.started_at; result.completed_at = record.completed_at; result.is_first_completion = first
-	if first: result.village_experience_reward = building_manager.get_building(record.building_id).village_experience_reward; village_manager.add_village_experience(result.village_experience_reward)
+	if first: result.village_experience_reward = building_manager.get_building(record.building_id).village_experience_reward; village_manager.add_village_experience(result.village_experience_reward); result.reward_applied = true
+	record.reward_applied = result.reward_applied; data.completed_construction_ids.append(record.construction_record_id); data.construction_records.append(record.to_dict())
 	data.active_construction = {}; construction_completed.emit(result); return result
 func _unique_id(prefix: String) -> String: return "%s_%d_%d" % [prefix, int(TimeManager.get_now() * 1000000.0), randi_range(1000, 9999)]

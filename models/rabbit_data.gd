@@ -17,6 +17,9 @@ signal data_changed
 @export var fishing_activity_count := 0: set = _set_fishing_activity_count
 @export var home_activity_count := 0: set = _set_home_activity_count
 @export var total_activity_count := 0: set = _set_total_activity_count
+@export var cafe_experience := 0
+@export var social_experience := 0
+@export var cafe_activity_count := 0
 @export var unlocked_growth_marks: Array[Dictionary] = []
 @export var pending_growth_event: Dictionary = {}
 @export var village_data: Dictionary = {}: set = _set_village_data
@@ -54,6 +57,7 @@ func to_dict() -> Dictionary:
 		"intimacy": intimacy, "forest_activity_count": forest_activity_count,
 		"fishing_activity_count": fishing_activity_count, "home_activity_count": home_activity_count,
 		"total_activity_count": total_activity_count,
+		"cafe_experience": cafe_experience, "social_experience": social_experience, "cafe_activity_count": cafe_activity_count,
 		"unlocked_growth_marks": unlocked_growth_marks.duplicate(),
 		"pending_growth_event": pending_growth_event.duplicate(true),
 		"village_data": village_data.duplicate(true)
@@ -72,6 +76,9 @@ static func from_dict(data: Dictionary) -> RabbitData:
 	result.fishing_activity_count = int(data.get("fishing_activity_count", 0))
 	result.home_activity_count = int(data.get("home_activity_count", 0))
 	result.total_activity_count = int(data.get("total_activity_count", 0))
+	result.cafe_experience = maxi(0, int(data.get("cafe_experience", 0)))
+	result.social_experience = maxi(0, int(data.get("social_experience", 0)))
+	result.cafe_activity_count = maxi(0, int(data.get("cafe_activity_count", 0)))
 	for mark: Variant in data.get("unlocked_growth_marks", []):
 		if mark is Dictionary:
 			result.unlocked_growth_marks.append(mark.duplicate(true))

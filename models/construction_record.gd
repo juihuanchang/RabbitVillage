@@ -7,11 +7,18 @@ extends Resource
 @export var ends_at := 0.0
 @export var completed_at := 0.0
 @export var is_completed := false
+@export var reward_applied := false
+var construction_id: String:
+	get: return construction_record_id
+	set(value): construction_record_id = value
+var complete_at: float:
+	get: return ends_at
+	set(value): ends_at = value
 func to_dict() -> Dictionary:
 	return {"construction_record_id": construction_record_id, "building_id": building_id, "slot_id": slot_id,
-		"started_at": started_at, "ends_at": ends_at, "completed_at": completed_at, "is_completed": is_completed}
+		"started_at": started_at, "ends_at": ends_at, "complete_at": ends_at, "completed_at": completed_at, "is_completed": is_completed, "reward_applied": reward_applied}
 static func from_dict(d: Dictionary) -> ConstructionRecord:
 	var r := ConstructionRecord.new(); r.construction_record_id = str(d.get("construction_record_id", ""))
 	r.building_id = str(d.get("building_id", "")); r.slot_id = str(d.get("slot_id", ""))
-	r.started_at = float(d.get("started_at", 0.0)); r.ends_at = float(d.get("ends_at", 0.0))
-	r.completed_at = float(d.get("completed_at", 0.0)); r.is_completed = bool(d.get("is_completed", false)); return r
+	r.started_at = float(d.get("started_at", 0.0)); r.ends_at = float(d.get("ends_at", d.get("complete_at", 0.0)))
+	r.completed_at = float(d.get("completed_at", 0.0)); r.is_completed = bool(d.get("is_completed", false)); r.reward_applied = bool(d.get("reward_applied", false)); return r

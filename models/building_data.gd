@@ -7,6 +7,8 @@ extends Resource
 @export var construction_seconds := 30.0
 @export var village_experience_reward := 20
 @export var is_unlocked := false
+@export var coin_cost := 0
+@export var material_costs: Dictionary = {}
 
 static func create(id: String, name: String, seconds: float, reward: int, unlocked := false) -> BuildingData:
 	var b := BuildingData.new(); b.building_id = id; b.display_name = name
@@ -16,4 +18,4 @@ static func create(id: String, name: String, seconds: float, reward: int, unlock
 func to_dict() -> Dictionary:
 	return {"building_id": building_id, "display_name": display_name, "description": description,
 		"construction_seconds": construction_seconds, "village_experience_reward": village_experience_reward,
-		"is_unlocked": is_unlocked}
+		"is_unlocked": is_unlocked, "coin_cost": coin_cost, "material_costs": material_costs.duplicate(true)}

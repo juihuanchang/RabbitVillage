@@ -13,11 +13,15 @@ var _marks: Dictionary = {}
 var _activity_records: Array[Dictionary] = []
 var _growth_tendencies: Dictionary = {"forest": 0, "lake": 0, "home": 0}
 var _progress := GrowthPathProgressData.new()
+var _completed_life_event_ids: Array[String] = []
+const DOMINANT_SAFE_GAP := 3
 
 func _init() -> void:
 	_marks["leaf_mark"] = GrowthMarkData.create_leaf_mark()
 	_marks["sprout_mark"] = GrowthMarkData.create("sprout_mark", "forest", 2)
 	_marks["lake_interest"] = GrowthMarkData.create("lake_interest", "lakeside", 1)
+	_marks["forest_stage3"] = GrowthMarkData.create("forest_stage3", "forest", 3)
+	_marks["lakeside_stage2"] = GrowthMarkData.create("lakeside_stage2", "lakeside", 2)
 
 func setup(rabbit: RabbitData) -> void:
 	_rabbit = rabbit
@@ -27,8 +31,8 @@ func setup(rabbit: RabbitData) -> void:
 		if _marks.has(mark_id):
 			var mark := _marks[mark_id] as GrowthMarkData; mark.is_unlocked = true
 			mark.unlocked_at = float(saved_mark.get("unlocked_at", 0.0))
-	_progress.forest_stage = 2 if has_growth_mark("sprout_mark") else (1 if has_growth_mark("leaf_mark") else 0)
-	_progress.lakeside_stage = 1 if has_growth_mark("lake_interest") else 0
+	_progress.forest_stage = 3 if has_growth_mark("forest_stage3") else (2 if has_growth_mark("sprout_mark") else (1 if has_growth_mark("leaf_mark") else 0))
+	_progress.lakeside_stage = 2 if has_growth_mark("lakeside_stage2") else (1 if has_growth_mark("lake_interest") else 0)
 	_update_tendency_levels(); growth_progress_changed.emit()
 
 func load_from_save_data(data: SaveData) -> void:
@@ -37,6 +41,8 @@ func load_from_save_data(data: SaveData) -> void:
 	if _activity_records.is_empty():
 		for record_id: String in data.completed_activity_ids: _activity_records.append({"activity_record_id": record_id})
 	_growth_tendencies = data.growth_tendencies.duplicate(true)
+	_progress.forest_stage = maxi(_progress.forest_stage, int(data.growth_path_progress.get("forest_stage", 0)))
+	_progress.lakeside_stage = maxi(_progress.lakeside_stage, int(data.growth_path_progress.get("lakeside_stage", 0)))
 	if _growth_tendencies.is_empty(): _growth_tendencies = {"forest": 0, "lake": 0, "home": 0}
 	_update_tendency_levels(); growth_progress_changed.emit()
 
@@ -75,18 +81,32 @@ func check_lakeside_interest_condition() -> bool:
 		and not _has_completed_growth_event("growth_lake_interest_001") \
 		and _rabbit.fishing_experience >= 40 and _activity_count("fishing") >= 5 \
 		and _location_count("lake") >= 7 and _rabbit.intimacy >= 8
+func set_completed_life_event_ids(ids: Array[String]) -> void: _completed_life_event_ids = ids.duplicate()
+func check_forest_stage3_condition() -> bool:
+	return _rabbit != null and get_forest_growth_stage() >= 2 and not has_growth_mark("forest_stage3") and _rabbit.forest_experience >= 85 and _location_count("forest") >= 12 and _count_life_events("forest") >= 2 and _rabbit.intimacy >= 15
+func check_lakeside_stage2_condition() -> bool:
+	return _rabbit != null and get_lakeside_growth_stage() >= 1 and not has_growth_mark("lakeside_stage2") and _rabbit.fishing_experience >= 65 and _location_count("lake") >= 10 and _count_life_events("lake") >= 2 and _rabbit.intimacy >= 12
+func _count_life_events(path: String) -> int:
+	var count := 0
+	for id: String in _completed_life_event_ids:
+		if id.contains(path) or (path == "lake" and id.contains("fishing")): count += 1
+	return count
 
 func _has_completed_growth_event(event_id: String) -> bool:
 	if event_id == "growth_sprout_mark_001":
 		return has_growth_mark("sprout_mark")
 	if event_id == "growth_lake_interest_001":
 		return has_growth_mark("lake_interest")
+	if event_id == "growth_forest_stage3_001": return has_growth_mark("forest_stage3")
+	if event_id == "growth_lakeside_stage2_001": return has_growth_mark("lakeside_stage2")
 	return false
 
 func check_growth_path_events() -> GrowthEventData:
 	if has_pending_growth_event(): return get_pending_growth_event()
 	if check_sprout_mark_condition(): return _create_pending_event("growth_sprout_mark_001", "sprout_mark")
 	if check_lakeside_interest_condition(): return _create_pending_event("growth_lake_interest_001", "lake_interest")
+	if check_forest_stage3_condition(): return _create_pending_event("growth_forest_stage3_001", "forest_stage3")
+	if check_lakeside_stage2_condition(): return _create_pending_event("growth_lakeside_stage2_001", "lakeside_stage2")
 	return null
 func check_growth_conditions() -> GrowthEventData:
 	if _rabbit != null and not has_growth_mark("leaf_mark") and can_unlock_mark("leaf_mark") and not has_pending_growth_event():
@@ -100,6 +120,8 @@ func can_unlock_mark(mark_id: String) -> bool:
 	if _rabbit == null or not _marks.has(mark_id) or has_growth_mark(mark_id): return false
 	if mark_id == "sprout_mark": return check_sprout_mark_condition()
 	if mark_id == "lake_interest": return check_lakeside_interest_condition()
+	if mark_id == "forest_stage3": return check_forest_stage3_condition()
+	if mark_id == "lakeside_stage2": return check_lakeside_stage2_condition()
 	var mark := _marks[mark_id] as GrowthMarkData
 	return _rabbit.forest_experience >= mark.required_experience and _rabbit.forest_activity_count >= mark.required_visit_count
 func has_growth_mark(mark_id: String) -> bool:
@@ -123,11 +145,14 @@ func confirm_growth_event(event_id: String) -> bool:
 	var event := get_pending_growth_event()
 	if event == null or event.event_id != event_id or event.is_applied or has_growth_mark(event.growth_mark_id): return false
 	if not unlock_growth_mark(event.growth_mark_id): return false
-	var old_stage := get_forest_growth_stage() if event.growth_mark_id == "sprout_mark" else get_lakeside_growth_stage()
+	var is_forest := event.growth_mark_id in ["leaf_mark", "sprout_mark", "forest_stage3"]
+	var old_stage := get_forest_growth_stage() if is_forest else get_lakeside_growth_stage()
 	if event.growth_mark_id == "leaf_mark": _progress.forest_stage = maxi(_progress.forest_stage, 1)
 	elif event.growth_mark_id == "sprout_mark": _progress.forest_stage = 2
 	elif event.growth_mark_id == "lake_interest": _progress.lakeside_stage = 1
-	var path := "forest" if event.growth_mark_id != "lake_interest" else "lakeside"
+	elif event.growth_mark_id == "forest_stage3": _progress.forest_stage = 3
+	elif event.growth_mark_id == "lakeside_stage2": _progress.lakeside_stage = 2
+	var path := "forest" if is_forest else "lakeside"
 	var new_stage := get_forest_growth_stage() if path == "forest" else get_lakeside_growth_stage()
 	event.is_confirmed = true; event.is_applied = true; _progress.last_updated_at = TimeManager.get_now(); _rabbit.pending_growth_event = {}
 	growth_mark_unlocked.emit(_marks[event.growth_mark_id], event); growth_path_updated.emit(path, old_stage, new_stage, event.event_id)
@@ -147,6 +172,16 @@ func get_growth_tendency(path_id: String) -> String:
 func get_growth_tendency_summary() -> Dictionary:
 	return {"forest": get_growth_tendency("forest"), "lakeside": get_growth_tendency("lakeside")}
 func get_growth_tendencies() -> Dictionary: return _growth_tendencies.duplicate(true)
+func get_dominant_tendency() -> String:
+	var forest := int(_growth_tendencies.get("forest", 0)); var lake := int(_growth_tendencies.get("lake", 0))
+	if absi(forest - lake) < DOMINANT_SAFE_GAP: return "balanced"
+	return "forest" if forest > lake else "lakeside"
+func get_appearance_state() -> String:
+	if get_forest_growth_stage() >= 3: return "forest_stage3"
+	if get_lakeside_growth_stage() >= 2: return "lakeside_stage2"
+	if has_growth_mark("sprout_mark"): return "sprout"
+	if has_growth_mark("leaf_mark"): return "leaf"
+	return "normal"
 func _update_tendency_levels() -> void:
 	if _rabbit == null: return
 	_progress.forest_tendency_level = 3 if _rabbit.forest_experience >= 60 and _rabbit.forest_activity_count >= 8 and _activity_count("forest_explore") >= 3 and _rabbit.intimacy >= 10 else (2 if check_sprout_mark_condition() or has_growth_mark("sprout_mark") else (1 if _rabbit.forest_experience > 0 else 0))

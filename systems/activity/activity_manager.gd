@@ -8,7 +8,7 @@ signal activity_completed_data(completion_data: Dictionary)
 signal rabbit_returned(rabbit: RabbitData)
 
 const MIN_HUNGER_TO_START := 15
-const VALID_LOCATIONS := ["home", "forest", "lake"]
+const VALID_LOCATIONS := ["home", "forest", "lake", "cafe"]
 var active_activity: ActiveActivityData
 var last_error := ""
 var _rabbit: RabbitData
@@ -17,13 +17,19 @@ var _life_event_manager: LifeEventManager
 var _growth_manager: GrowthManager
 var _activities: Dictionary = {}
 var _completed_record_ids: Dictionary = {}
+var _building_manager: BuildingManager
+var _currency_manager: CurrencyManager
 
 func _init() -> void:
 	register_activity(ActivityData.create_forest_walk()); register_activity(ActivityData.create_forest_explore())
 	register_activity(ActivityData.create_fishing()); register_activity(ActivityData.create_home_rest())
+	register_activity(CafeActivityData.create("cafe_hot_drink", "Hot Drink", 30.0, 0, 8, 8))
+	register_activity(CafeActivityData.create("cafe_help_serve", "Help Serve", 45.0, -8, 5, 12, 3, 10))
+	register_activity(CafeActivityData.create("cafe_relax", "Relax", 30.0, 12, 10, 5, 1))
 
 func setup(rabbit: RabbitData, rewards: RewardManager = null, life_events: LifeEventManager = null, growth: GrowthManager = null) -> void:
 	_rabbit = rabbit; _reward_manager = rewards; _life_event_manager = life_events; _growth_manager = growth
+func setup_cafe(buildings: BuildingManager, currency: CurrencyManager) -> void: _building_manager = buildings; _currency_manager = currency
 func register_activity(activity: ActivityData) -> bool:
 	if activity == null or activity.activity_id.is_empty(): return false
 	_activities[activity.activity_id] = activity; return true
@@ -42,6 +48,7 @@ func can_start_activity(activity_id: String) -> Dictionary:
 	var activity := get_activity(activity_id)
 	if activity == null or not activity.is_unlocked or not VALID_LOCATIONS.has(activity.location_id): return _check(false, "invalid_activity")
 	if _rabbit == null: return _check(false, "invalid_activity")
+	if activity.location_id == "cafe" and (_building_manager == null or not _building_manager.is_building_completed("coffee_shop")): return _check(false, "cafe_not_completed")
 	if (_life_event_manager != null and _life_event_manager.has_pending_life_event()) or (_growth_manager != null and _growth_manager.has_pending_growth_event()): return _check(false, "invalid_activity")
 	if activity.activity_type != ActivityData.TYPE_HOME and _rabbit.hunger < MIN_HUNGER_TO_START: return _check(false, "too_hungry")
 	if _rabbit.energy < activity.required_energy: return _check(false, "too_tired")
@@ -95,6 +102,10 @@ func _complete_activity(completed_time: float) -> void:
 		"forest": rabbit.forest_activity_count += 1
 		"lake": rabbit.fishing_activity_count += 1
 		"home": rabbit.home_activity_count += 1
+		"cafe": rabbit.cafe_activity_count += 1
+	if activity is CafeActivityData:
+		var cafe := activity as CafeActivityData; rabbit.cafe_experience += cafe.cafe_experience_change; rabbit.social_experience += cafe.social_experience_change
+		if cafe.coin_reward > 0 and _currency_manager != null: _currency_manager.add_coins(cafe.coin_reward, "cafe_activity", completed.activity_record_id)
 	rabbit.total_activity_count += 1; rabbit.is_away = false; rabbit.current_activity = ""; rabbit.current_state = ""
 	if _reward_manager != null:
 		var reward := _reward_manager.generate_activity_reward(activity.activity_id, completed.activity_record_id)
