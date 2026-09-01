@@ -287,3 +287,168 @@ static func _repair_week6_transaction_guards(save: SaveData) -> void:
 		if not record_id.is_empty() and not applied_cooking_ids.has(record_id):
 			applied_cooking_ids.append(record_id)
 	save.cooking_state["applied_cooking_ids"] = applied_cooking_ids
+
+
+## Week 6 (SaveVersion 7) -> Week 7 building / Café / advanced-growth migration.
+## The migration preserves the old VillageData runtime structure and only adds the
+## new canonical C-owned permanent layer. It never spends Currency or Inventory.
+static func migrate_week6_to_week7(save: SaveData) -> SaveData:
+	if save == null:
+		return null
+	_migrate_week7_building_layer(save)
+	_migrate_week7_cafe_layer(save)
+	_migrate_week7_growth_layer(save)
+	return save
+
+static func _migrate_week7_building_layer(save: SaveData) -> void:
+	var village := VillageData.from_dict(save.village_data)
+	var cafe_record: Dictionary = {}
+	if village.building_records.has("coffee_shop") and village.building_records["coffee_shop"] is Dictionary:
+		cafe_record = village.building_records["coffee_shop"].duplicate(true)
+	elif village.building_records.has("cafe") and village.building_records["cafe"] is Dictionary:
+		cafe_record = village.building_records["cafe"].duplicate(true)
+
+	if village.unlocked_building_ids.has("coffee_shop") or save.completed_life_event_ids.has("cafe_barista_arrives_001") or not cafe_record.is_empty():
+		if not save.unlocked_building_ids.has("cafe"):
+			save.unlocked_building_ids.append("cafe")
+		if save.building_unlock_history.is_empty():
+			var unlock := BuildingUnlockHistoryEntry.new()
+			unlock.building_id = "cafe"
+			unlock.unlocked_at = _week7_life_event_time(save, "cafe_barista_arrives_001")
+			unlock.source_event_id = "cafe_barista_arrives_001" if save.completed_life_event_ids.has("cafe_barista_arrives_001") else "week7_migration"
+			save.building_unlock_history.append(unlock.to_dict())
+
+	if not save.buildable_building_ids.has("cafe"):
+		save.buildable_building_ids.append("cafe")
+
+	if not cafe_record.is_empty():
+		var slot_id := _week7_canonical_slot(str(cafe_record.get("slot_id", "")))
+		if not slot_id.is_empty():
+			var already_placed := false
+			for raw: Dictionary in save.building_placement_history:
+				if str(raw.get("building_id", "")) == "cafe":
+					already_placed = true
+					break
+			if not already_placed:
+				var placement := BuildingPlacementHistoryEntry.new()
+				placement.building_id = "cafe"
+				placement.slot_id = slot_id
+				placement.placed_at = maxf(0.0, float(cafe_record.get("placed_at", 0.0)))
+				save.building_placement_history.append(placement.to_dict())
+			var occupied := false
+			for canonical_slot: String in SaveData.WEEK7_BUILDING_SLOTS:
+				if str(save.building_slots.get(canonical_slot, "")) == "cafe":
+					occupied = true
+					break
+			if not occupied:
+				save.building_slots[slot_id] = "cafe"
+
+	# Extend, don't replace, the Fourth-week ConstructionHistory.
+	for raw: Dictionary in village.construction_records:
+		var legacy := ConstructionHistoryEntry.from_dict(raw)
+		if legacy.building_id not in ["coffee_shop", "cafe"]:
+			continue
+		legacy.building_id = "cafe"
+		legacy.slot_id = _week7_canonical_slot(legacy.slot_id)
+		if legacy.slot_id.is_empty() or legacy.construction_record_id.is_empty():
+			continue
+		var exists := false
+		for existing_raw: Dictionary in save.construction_history:
+			if str(existing_raw.get("construction_record_id", existing_raw.get("construction_id", ""))) == legacy.construction_record_id:
+				exists = true
+				break
+		if not exists:
+			save.construction_history.append(legacy.to_dict())
+
+	if not village.active_construction.is_empty():
+		var active := ConstructionHistoryEntry.from_dict(village.active_construction)
+		if active.building_id in ["coffee_shop", "cafe"]:
+			active.building_id = "cafe"
+			active.slot_id = _week7_canonical_slot(active.slot_id)
+			if not active.slot_id.is_empty() and not active.construction_record_id.is_empty():
+				var definition_cost := _week7_cafe_cost()
+				active.coin_cost = int(definition_cost.get("coin_cost", 0))
+				active.material_costs = definition_cost.get("material_costs", {}).duplicate(true)
+				var active_exists := false
+				for existing_raw: Dictionary in save.active_constructions:
+					if str(existing_raw.get("construction_record_id", existing_raw.get("construction_id", ""))) == active.construction_record_id:
+						active_exists = true
+						break
+				if not active_exists:
+					save.active_constructions.append(active.to_dict())
+				var history_exists := false
+				for existing_raw: Dictionary in save.construction_history:
+					if str(existing_raw.get("construction_record_id", existing_raw.get("construction_id", ""))) == active.construction_record_id:
+						history_exists = true
+						break
+				if not history_exists:
+					save.construction_history.append(active.to_dict())
+
+	# Old BuildingHistory remains in VillageData. Copy only the café facts into the
+	# new canonical Week 7 layer so older saves gain the new permanent history.
+	for raw: Dictionary in village.building_history:
+		var legacy_building := BuildingHistoryEntry.from_dict(raw)
+		if legacy_building.building_id not in ["coffee_shop", "cafe"]:
+			continue
+		if legacy_building.unlocked_at > 0.0 and save.building_unlock_history.is_empty():
+			var unlock := BuildingUnlockHistoryEntry.new()
+			unlock.building_id = "cafe"
+			unlock.unlocked_at = legacy_building.unlocked_at
+			unlock.source_event_id = "week4_building_history"
+			save.building_unlock_history.append(unlock.to_dict())
+		if not legacy_building.slot_id.is_empty():
+			var slot_id := _week7_canonical_slot(legacy_building.slot_id)
+			if not slot_id.is_empty() and save.building_placement_history.is_empty():
+				var placement := BuildingPlacementHistoryEntry.new()
+				placement.building_id = "cafe"
+				placement.slot_id = slot_id
+				placement.placed_at = legacy_building.placed_at
+				save.building_placement_history.append(placement.to_dict())
+
+static func _migrate_week7_cafe_layer(save: SaveData) -> void:
+	var migrated_exp := maxi(0, save.cafe_experience)
+	for raw: Dictionary in save.rabbits:
+		migrated_exp = maxi(migrated_exp, int(raw.get("cafe_experience", 0)))
+	save.cafe_experience = migrated_exp
+
+static func _migrate_week7_growth_layer(save: SaveData) -> void:
+	var forest_stage := maxi(0, int(save.growth_path_progress.get("forest_stage", 0)))
+	var lakeside_stage := maxi(0, int(save.growth_path_progress.get("lakeside_stage", 0)))
+	if _save_has_growth_mark(save, "forest_stage3") or _save_has_growth_event(save, "growth_forest_stage3_001"):
+		forest_stage = maxi(forest_stage, 3)
+	if _save_has_growth_mark(save, "lakeside_stage2") or _save_has_growth_event(save, "growth_lakeside_stage2_001"):
+		lakeside_stage = maxi(lakeside_stage, 2)
+	save.growth_path_progress["forest_stage"] = forest_stage
+	save.growth_path_progress["lakeside_stage"] = lakeside_stage
+	if forest_stage >= 3:
+		save.growth_appearance_state = "forest_stage3"
+	elif lakeside_stage >= 2:
+		save.growth_appearance_state = "lakeside_stage2"
+	elif forest_stage >= 2:
+		save.growth_appearance_state = "sprout"
+	elif forest_stage >= 1:
+		save.growth_appearance_state = "leaf"
+	else:
+		save.growth_appearance_state = "normal"
+
+static func _week7_canonical_slot(slot_id: String) -> String:
+	if SaveData.WEEK7_BUILDING_SLOTS.has(slot_id):
+		return slot_id
+	if slot_id.begins_with("Slot"):
+		var suffix := slot_id.trim_prefix("Slot")
+		if suffix.is_valid_int():
+			var index := int(suffix)
+			if index >= 1 and index <= 5:
+				return "building_slot_%02d" % index
+	return ""
+
+static func _week7_life_event_time(save: SaveData, event_id: String) -> float:
+	for raw: Dictionary in save.life_event_history:
+		if str(raw.get("life_event_id", "")) == event_id:
+			return maxf(0.0, float(raw.get("confirmed_at", 0.0)))
+	return 0.0
+
+static func _week7_cafe_cost() -> Dictionary:
+	# Mirrors B's current café definition only as permanent transaction metadata.
+	# C never spends these resources itself.
+	return {"coin_cost": 50, "material_costs": {"twig": 5, "small_stone": 3}}

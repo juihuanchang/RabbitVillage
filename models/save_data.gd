@@ -1,12 +1,16 @@
 class_name SaveData
 extends Resource
 
-const CURRENT_VERSION := 7
+const CURRENT_VERSION := 8
 const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread",
 	"berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 const VALID_PRODUCT_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack"]
 const VALID_RECIPE_IDS := ["recipe_carrot_sandwich", "recipe_forest_salad", "recipe_berry_toast", "recipe_picnic_snack"]
 const VALID_FOOD_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
+const WEEK7_BUILDING_IDS := ["cafe", "library", "flower_shop", "workshop"]
+const WEEK7_BUILDABLE_BUILDING_IDS := ["cafe"]
+const WEEK7_BUILDING_SLOTS := ["building_slot_01", "building_slot_02", "building_slot_03", "building_slot_04", "building_slot_05"]
+const WEEK7_APPEARANCE_STATES := ["normal", "leaf", "sprout", "forest_stage3", "lakeside_stage2"]
 
 var save_version := CURRENT_VERSION
 var rabbits: Array[Dictionary] = []
@@ -64,6 +68,25 @@ var last_shopping_journal_date := ""
 var last_cooking_journal_date := ""
 var last_picnic_journal_date := ""
 
+# Week 7 permanent building / café / advanced-growth data.
+var building_slots: Dictionary = {
+	"building_slot_01": "", "building_slot_02": "", "building_slot_03": "",
+	"building_slot_04": "", "building_slot_05": ""
+}
+var unlocked_building_ids: Array[String] = []
+var buildable_building_ids: Array[String] = ["cafe"]
+var active_constructions: Array[Dictionary] = []
+var building_unlock_history: Array[Dictionary] = []
+var building_placement_history: Array[Dictionary] = []
+var construction_history: Array[Dictionary] = []
+var cafe_experience := 0
+var cafe_activity_history: Array[Dictionary] = []
+var cafe_experience_history: Array[Dictionary] = []
+var village_progress_state: Dictionary = {}
+var village_progress_history: Array[Dictionary] = []
+var growth_appearance_state := "normal"
+var growth_appearance_history: Array[Dictionary] = []
+
 func to_dict() -> Dictionary:
 	return {
 		"save_version": save_version,
@@ -114,6 +137,20 @@ func to_dict() -> Dictionary:
 		"last_shopping_journal_date": last_shopping_journal_date,
 		"last_cooking_journal_date": last_cooking_journal_date,
 		"last_picnic_journal_date": last_picnic_journal_date,
+		"building_slots": building_slots.duplicate(true),
+		"unlocked_building_ids": unlocked_building_ids.duplicate(),
+		"buildable_building_ids": buildable_building_ids.duplicate(),
+		"active_constructions": active_constructions.duplicate(true),
+		"building_unlock_history": building_unlock_history.duplicate(true),
+		"building_placement_history": building_placement_history.duplicate(true),
+		"construction_history": construction_history.duplicate(true),
+		"cafe_experience": cafe_experience,
+		"cafe_activity_history": cafe_activity_history.duplicate(true),
+		"cafe_experience_history": cafe_experience_history.duplicate(true),
+		"village_progress_state": village_progress_state.duplicate(true),
+		"village_progress_history": village_progress_history.duplicate(true),
+		"growth_appearance_state": growth_appearance_state,
+		"growth_appearance_history": growth_appearance_history.duplicate(true),
 		"cooking_state": cooking_state.duplicate(true),
 		"food_runtime_state": food_runtime_state.duplicate(true),
 		"life_location_state": life_location_state.duplicate(true)
@@ -185,11 +222,29 @@ static func from_dict(data: Dictionary) -> SaveData:
 	result.last_shopping_journal_date = str(data.get("last_shopping_journal_date", ""))
 	result.last_cooking_journal_date = str(data.get("last_cooking_journal_date", ""))
 	result.last_picnic_journal_date = str(data.get("last_picnic_journal_date", ""))
+	result.building_slots = _load_week7_building_slots(data.get("building_slots", {}))
+	result.unlocked_building_ids = _load_week7_building_ids(data.get("unlocked_building_ids", []), true)
+	result.buildable_building_ids = _load_week7_building_ids(data.get("buildable_building_ids", ["cafe"]), false)
+	if not result.buildable_building_ids.has("cafe"):
+		result.buildable_building_ids.append("cafe")
+	_load_week7_active_constructions(data.get("active_constructions", []), result.active_constructions)
+	_load_week7_building_unlock_history(data.get("building_unlock_history", []), result.building_unlock_history)
+	_load_week7_building_placement_history(data.get("building_placement_history", []), result.building_placement_history)
+	_load_week7_construction_history(data.get("construction_history", []), result.construction_history)
+	result.cafe_experience = maxi(0, int(data.get("cafe_experience", 0)))
+	_load_week7_cafe_activity_history(data.get("cafe_activity_history", []), result.cafe_activity_history)
+	_load_week7_cafe_experience_history(data.get("cafe_experience_history", []), result.cafe_experience_history)
+	if data.get("village_progress_state", {}) is Dictionary:
+		result.village_progress_state = data.get("village_progress_state", {}).duplicate(true)
+	_load_week7_village_progress_history(data.get("village_progress_history", []), result.village_progress_history)
+	result.growth_appearance_state = _load_week7_appearance_state(str(data.get("growth_appearance_state", "normal")))
+	_load_week7_appearance_history(data.get("growth_appearance_history", []), result.growth_appearance_history)
 	result.cooking_state = _load_cooking_state(data.get("cooking_state", {}))
 	if data.get("food_runtime_state", {}) is Dictionary: result.food_runtime_state = data.get("food_runtime_state", {}).duplicate(true)
 	if data.get("life_location_state", {}) is Dictionary: result.life_location_state = data.get("life_location_state", {}).duplicate(true)
 	_repair_growth_progress(result)
 	_repair_week6_transaction_guards(result)
+	_repair_week7_consistency(result)
 	return result
 
 func is_supported_version() -> bool:
@@ -670,8 +725,12 @@ static func _repair_growth_progress(data: SaveData) -> void:
 		forest_stage = maxi(forest_stage, 1)
 	if _has_growth_mark(data.unlocked_growth_marks, "sprout_mark"):
 		forest_stage = maxi(forest_stage, 2)
+	if _has_growth_mark(data.unlocked_growth_marks, "forest_stage3") or _has_growth_event_journal(data.journals, "growth_forest_stage3_001"):
+		forest_stage = maxi(forest_stage, 3)
 	if _has_growth_mark(data.unlocked_growth_marks, "lake_interest") or _has_growth_event_journal(data.journals, "growth_lake_interest_001"):
 		lakeside_stage = maxi(lakeside_stage, 1)
+	if _has_growth_mark(data.unlocked_growth_marks, "lakeside_stage2") or _has_growth_event_journal(data.journals, "growth_lakeside_stage2_001"):
+		lakeside_stage = maxi(lakeside_stage, 2)
 	data.growth_path_progress["forest_stage"] = forest_stage
 	data.growth_path_progress["lakeside_stage"] = lakeside_stage
 
@@ -686,6 +745,224 @@ static func _has_growth_event_journal(journal_entries: Array[Dictionary], event_
 		if str(journal.get("growth_event_id", "")) == event_id:
 			return true
 	return false
+
+static func _canonical_week7_building_id(value: String) -> String:
+	match value:
+		"cafe", "coffee_shop":
+			return "cafe"
+		"library", "flower_shop", "workshop":
+			return value
+	return ""
+
+static func _canonical_week7_slot_id(value: String) -> String:
+	if WEEK7_BUILDING_SLOTS.has(value):
+		return value
+	if value.begins_with("Slot"):
+		var suffix := value.trim_prefix("Slot")
+		if suffix.is_valid_int():
+			var index := int(suffix)
+			if index >= 1 and index <= 5:
+				return "building_slot_%02d" % index
+	return ""
+
+static func _load_week7_building_slots(source: Variant) -> Dictionary:
+	var result := {}
+	for slot_id: String in WEEK7_BUILDING_SLOTS:
+		result[slot_id] = ""
+	if not (source is Dictionary):
+		return result
+	var cafe_seen := false
+	for raw_slot: Variant in source.keys():
+		var slot_id := _canonical_week7_slot_id(str(raw_slot))
+		var building_id := _canonical_week7_building_id(str(source[raw_slot]))
+		if slot_id.is_empty() or building_id != "cafe" or cafe_seen:
+			continue
+		result[slot_id] = "cafe"
+		cafe_seen = true
+	return result
+
+static func _load_week7_building_ids(source: Variant, allow_reserved: bool) -> Array[String]:
+	var result: Array[String] = []
+	if source is Array:
+		for raw: Variant in source:
+			var id := _canonical_week7_building_id(str(raw))
+			if id.is_empty():
+				continue
+			if not allow_reserved and id != "cafe":
+				continue
+			if not result.has(id):
+				result.append(id)
+	return result
+
+static func _load_week7_active_constructions(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := ConstructionHistoryEntry.from_dict(raw)
+		entry.building_id = _canonical_week7_building_id(entry.building_id)
+		entry.slot_id = _canonical_week7_slot_id(entry.slot_id)
+		if entry.construction_record_id.is_empty() or entry.building_id != "cafe" or entry.slot_id.is_empty() or entry.is_completed or seen.has(entry.construction_record_id):
+			continue
+		seen[entry.construction_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week7_building_unlock_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var best: BuildingUnlockHistoryEntry = null
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := BuildingUnlockHistoryEntry.from_dict(raw)
+		entry.building_id = _canonical_week7_building_id(entry.building_id)
+		if entry.building_id != "cafe":
+			continue
+		if best == null or _time_is_earlier(entry.unlocked_at, best.unlocked_at):
+			best = entry
+	if best != null:
+		target.append(best.to_dict())
+
+static func _load_week7_building_placement_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var best: BuildingPlacementHistoryEntry = null
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := BuildingPlacementHistoryEntry.from_dict(raw)
+		entry.building_id = _canonical_week7_building_id(entry.building_id)
+		entry.slot_id = _canonical_week7_slot_id(entry.slot_id)
+		if entry.building_id != "cafe" or entry.slot_id.is_empty():
+			continue
+		if best == null or _time_is_earlier(entry.placed_at, best.placed_at):
+			best = entry
+	if best != null:
+		target.append(best.to_dict())
+
+static func _load_week7_construction_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := ConstructionHistoryEntry.from_dict(raw)
+		entry.building_id = _canonical_week7_building_id(entry.building_id)
+		entry.slot_id = _canonical_week7_slot_id(entry.slot_id)
+		if entry.construction_record_id.is_empty() or entry.building_id != "cafe" or entry.slot_id.is_empty() or seen.has(entry.construction_record_id):
+			continue
+		seen[entry.construction_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week7_cafe_activity_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := CafeActivityHistoryEntry.from_dict(raw)
+		if entry.activity_record_id.is_empty() or not entry.cafe_activity_id.begins_with("cafe_") or seen.has(entry.activity_record_id):
+			continue
+		seen[entry.activity_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week7_cafe_experience_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := CafeExperienceHistoryEntry.from_dict(raw)
+		var key := "%s|%s" % [entry.source_type, entry.source_id]
+		if entry.source_id.is_empty() or seen.has(key):
+			continue
+		seen[key] = true
+		target.append(entry.to_dict())
+
+static func _load_week7_village_progress_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := VillageProgressHistoryEntry.from_dict(raw)
+		if entry.village_progress_event_id.is_empty() or seen.has(entry.village_progress_event_id):
+			continue
+		seen[entry.village_progress_event_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week7_appearance_state(value: String) -> String:
+	return value if WEEK7_APPEARANCE_STATES.has(value) else "normal"
+
+static func _load_week7_appearance_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := GrowthAppearanceHistoryEntry.from_dict(raw)
+		entry.appearance_state_id = _load_week7_appearance_state(entry.appearance_state_id)
+		if entry.source_event_id.is_empty() or seen.has(entry.source_event_id):
+			continue
+		seen[entry.source_event_id] = true
+		target.append(entry.to_dict())
+
+static func _repair_week7_consistency(data: SaveData) -> void:
+	# Fixed Week 7 slot layout. Unknown/duplicate slot data is discarded, while
+	# Fourth-week runtime building data stays preserved inside village_data.
+	data.building_slots = _load_week7_building_slots(data.building_slots)
+	data.unlocked_building_ids = _load_week7_building_ids(data.unlocked_building_ids, true)
+	data.buildable_building_ids = ["cafe"]
+
+	var now := TimeManager.get_now()
+	for i in data.construction_history.size():
+		var entry := ConstructionHistoryEntry.from_dict(data.construction_history[i])
+		if not entry.is_completed and entry.complete_at > 0.0 and entry.complete_at <= now:
+			entry.is_completed = true
+			entry.completed_at = entry.complete_at
+			data.construction_history[i] = entry.to_dict()
+	for raw: Dictionary in data.construction_history:
+		var entry := ConstructionHistoryEntry.from_dict(raw)
+		if entry.is_completed and entry.building_id == "cafe" and not entry.slot_id.is_empty():
+			var occupied := false
+			for slot_id: String in WEEK7_BUILDING_SLOTS:
+				if str(data.building_slots.get(slot_id, "")) == "cafe":
+					occupied = true
+					break
+			if not occupied:
+				data.building_slots[entry.slot_id] = "cafe"
+			if data.building_placement_history.is_empty():
+				var placement := BuildingPlacementHistoryEntry.new()
+				placement.building_id = "cafe"
+				placement.slot_id = entry.slot_id
+				placement.placed_at = entry.started_at
+				data.building_placement_history.append(placement.to_dict())
+			break
+
+	# Completed stage and mark/appearance repair.
+	var forest_stage := maxi(0, int(data.growth_path_progress.get("forest_stage", 0)))
+	var lakeside_stage := maxi(0, int(data.growth_path_progress.get("lakeside_stage", 0)))
+	if forest_stage >= 3:
+		data.growth_appearance_state = "forest_stage3"
+	elif lakeside_stage >= 2:
+		data.growth_appearance_state = "lakeside_stage2"
+	elif forest_stage >= 2:
+		data.growth_appearance_state = "sprout"
+	elif forest_stage >= 1:
+		data.growth_appearance_state = "leaf"
+	else:
+		data.growth_appearance_state = _load_week7_appearance_state(data.growth_appearance_state)
+
+	# Café total may never be lower than the permanent source history.
+	for raw: Dictionary in data.cafe_experience_history:
+		data.cafe_experience = maxi(data.cafe_experience, CafeExperienceHistoryEntry.from_dict(raw).amount_after)
 
 static func _time_is_earlier(candidate: float, current: float) -> bool:
 	if current <= 0.0:

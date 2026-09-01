@@ -39,6 +39,21 @@ const COOKING_EVENTS_PATH := "res://data/journals/week6/cooking_events.json"
 const PICNIC_EVENTS_PATH := "res://data/journals/week6/picnic_events.json"
 const WEEK6_FINALE_PATH := "res://data/journals/week6/week6_finale.json"
 
+# Week 7 journal templates.
+const WEEK7_BUILDING_UNLOCK_PATH := "res://data/journals/week7/building_unlock.json"
+const WEEK7_BUILDING_PLACEMENT_PATH := "res://data/journals/week7/building_placement.json"
+const WEEK7_CONSTRUCTION_PATH := "res://data/journals/week7/construction.json"
+const WEEK7_CAFE_COMPLETE_PATH := "res://data/journals/week7/cafe_complete.json"
+const WEEK7_CAFE_HOT_DRINK_PATH := "res://data/journals/week7/cafe_hot_drink.json"
+const WEEK7_CAFE_HELP_SERVE_PATH := "res://data/journals/week7/cafe_help_serve.json"
+const WEEK7_CAFE_RELAX_PATH := "res://data/journals/week7/cafe_relax.json"
+const WEEK7_CAFE_EVENTS_PATH := "res://data/journals/week7/cafe_events.json"
+const WEEK7_FOREST_STAGE3_PATH := "res://data/journals/week7/forest_stage3.json"
+const WEEK7_LAKESIDE_STAGE2_PATH := "res://data/journals/week7/lakeside_stage2.json"
+const WEEK7_GROWTH_REACTIONS_PATH := "res://data/journals/week7/growth_reactions.json"
+const WEEK7_VILLAGE_PROGRESS_PATH := "res://data/journals/week7/village_progress.json"
+const WEEK7_FINALE_PATH := "res://data/journals/week7/week7_finale.json"
+
 static func generate(active: ActiveActivityData, journal_id: String) -> JournalEntry:
 	if active == null or active.rabbit == null or active.activity == null:
 		return null
@@ -524,6 +539,178 @@ static func generate_week6_event_journal(rabbit_name: String, journal_id: String
 	entry.is_special_memory = true
 	entry.is_life_memory = true
 	return entry
+
+# ---------------- Week 7 ----------------
+
+static func generate_week7_building_unlock_journal(rabbit_name: String, journal_id: String, entry: BuildingUnlockHistoryEntry) -> JournalEntry:
+	if entry == null or entry.building_id != "cafe":
+		return null
+	var data := _load_json(WEEK7_BUILDING_UNLOCK_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "building_unlock", entry.unlocked_at, str(template.get("title", "咖啡館解鎖")), str(template.get("content", "")))
+	journal.building_id = "cafe"
+	journal.life_event_id = entry.source_event_id
+	journal.is_special_memory = true
+	journal.is_village_memory = true
+	return journal
+
+static func generate_week7_building_placement_journal(rabbit_name: String, journal_id: String, entry: BuildingPlacementHistoryEntry) -> JournalEntry:
+	if entry == null or entry.building_id != "cafe" or entry.slot_id.is_empty():
+		return null
+	var data := _load_json(WEEK7_BUILDING_PLACEMENT_PATH)
+	var template: Dictionary = {}
+	var by_slot: Variant = data.get("by_slot", {})
+	if by_slot is Dictionary and by_slot.has(entry.slot_id):
+		template = _pick_dictionary(by_slot[entry.slot_id])
+	if template.is_empty():
+		template = _pick_dictionary(data.get("general", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "building_placement", entry.placed_at, str(template.get("title", "咖啡館的位置")), str(template.get("content", "")))
+	journal.building_id = "cafe"
+	journal.building_slot_id = entry.slot_id
+	journal.location_id = entry.slot_id
+	journal.location_name = "村莊建築位"
+	return journal
+
+static func generate_week7_construction_journal(rabbit_name: String, journal_id: String, entry: ConstructionHistoryEntry) -> JournalEntry:
+	if entry == null or entry.building_id != "cafe" or entry.construction_record_id.is_empty():
+		return null
+	var data := _load_json(WEEK7_CONSTRUCTION_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "week7_construction", entry.started_at, str(template.get("title", "咖啡館施工")), str(template.get("content", "")))
+	journal.building_id = "cafe"
+	journal.building_slot_id = entry.slot_id
+	journal.construction_id = entry.construction_record_id
+	journal.construction_record_id = entry.construction_record_id
+	return journal
+
+static func generate_week7_cafe_complete_journal(rabbit_name: String, journal_id: String, entry: ConstructionHistoryEntry) -> JournalEntry:
+	if entry == null or entry.building_id != "cafe" or entry.construction_record_id.is_empty():
+		return null
+	var data := _load_json(WEEK7_CAFE_COMPLETE_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var at := entry.completed_at if entry.completed_at > 0.0 else entry.complete_at
+	var journal := _base(journal_id, rabbit_name, "cafe_complete", at, str(template.get("title", "咖啡館完成")), str(template.get("content", "")))
+	journal.building_id = "cafe"
+	journal.building_slot_id = entry.slot_id
+	journal.construction_id = entry.construction_record_id
+	journal.construction_record_id = entry.construction_record_id
+	journal.is_special_memory = true
+	journal.is_village_memory = true
+	return journal
+
+static func generate_week7_cafe_activity_journal(rabbit_name: String, journal_id: String, entry: CafeActivityHistoryEntry) -> JournalEntry:
+	if entry == null or entry.activity_record_id.is_empty():
+		return null
+	var path := ""
+	match entry.cafe_activity_id:
+		"cafe_hot_drink":
+			path = WEEK7_CAFE_HOT_DRINK_PATH
+		"cafe_help_serve":
+			path = WEEK7_CAFE_HELP_SERVE_PATH
+		"cafe_relax":
+			path = WEEK7_CAFE_RELAX_PATH
+		_:
+			return null
+	var data := _load_json(path)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "cafe_activity", entry.completed_at, str(template.get("title", "咖啡館時光")), str(template.get("content", "")))
+	journal.activity_record_id = entry.activity_record_id
+	journal.activity_id = entry.cafe_activity_id
+	journal.cafe_activity_id = entry.cafe_activity_id
+	journal.location_id = "cafe"
+	journal.location_name = "咖啡館"
+	journal.stat_changes = {
+		"cafe_experience": entry.cafe_experience_change,
+		"social_experience": entry.social_experience_change,
+		"coin": entry.coin_reward
+	}
+	return journal
+
+static func generate_week7_cafe_event_journal(rabbit_name: String, journal_id: String, event_id: String, at: float) -> JournalEntry:
+	var data := _load_json(WEEK7_CAFE_EVENTS_PATH)
+	var events: Variant = data.get("events", {})
+	if not (events is Dictionary) or not events.has(event_id):
+		return null
+	var template := _pick_dictionary(events[event_id])
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "cafe_event", at, str(template.get("title", "咖啡館事件")), str(template.get("content", "")))
+	journal.life_event_id = event_id
+	journal.cafe_activity_id = event_id
+	journal.building_id = "cafe"
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	journal.is_village_memory = true
+	return journal
+
+static func generate_week7_growth_journal(rabbit_name: String, journal_id: String, event_id: String, growth_path: String, growth_stage: int, growth_mark_id: String, at: float) -> JournalEntry:
+	var path := WEEK7_FOREST_STAGE3_PATH if event_id == "growth_forest_stage3_001" else WEEK7_LAKESIDE_STAGE2_PATH if event_id == "growth_lakeside_stage2_001" else ""
+	if path.is_empty():
+		return null
+	var data := _load_json(path)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "week7_growth", at, str(template.get("title", "新的成長")), str(template.get("content", "")))
+	journal.growth_event_id = event_id
+	journal.growth_mark_id = growth_mark_id
+	journal.growth_path = growth_path
+	journal.growth_stage = growth_stage
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	journal.illustration_id = growth_mark_id
+	return journal
+
+static func generate_week7_growth_reaction_journal(rabbit_name: String, journal_id: String, source_record_id: String, growth_path: String, growth_stage: int, at: float) -> JournalEntry:
+	if source_record_id.is_empty():
+		return null
+	var data := _load_json(WEEK7_GROWTH_REACTIONS_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "growth_reaction", at, str(template.get("title", "新的樣子")), str(template.get("content", "")))
+	journal.activity_record_id = source_record_id
+	journal.growth_path = growth_path
+	journal.growth_stage = growth_stage
+	return journal
+
+static func generate_week7_village_progress_journal(rabbit_name: String, journal_id: String, entry: VillageProgressHistoryEntry) -> JournalEntry:
+	if entry == null or entry.village_progress_event_id.is_empty():
+		return null
+	var data := _load_json(WEEK7_VILLAGE_PROGRESS_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "village_progress", entry.changed_at, str(template.get("title", "村莊進度")), str(template.get("content", "")))
+	journal.village_progress_event_id = entry.village_progress_event_id
+	journal.village_stage = entry.new_level
+	return journal
+
+static func generate_week7_finale_journal(rabbit_name: String, journal_id: String, event_id: String, at: float) -> JournalEntry:
+	var data := _load_json(WEEK7_FINALE_PATH)
+	var events: Variant = data.get("events", {})
+	if not (events is Dictionary) or not events.has(event_id):
+		return null
+	var template := _pick_dictionary(events[event_id])
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "week7_finale", at, str(template.get("title", "村莊第一次擴張")), str(template.get("content", "")))
+	journal.life_event_id = event_id
+	journal.village_progress_event_id = event_id
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	journal.is_village_memory = true
+	return journal
 
 static func _base(id: String, rabbit_name: String, journal_type: String, at: float, title: String, content: String) -> JournalEntry:
 	var time := TimeManager.get_now() if at <= 0.0 else at

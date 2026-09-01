@@ -1,0 +1,40 @@
+{
+  "by_slot": {
+    "building_slot_01": [
+      {
+        "title": "靠近入口的位置",
+        "content": "咖啡館選在第一個建築位。{rabbit_name} 覺得這裡一進村莊就能看見，很適合迎接回家的日子。"
+      }
+    ],
+    "building_slot_02": [
+      {
+        "title": "村莊中央的一角",
+        "content": "咖啡館被安排在第二個建築位。{rabbit_name} 似乎很喜歡這個離大家都不遠的位置。"
+      }
+    ],
+    "building_slot_03": [
+      {
+        "title": "剛剛好的位置",
+        "content": "第三個建築位成了咖啡館的新家。{rabbit_name} 在旁邊坐了一會，好像已經把這裡當成日常的一部分。"
+      }
+    ],
+    "building_slot_04": [
+      {
+        "title": "安靜一點的角落",
+        "content": "咖啡館選在第四個建築位。這裡稍微安靜一些，{rabbit_name} 好像很期待以後來這裡休息。"
+      }
+    ],
+    "building_slot_05": [
+      {
+        "title": "村邊的小咖啡館",
+        "content": "第五個建築位被留給咖啡館。{rabbit_name} 看著遠一點的景色，似乎覺得這個位置也很不錯。"
+      }
+    ]
+  },
+  "general": [
+    {
+      "title": "位置決定了",
+      "content": "咖啡館的位置終於確定。從今天起，這個空建築位有了真正的用途。"
+    }
+  ]
+}

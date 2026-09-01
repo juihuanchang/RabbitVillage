@@ -56,6 +56,14 @@ extends Resource
 @export var cooking_event_id := ""
 @export var picnic_event_id := ""
 
+# Week 7 building / cafe / advanced-growth fields.
+# building_id is inherited from Week 4; building_slot_id and construction_id are
+# canonical Week 7 aliases kept alongside the legacy construction_record_id field.
+@export var building_slot_id := ""
+@export var construction_id := ""
+@export var cafe_activity_id := ""
+@export var village_progress_event_id := ""
+
 func _init(
 	initial_journal_id := "",
 	initial_record_id := "",
@@ -144,7 +152,11 @@ func to_dict() -> Dictionary:
 		"life_location_activity_id": life_location_activity_id,
 		"shop_event_id": shop_event_id,
 		"cooking_event_id": cooking_event_id,
-		"picnic_event_id": picnic_event_id
+		"picnic_event_id": picnic_event_id,
+		"building_slot_id": building_slot_id,
+		"construction_id": construction_id,
+		"cafe_activity_id": cafe_activity_id,
+		"village_progress_event_id": village_progress_event_id
 	}
 
 static func from_dict(data: Dictionary) -> JournalEntry:
@@ -222,6 +234,14 @@ static func from_dict(data: Dictionary) -> JournalEntry:
 	entry.shop_event_id = str(data.get("shop_event_id", data.get("ShopEventId", "")))
 	entry.cooking_event_id = str(data.get("cooking_event_id", data.get("CookingEventId", "")))
 	entry.picnic_event_id = str(data.get("picnic_event_id", data.get("PicnicEventId", "")))
+	entry.building_slot_id = str(data.get("building_slot_id", data.get("BuildingSlotId", data.get("slot_id", ""))))
+	entry.construction_id = str(data.get("construction_id", data.get("ConstructionId", entry.construction_record_id)))
+	if entry.construction_record_id.is_empty() and not entry.construction_id.is_empty():
+		entry.construction_record_id = entry.construction_id
+	if entry.construction_id.is_empty() and not entry.construction_record_id.is_empty():
+		entry.construction_id = entry.construction_record_id
+	entry.cafe_activity_id = str(data.get("cafe_activity_id", data.get("CafeActivityId", "")))
+	entry.village_progress_event_id = str(data.get("village_progress_event_id", data.get("VillageProgressEventId", "")))
 	return entry
 
 func is_valid() -> bool:
@@ -275,5 +295,25 @@ func is_valid() -> bool:
 		"picnic_event":
 			return not picnic_event_id.is_empty()
 		"week6_finale":
+			return not life_event_id.is_empty()
+		"building_unlock":
+			return not building_id.is_empty()
+		"building_placement":
+			return not building_id.is_empty() and not building_slot_id.is_empty()
+		"week7_construction":
+			return not construction_id.is_empty() and not building_id.is_empty()
+		"cafe_complete":
+			return building_id == "cafe"
+		"cafe_activity":
+			return not activity_record_id.is_empty() and not cafe_activity_id.is_empty()
+		"cafe_event":
+			return not life_event_id.is_empty()
+		"week7_growth":
+			return not growth_event_id.is_empty() and growth_stage > 0
+		"growth_reaction":
+			return not activity_record_id.is_empty() and not growth_path.is_empty() and growth_stage > 0
+		"village_progress":
+			return not village_progress_event_id.is_empty()
+		"week7_finale":
 			return not life_event_id.is_empty()
 	return true

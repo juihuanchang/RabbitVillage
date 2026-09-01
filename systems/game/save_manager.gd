@@ -22,6 +22,9 @@ var _shop_manager: ShopManager
 var _daily_shop_manager: DailyShopManager
 var _cooking_manager: CookingManager
 var _life_location_manager: LifeLocationManager
+var _building_manager: BuildingManager
+var _construction_manager: ConstructionManager
+var _village_manager: VillageManager
 
 var resource_history_manager := ResourceHistoryManager.new()
 var life_history_manager := LifeHistoryManager.new()
@@ -30,6 +33,7 @@ var shop_history_manager := ShopHistoryManager.new()
 var cooking_history_manager := CookingHistoryManager.new()
 var life_location_history_manager := LifeLocationHistoryManager.new()
 var recipe_collection_manager := RecipeCollectionManager.new()
+var week7_history_manager := Week7HistoryManager.new()
 
 var _loaded_save: SaveData
 var _week5_runtime_ready := false
@@ -85,6 +89,7 @@ func save_game() -> bool:
 	else:
 		_capture_week5_from_loaded(save)
 	_capture_week6_persistent(save)
+	_capture_week7_persistent(save)
 	_backup_valid_primary()
 	var ok := _write(save)
 	if ok:
@@ -150,6 +155,7 @@ func migrate_save_data(save: SaveData) -> SaveData:
 	if original_version <= SaveData.CURRENT_VERSION:
 		save = LegacySaveMigrator.migrate_week4_to_week5(save)
 		save = LegacySaveMigrator.migrate_week5_to_week6(save)
+		save = LegacySaveMigrator.migrate_week6_to_week7(save)
 	save.save_version = SaveData.CURRENT_VERSION
 	return save
 
@@ -177,6 +183,9 @@ func get_life_location_history_manager() -> LifeLocationHistoryManager:
 func get_recipe_collection_manager() -> RecipeCollectionManager:
 	return recipe_collection_manager
 
+func get_week7_history_manager() -> Week7HistoryManager:
+	return week7_history_manager
+
 func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	resource_history_manager.setup(save.inventory_history, save.currency_history, save.reward_history, save.item_discovery_history)
 	life_history_manager.setup(save.food_use_history, save.growth_path_history, save.life_event_history, save.food_variety_records)
@@ -185,12 +194,13 @@ func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	cooking_history_manager.setup(save.cooking_history, save.recipe_unlock_history)
 	life_location_history_manager.setup(save.life_location_history)
 	recipe_collection_manager.setup(save.recipe_collection)
+	week7_history_manager.setup_from_save(save)
 	if _diary_manager != null:
 		_diary_manager.setup_week5_limits(save.last_food_journal_date, save.last_needs_journal_date)
 		_diary_manager.setup_week6_limits(save.last_shopping_journal_date, save.last_cooking_journal_date, save.last_picnic_journal_date)
 
 func _ensure_week5_managers() -> void:
-	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager]:
+	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, week7_history_manager]:
 		if manager.get_parent() == null:
 			add_child(manager)
 
@@ -207,6 +217,9 @@ func _discover_week5_runtime_managers() -> void:
 	var daily_shop_variant: Variant = parent_node.get("daily_shop_manager")
 	var cooking_variant: Variant = parent_node.get("cooking_manager")
 	var location_variant: Variant = parent_node.get("life_location_manager")
+	var building_variant: Variant = parent_node.get("building_manager")
+	var construction_variant: Variant = parent_node.get("construction_manager")
+	var village_variant: Variant = parent_node.get("village_manager")
 	if inventory_variant is InventoryManager:
 		_inventory_manager = inventory_variant
 	if currency_variant is CurrencyManager:
@@ -221,6 +234,9 @@ func _discover_week5_runtime_managers() -> void:
 	if daily_shop_variant is DailyShopManager: _daily_shop_manager = daily_shop_variant
 	if cooking_variant is CookingManager: _cooking_manager = cooking_variant
 	if location_variant is LifeLocationManager: _life_location_manager = location_variant
+	if building_variant is BuildingManager: _building_manager = building_variant
+	if construction_variant is ConstructionManager: _construction_manager = construction_variant
+	if village_variant is VillageManager: _village_manager = village_variant
 
 func _connect_week5_signals() -> void:
 	if _week5_signals_connected:
@@ -261,6 +277,11 @@ func _connect_week5_signals() -> void:
 		_cooking_manager.recipe_unlocked.connect(_on_recipe_unlocked)
 	if _life_location_manager != null:
 		_life_location_manager.life_location_activity_completed.connect(_on_life_location_completed)
+	if _construction_manager != null:
+		_construction_manager.construction_started.connect(_on_week7_construction_started)
+		_construction_manager.construction_completed.connect(_on_week7_construction_completed)
+	if _village_manager != null:
+		_village_manager.village_progress_changed.connect(_on_week7_village_progress_changed)
 	_week5_signals_connected = true
 
 func _apply_loaded_week5_runtime() -> void:
@@ -287,6 +308,7 @@ func _apply_loaded_week5_runtime() -> void:
 	_repair_discovery_dependencies()
 	_repair_reward_history_dependencies()
 	_repair_week6_dependencies()
+	_repair_week7_dependencies()
 	_week5_runtime_ready = true
 	_on_rabbit_need_state_changed(_rabbit_manager.get_hunger_state(), _rabbit_manager.get_energy_state(), _rabbit_manager.get_mood_state())
 	save_game()
@@ -304,8 +326,12 @@ func _apply_growth_progress(raw: Dictionary) -> void:
 		forest_stage = maxi(forest_stage, 1)
 	if _growth_manager.has_growth_mark("sprout_mark"):
 		forest_stage = maxi(forest_stage, 2)
+	if _growth_manager.has_growth_mark("forest_stage3"):
+		forest_stage = maxi(forest_stage, 3)
 	if _growth_manager.has_growth_mark("lake_interest"):
 		lakeside_stage = maxi(lakeside_stage, 1)
+	if _growth_manager.has_growth_mark("lakeside_stage2"):
+		lakeside_stage = maxi(lakeside_stage, 2)
 	progress.forest_stage = forest_stage
 	progress.lakeside_stage = lakeside_stage
 	progress.forest_tendency_level = clampi(int(raw.get("forest_tendency_level", progress.forest_tendency_level)), 0, 3)
@@ -540,9 +566,18 @@ func _on_life_event_confirmed(result: LifeEventResult) -> void:
 	life_history_manager.record_life_event(result)
 	if result.event_id.begins_with("shop_"):
 		shop_history_manager.record_shop_event(result.event_id, result.confirmed_at)
+	if result.event_id == "cafe_barista_arrives_001":
+		var unlock := week7_history_manager.record_building_unlock("cafe", result.confirmed_at, result.event_id)
+		if unlock != null and _diary_manager != null:
+			_diary_manager.generate_week7_building_unlock_journal(unlock, _current_rabbit_name())
+		_add_week7_album_moment("cafe_unlock", result.event_id, "咖啡館解鎖", "村莊正式有了建造咖啡館的計畫。", "village", 0, result.confirmed_at, _find_journal_id_for_life_event(result.event_id))
 	if _diary_manager != null:
 		if result.event_id.begins_with("shop_") or result.event_id.begins_with("cooking_") or result.event_id.begins_with("picnic_") or result.event_id == "village_daily_life_001":
 			_diary_manager.generate_week6_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
+		elif result.event_id in ["cafe_barista_arrives_001", "cafe_first_visit_001", "cafe_first_work_001", "cafe_regular_visitor_001"]:
+			_diary_manager.generate_week7_cafe_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
+		elif result.event_id == "village_first_expansion_001":
+			_diary_manager.generate_week7_finale_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
 		else:
 			_diary_manager.generate_life_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
 	save_game()
@@ -559,7 +594,10 @@ func _on_growth_path_updated(growth_path: String, old_stage: int, new_stage: int
 	var mark_id := _growth_mark_for_event(source_event_id)
 	var journal: JournalEntry = null
 	if _diary_manager != null:
-		journal = _diary_manager.generate_growth_event_journal(source_event_id, growth_path, new_stage, mark_id, _current_rabbit_name())
+		if source_event_id in ["growth_forest_stage3_001", "growth_lakeside_stage2_001"]:
+			journal = _diary_manager.generate_week7_growth_journal(source_event_id, growth_path, new_stage, mark_id, _current_rabbit_name())
+		else:
+			journal = _diary_manager.generate_growth_event_journal(source_event_id, growth_path, new_stage, mark_id, _current_rabbit_name())
 		if journal == null:
 			journal = _diary_manager.get_journal_for_growth_event(source_event_id)
 	if _growth_album_manager != null and source_event_id in ["growth_sprout_mark_001", "growth_lake_interest_001"]:
@@ -568,6 +606,10 @@ func _on_growth_path_updated(growth_path: String, old_stage: int, new_stage: int
 		var illustration_id := journal.illustration_id if journal != null else ""
 		var journal_id := journal.journal_id if journal != null else ""
 		_growth_album_manager.add_week5_growth_entry(mark_id, source_event_id, title, description, growth_path, new_stage, TimeManager.get_now(), journal_id, illustration_id)
+	if source_event_id in ["growth_forest_stage3_001", "growth_lakeside_stage2_001"]:
+		var appearance := "forest_stage3" if source_event_id == "growth_forest_stage3_001" else "lakeside_stage2"
+		week7_history_manager.record_appearance(appearance, source_event_id, TimeManager.get_now())
+		_add_week7_album_moment(mark_id, source_event_id, journal.title if journal != null else appearance, journal.content if journal != null else "Amy 的成長進入了新的階段。", growth_path, new_stage, TimeManager.get_now(), journal.journal_id if journal != null else "", journal.illustration_id if journal != null else mark_id)
 	save_game()
 
 func _on_growth_album_updated(_entry: GrowthAlbumEntry) -> void:
@@ -577,12 +619,24 @@ func _on_journal_created(_entry: JournalEntry) -> void:
 	save_game()
 
 func _on_activity_completed_for_life_journal(active: ActiveActivityData) -> void:
-	if active == null or active.activity == null or _growth_manager == null or _diary_manager == null:
+	if active == null or active.activity == null:
+		return
+	if active.activity.location_id == "cafe":
+		var cafe_history := week7_history_manager.record_cafe_activity(active)
+		if cafe_history != null and _diary_manager != null:
+			_diary_manager.generate_week7_cafe_activity_journal(cafe_history, _current_rabbit_name())
+		# Café Activity Complete is an explicit Week 7 immediate-save point.
+		save_game()
+	if _growth_manager == null or _diary_manager == null:
 		return
 	if active.activity.location_id == "forest" and _growth_manager.get_forest_growth_stage() >= 2:
 		_diary_manager.generate_growth_lifestyle_journal("forest", _growth_manager.get_forest_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at)
+		if _growth_manager.get_forest_growth_stage() >= 3:
+			_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "forest", _growth_manager.get_forest_growth_stage(), _current_rabbit_name(), active.completed_at)
 	elif active.activity.location_id == "lake" and _growth_manager.get_lakeside_growth_stage() >= 1:
 		_diary_manager.generate_growth_lifestyle_journal("lakeside", _growth_manager.get_lakeside_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at)
+		if _growth_manager.get_lakeside_growth_stage() >= 2:
+			_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "lakeside", _growth_manager.get_lakeside_growth_stage(), _current_rabbit_name(), active.completed_at)
 
 func _on_rabbit_need_state_changed(hunger_state: String, energy_state: String, mood_state: String) -> void:
 	if not _week5_runtime_ready or _diary_manager == null:
@@ -750,6 +804,162 @@ func _repair_week6_dependencies() -> void:
 			if recipe.is_unlocked and cooking_history_manager.get_recipe_unlock(recipe.recipe_id) == null:
 				cooking_history_manager.record_recipe_unlock(recipe.recipe_id, recipe.unlocked_at, "repair", "cooking_state")
 
+func _capture_week7_persistent(save: SaveData) -> void:
+	_sync_week7_from_runtime()
+	week7_history_manager.repair_consistency(TimeManager.get_now())
+	save.building_slots = week7_history_manager.building_slots.duplicate(true)
+	save.unlocked_building_ids = week7_history_manager.unlocked_building_ids.duplicate()
+	save.buildable_building_ids = ["cafe"]
+	save.active_constructions = week7_history_manager.active_constructions.duplicate(true)
+	save.building_unlock_history = week7_history_manager.building_unlock_history_to_array()
+	save.building_placement_history = week7_history_manager.building_placement_history_to_array()
+	save.construction_history = week7_history_manager.construction_history_to_array()
+	save.cafe_experience = week7_history_manager.cafe_experience
+	save.cafe_activity_history = week7_history_manager.cafe_activity_history_to_array()
+	save.cafe_experience_history = week7_history_manager.cafe_experience_history_to_array()
+	save.village_progress_state = week7_history_manager.village_progress_state.duplicate(true)
+	save.village_progress_history = week7_history_manager.village_progress_history_to_array()
+	save.growth_appearance_state = week7_history_manager.growth_appearance_state
+	save.growth_appearance_history = week7_history_manager.growth_appearance_history_to_array()
+
+func _sync_week7_from_runtime() -> void:
+	_discover_week5_runtime_managers()
+	var parent_node := get_parent()
+	if parent_node != null:
+		var village_variant: Variant = parent_node.get("village_data")
+		if village_variant is VillageData:
+			var village: VillageData = village_variant
+			if village.building_records.has("coffee_shop") and village.building_records["coffee_shop"] is Dictionary:
+				var raw: Dictionary = village.building_records["coffee_shop"]
+				var slot_id := Week7HistoryManager.canonical_slot_id(str(raw.get("slot_id", "")))
+				if not slot_id.is_empty():
+					week7_history_manager.record_building_placement("cafe", slot_id, float(raw.get("placed_at", 0.0)))
+			if not village.active_construction.is_empty():
+				var active := ConstructionRecord.from_dict(village.active_construction)
+				if active.building_id in ["coffee_shop", "cafe"]:
+					var definition: BuildingData = _building_manager.get_building("coffee_shop") if _building_manager != null else null
+					var coin_cost := definition.coin_cost if definition != null else 0
+					var materials: Dictionary = definition.material_costs.duplicate(true) if definition != null else {}
+					week7_history_manager.record_construction_start(active, coin_cost, materials)
+	if _building_manager != null:
+		var cafe: BuildingData = _building_manager.get_building("coffee_shop")
+		if cafe != null and cafe.is_unlocked:
+			var source_event := "cafe_barista_arrives_001" if _life_event_manager != null and _life_event_manager.has_completed_life_event("cafe_barista_arrives_001") else "runtime_building_state"
+			week7_history_manager.record_building_unlock("cafe", _week7_event_time(source_event), source_event)
+	var rabbit := _current_rabbit()
+	if rabbit != null:
+		week7_history_manager.cafe_experience = maxi(week7_history_manager.cafe_experience, rabbit.cafe_experience)
+	if _village_manager != null:
+		var progress_variant: Variant = _village_manager.get_village_progress()
+		if progress_variant is Dictionary:
+			week7_history_manager.village_progress_state = progress_variant.duplicate(true)
+		elif progress_variant is Object and progress_variant.has_method("to_dict"):
+			week7_history_manager.village_progress_state = progress_variant.to_dict()
+	if _growth_manager != null:
+		var appearance_variant: Variant = _growth_manager.get_appearance_state()
+		if appearance_variant is Dictionary:
+			week7_history_manager.growth_appearance_state = appearance_variant.duplicate(true)
+
+func _on_week7_construction_started(record: ConstructionRecord) -> void:
+	if record == null or record.building_id not in ["coffee_shop", "cafe"]:
+		return
+	var definition: BuildingData = _building_manager.get_building("coffee_shop") if _building_manager != null else null
+	var coin_cost := definition.coin_cost if definition != null else 0
+	var materials: Dictionary = definition.material_costs.duplicate(true) if definition != null else {}
+	var history := week7_history_manager.record_construction_start(record, coin_cost, materials)
+	if history != null and _diary_manager != null:
+		var placement: BuildingPlacementHistoryEntry = null
+		for raw: Dictionary in week7_history_manager.building_placement_history:
+			var candidate := BuildingPlacementHistoryEntry.from_dict(raw)
+			if candidate.building_id == "cafe":
+				placement = candidate
+				break
+		if placement != null:
+			_diary_manager.generate_week7_building_placement_journal(placement, _current_rabbit_name())
+		_diary_manager.generate_week7_construction_journal(history, _current_rabbit_name())
+	save_game()
+
+func _on_week7_construction_completed(result: ConstructionResult) -> void:
+	if result == null or result.building_id not in ["coffee_shop", "cafe"]:
+		return
+	var history := week7_history_manager.record_construction_complete(result)
+	if history != null and _diary_manager != null:
+		var journal := _diary_manager.generate_week7_cafe_complete_journal(history, _current_rabbit_name())
+		_add_week7_album_moment("cafe_completed", history.construction_record_id, "咖啡館完成", journal.content if journal != null else "咖啡館正式完成，村莊多了一個新的生活場所。", "village", 1, history.completed_at, journal.journal_id if journal != null else "", "cafe_completed")
+	save_game()
+
+func _on_week7_village_progress_changed(progress: VillageProgressData) -> void:
+	var history := week7_history_manager.record_village_progress(progress, TimeManager.get_now())
+	if history != null and _diary_manager != null and history.new_level > history.old_level:
+		_diary_manager.generate_week7_village_progress_journal(history, _current_rabbit_name())
+	save_game()
+
+func _on_week7_history_changed() -> void:
+	# History signals can be emitted while save_game() is already collecting data.
+	# Defer the write to avoid recursive save loops.
+	call_deferred("save_game")
+
+func _repair_week7_dependencies() -> void:
+	if _loaded_save == null:
+		return
+	week7_history_manager.setup_from_save(_loaded_save)
+	_sync_week7_from_runtime()
+	week7_history_manager.repair_consistency(TimeManager.get_now())
+
+	# Recreate missing permanent journals from History only. Never re-spend costs or
+	# re-apply Café rewards during repair.
+	if _diary_manager != null:
+		for raw: Dictionary in week7_history_manager.building_unlock_history:
+			var entry := BuildingUnlockHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week7_building_unlock_journal(entry, _current_rabbit_name())
+		for raw: Dictionary in week7_history_manager.building_placement_history:
+			var entry := BuildingPlacementHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week7_building_placement_journal(entry, _current_rabbit_name())
+		for raw: Dictionary in week7_history_manager.construction_history:
+			var entry := ConstructionHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week7_construction_journal(entry, _current_rabbit_name())
+			if entry.is_completed:
+				_diary_manager.generate_week7_cafe_complete_journal(entry, _current_rabbit_name())
+		for raw: Dictionary in week7_history_manager.cafe_activity_history:
+			_diary_manager.generate_week7_cafe_activity_journal(CafeActivityHistoryEntry.from_dict(raw), _current_rabbit_name())
+
+	# GrowthAlbum repair: fill the moment only, never recreate its special journal.
+	if _growth_album_manager != null:
+		for raw: Dictionary in week7_history_manager.building_unlock_history:
+			var unlock := BuildingUnlockHistoryEntry.from_dict(raw)
+			_add_week7_album_moment("cafe_unlock", unlock.source_event_id if not unlock.source_event_id.is_empty() else "cafe_unlock_migrated", "咖啡館解鎖", "村莊正式有了建造咖啡館的計畫。", "village", 0, unlock.unlocked_at, "")
+		for raw: Dictionary in week7_history_manager.construction_history:
+			var construction := ConstructionHistoryEntry.from_dict(raw)
+			if construction.is_completed:
+				_add_week7_album_moment("cafe_completed", construction.construction_record_id, "咖啡館完成", "咖啡館正式完成，村莊多了一個新的生活場所。", "village", 1, construction.completed_at, "")
+				break
+		if _growth_manager != null and _growth_manager.get_forest_growth_stage() >= 3:
+			_add_week7_album_moment("forest_stage3", "growth_forest_stage3_001", "森林第三階段", "Amy 的森林成長已經進入第三階段。", "forest", 3, TimeManager.get_now(), "")
+		if _growth_manager != null and _growth_manager.get_lakeside_growth_stage() >= 2:
+			_add_week7_album_moment("lakeside_stage2", "growth_lakeside_stage2_001", "湖畔第二階段", "Amy 的湖畔成長已經進入第二階段。", "lakeside", 2, TimeManager.get_now(), "")
+
+func _add_week7_album_moment(moment_id: String, source_event_id: String, title: String, description: String, growth_path: String, stage: int, at: float, journal_id: String, illustration_id: String = "") -> void:
+	if _growth_album_manager == null or source_event_id.is_empty():
+		return
+	_growth_album_manager.add_week7_moment(moment_id, source_event_id, title, description, growth_path, stage, at, journal_id, illustration_id)
+
+func _week7_event_time(event_id: String) -> float:
+	if _life_event_manager != null:
+		var events_variant: Variant = _life_event_manager.get("_events")
+		if events_variant is Dictionary and events_variant.has(event_id):
+			var event := events_variant[event_id] as LifeEventData
+			if event != null:
+				return event.confirmed_at if event.confirmed_at > 0.0 else event.triggered_at
+	return 0.0
+
+func _find_journal_id_for_life_event(event_id: String) -> String:
+	if _diary_manager == null:
+		return ""
+	for entry: JournalEntry in _diary_manager.get_all_journals():
+		if entry.life_event_id == event_id:
+			return entry.journal_id
+	return ""
+
 func _growth_mark_for_event(event_id: String) -> String:
 	match event_id:
 		"growth_leaf_mark_001":
@@ -758,6 +968,10 @@ func _growth_mark_for_event(event_id: String) -> String:
 			return "sprout_mark"
 		"growth_lake_interest_001":
 			return "lake_interest"
+		"growth_forest_stage3_001":
+			return "forest_stage3"
+		"growth_lakeside_stage2_001":
+			return "lakeside_stage2"
 	return ""
 
 func _current_rabbit() -> RabbitData:

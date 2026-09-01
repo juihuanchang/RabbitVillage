@@ -281,6 +281,105 @@ func has_journal_for_week6_event(event_id: String) -> bool:
 			return true
 	return false
 
+# ---------------- Week 7 ----------------
+
+func generate_week7_building_unlock_journal(entry: BuildingUnlockHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.building_id.is_empty() or has_week7_building_unlock_journal(entry.building_id):
+		return null
+	return _append(JournalGenerator.generate_week7_building_unlock_journal(rabbit_name, _next_id(), entry))
+
+func generate_week7_building_placement_journal(entry: BuildingPlacementHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.building_id.is_empty() or entry.slot_id.is_empty() or has_week7_building_placement_journal(entry.building_id):
+		return null
+	return _append(JournalGenerator.generate_week7_building_placement_journal(rabbit_name, _next_id(), entry))
+
+func generate_week7_construction_journal(entry: ConstructionHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.construction_record_id.is_empty() or has_week7_construction_journal(entry.construction_record_id, false):
+		return null
+	return _append(JournalGenerator.generate_week7_construction_journal(rabbit_name, _next_id(), entry))
+
+func generate_week7_cafe_complete_journal(entry: ConstructionHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.construction_record_id.is_empty() or has_week7_construction_journal(entry.construction_record_id, true):
+		return null
+	return _append(JournalGenerator.generate_week7_cafe_complete_journal(rabbit_name, _next_id(), entry))
+
+func generate_week7_cafe_activity_journal(entry: CafeActivityHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.activity_record_id.is_empty() or has_week7_cafe_activity_journal(entry.activity_record_id):
+		return null
+	return _append(JournalGenerator.generate_week7_cafe_activity_journal(rabbit_name, _next_id(), entry))
+
+func generate_week7_cafe_event_journal(event_id: String, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if event_id.is_empty() or has_week7_cafe_event_journal(event_id):
+		return null
+	return _append(JournalGenerator.generate_week7_cafe_event_journal(rabbit_name, _next_id(), event_id, at))
+
+func generate_week7_growth_journal(event_id: String, growth_path: String, growth_stage: int, growth_mark_id: String, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if event_id.is_empty() or has_journal_for_growth_event(event_id):
+		return null
+	return _append(JournalGenerator.generate_week7_growth_journal(rabbit_name, _next_id(), event_id, growth_path, growth_stage, growth_mark_id, at))
+
+func generate_week7_growth_reaction_journal(source_record_id: String, growth_path: String, growth_stage: int, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if source_record_id.is_empty() or has_week7_growth_reaction_for_source(source_record_id):
+		return null
+	if growth_path == "forest" and growth_stage < 3:
+		return null
+	if growth_path == "lakeside" and growth_stage < 2:
+		return null
+	return _append(JournalGenerator.generate_week7_growth_reaction_journal(rabbit_name, _next_id(), source_record_id, growth_path, growth_stage, at))
+
+func generate_week7_village_progress_journal(entry: VillageProgressHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.village_progress_event_id.is_empty() or has_week7_village_progress_journal(entry.village_progress_event_id):
+		return null
+	return _append(JournalGenerator.generate_week7_village_progress_journal(rabbit_name, _next_id(), entry))
+
+func generate_week7_finale_journal(event_id: String, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if event_id.is_empty() or has_journal_for_life_event(event_id):
+		return null
+	return _append(JournalGenerator.generate_week7_finale_journal(rabbit_name, _next_id(), event_id, at))
+
+func has_week7_building_unlock_journal(building_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "building_unlock" and entry.building_id == building_id:
+			return true
+	return false
+
+func has_week7_building_placement_journal(building_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "building_placement" and entry.building_id == building_id:
+			return true
+	return false
+
+func has_week7_construction_journal(record_id: String, completed: bool) -> bool:
+	var expected := "cafe_complete" if completed else "week7_construction"
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == expected and (entry.construction_id == record_id or entry.construction_record_id == record_id):
+			return true
+	return false
+
+func has_week7_cafe_activity_journal(record_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "cafe_activity" and entry.activity_record_id == record_id:
+			return true
+	return false
+
+func has_week7_cafe_event_journal(event_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "cafe_event" and entry.life_event_id == event_id:
+			return true
+	return false
+
+func has_week7_growth_reaction_for_source(record_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "growth_reaction" and entry.activity_record_id == record_id:
+			return true
+	return false
+
+func has_week7_village_progress_journal(event_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "village_progress" and entry.village_progress_event_id == event_id:
+			return true
+	return false
+
 func get_last_food_journal_date() -> String:
 	return _last_food_journal_date
 
@@ -504,6 +603,26 @@ func _duplicate(entry: JournalEntry) -> bool:
 			return has_journal_for_week6_event(entry.picnic_event_id)
 		"week6_finale":
 			return has_journal_for_week6_event(entry.life_event_id)
+		"building_unlock":
+			return has_week7_building_unlock_journal(entry.building_id)
+		"building_placement":
+			return has_week7_building_placement_journal(entry.building_id)
+		"week7_construction":
+			return has_week7_construction_journal(entry.construction_id if not entry.construction_id.is_empty() else entry.construction_record_id, false)
+		"cafe_complete":
+			return has_week7_construction_journal(entry.construction_id if not entry.construction_id.is_empty() else entry.construction_record_id, true)
+		"cafe_activity":
+			return has_week7_cafe_activity_journal(entry.activity_record_id)
+		"cafe_event":
+			return has_week7_cafe_event_journal(entry.life_event_id)
+		"week7_growth":
+			return has_journal_for_growth_event(entry.growth_event_id)
+		"growth_reaction":
+			return has_week7_growth_reaction_for_source(entry.activity_record_id)
+		"village_progress":
+			return has_week7_village_progress_journal(entry.village_progress_event_id)
+		"week7_finale":
+			return has_journal_for_life_event(entry.life_event_id)
 	return false
 
 func _append(entry: JournalEntry) -> JournalEntry:
