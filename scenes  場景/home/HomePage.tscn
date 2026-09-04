@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://wr044glhr77k" path="res://scenes  場景/home/village_building_ui.gd" id="6_we17s"]
 [ext_resource type="Script" uid="uid://dryawo3t8jrqq" path="res://scenes  場景/home/village_economy_ui.gd" id="7_economy"]
 [ext_resource type="Script" uid="uid://bm53lcwih1gl" path="res://scenes  場景/home/village_expansion_ui.gd" id="8_expansion"]
+[ext_resource type="Script" path="res://scenes  場景/home/life_journey_ui.gd" id="9_life_journey"]
 
 [node name="HomePage" type="Node2D" unique_id=1538389181]
 script = ExtResource("1_inkar")
@@ -423,3 +424,6 @@ script = ExtResource("7_economy")
 
 [node name="VillageExpansionUI" type="Node" parent="." unique_id=1287838183]
 script = ExtResource("8_expansion")
+
+[node name="LifeJourneyUI" type="Node" parent="."]
+script = ExtResource("9_life_journey")

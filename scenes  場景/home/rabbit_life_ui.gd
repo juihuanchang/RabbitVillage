@@ -503,7 +503,7 @@ func _show_next_modal() -> void:
 	, "", func(): pass)
 
 func _has_external_modal() -> bool:
-	return WeekUIFactory.has_external_modal(self, modal_layer)
+	return UIComponentFactory.has_external_modal(self, modal_layer)
 
 func _close_windows() -> void:
 	inventory_window.hide()
@@ -542,13 +542,13 @@ func _album_title(entry: GrowthAlbumEntry) -> String:
 	return entry.title
 
 func _window_root(node_name: String) -> Control:
-	return WeekUIFactory.window_root(modal_layer, node_name, 0.48)
+	return UIComponentFactory.window_root(modal_layer, node_name, 0.48)
 
 func _card(parent: Control, position: Vector2, size: Vector2) -> PanelContainer:
-	return WeekUIFactory.card(parent, position, size)
+	return UIComponentFactory.card(parent, position, size)
 
 func _margin_vbox(parent: Control, margin_size: int) -> VBoxContainer:
-	return WeekUIFactory.margin_vbox(parent, margin_size, 16)
+	return UIComponentFactory.margin_vbox(parent, margin_size, 16)
 
 func _button(text: String) -> Button:
 	var button := Button.new()

@@ -33,7 +33,7 @@ var shop_history_manager := ShopHistoryManager.new()
 var cooking_history_manager := CookingHistoryManager.new()
 var life_location_history_manager := LifeLocationHistoryManager.new()
 var recipe_collection_manager := RecipeCollectionManager.new()
-var week7_history_manager := Week7HistoryManager.new()
+var village_development_history_manager := VillageDevelopmentHistoryManager.new()
 
 var _loaded_save: SaveData
 var _week5_runtime_ready := false
@@ -183,8 +183,8 @@ func get_life_location_history_manager() -> LifeLocationHistoryManager:
 func get_recipe_collection_manager() -> RecipeCollectionManager:
 	return recipe_collection_manager
 
-func get_week7_history_manager() -> Week7HistoryManager:
-	return week7_history_manager
+func get_village_development_history_manager() -> VillageDevelopmentHistoryManager:
+	return village_development_history_manager
 
 func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	resource_history_manager.setup(save.inventory_history, save.currency_history, save.reward_history, save.item_discovery_history)
@@ -194,13 +194,13 @@ func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	cooking_history_manager.setup(save.cooking_history, save.recipe_unlock_history)
 	life_location_history_manager.setup(save.life_location_history)
 	recipe_collection_manager.setup(save.recipe_collection)
-	week7_history_manager.setup_from_save(save)
+	village_development_history_manager.setup_from_save(save)
 	if _diary_manager != null:
 		_diary_manager.setup_week5_limits(save.last_food_journal_date, save.last_needs_journal_date)
 		_diary_manager.setup_week6_limits(save.last_shopping_journal_date, save.last_cooking_journal_date, save.last_picnic_journal_date)
 
 func _ensure_week5_managers() -> void:
-	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, week7_history_manager]:
+	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, village_development_history_manager]:
 		if manager.get_parent() == null:
 			add_child(manager)
 
@@ -567,7 +567,7 @@ func _on_life_event_confirmed(result: LifeEventResult) -> void:
 	if result.event_id.begins_with("shop_"):
 		shop_history_manager.record_shop_event(result.event_id, result.confirmed_at)
 	if result.event_id == "cafe_barista_arrives_001":
-		var unlock := week7_history_manager.record_building_unlock("cafe", result.confirmed_at, result.event_id)
+		var unlock := village_development_history_manager.record_building_unlock("cafe", result.confirmed_at, result.event_id)
 		if unlock != null and _diary_manager != null:
 			_diary_manager.generate_week7_building_unlock_journal(unlock, _current_rabbit_name())
 		_add_week7_album_moment("cafe_unlock", result.event_id, "咖啡館解鎖", "村莊正式有了建造咖啡館的計畫。", "village", 0, result.confirmed_at, _find_journal_id_for_life_event(result.event_id))
@@ -608,7 +608,7 @@ func _on_growth_path_updated(growth_path: String, old_stage: int, new_stage: int
 		_growth_album_manager.add_week5_growth_entry(mark_id, source_event_id, title, description, growth_path, new_stage, TimeManager.get_now(), journal_id, illustration_id)
 	if source_event_id in ["growth_forest_stage3_001", "growth_lakeside_stage2_001"]:
 		var appearance := "forest_stage3" if source_event_id == "growth_forest_stage3_001" else "lakeside_stage2"
-		week7_history_manager.record_appearance(appearance, source_event_id, TimeManager.get_now())
+		village_development_history_manager.record_appearance(appearance, source_event_id, TimeManager.get_now())
 		_add_week7_album_moment(mark_id, source_event_id, journal.title if journal != null else appearance, journal.content if journal != null else "Amy 的成長進入了新的階段。", growth_path, new_stage, TimeManager.get_now(), journal.journal_id if journal != null else "", journal.illustration_id if journal != null else mark_id)
 	save_game()
 
@@ -622,7 +622,7 @@ func _on_activity_completed_for_life_journal(active: ActiveActivityData) -> void
 	if active == null or active.activity == null:
 		return
 	if active.activity.location_id == "cafe":
-		var cafe_history := week7_history_manager.record_cafe_activity(active)
+		var cafe_history := village_development_history_manager.record_cafe_activity(active)
 		if cafe_history != null and _diary_manager != null:
 			_diary_manager.generate_week7_cafe_activity_journal(cafe_history, _current_rabbit_name())
 		# Café Activity Complete is an explicit Week 7 immediate-save point.
@@ -806,21 +806,21 @@ func _repair_week6_dependencies() -> void:
 
 func _capture_week7_persistent(save: SaveData) -> void:
 	_sync_week7_from_runtime()
-	week7_history_manager.repair_consistency(TimeManager.get_now())
-	save.building_slots = week7_history_manager.building_slots.duplicate(true)
-	save.unlocked_building_ids = week7_history_manager.unlocked_building_ids.duplicate()
+	village_development_history_manager.repair_consistency(TimeManager.get_now())
+	save.building_slots = village_development_history_manager.building_slots.duplicate(true)
+	save.unlocked_building_ids = village_development_history_manager.unlocked_building_ids.duplicate()
 	save.buildable_building_ids = ["cafe"]
-	save.active_constructions = week7_history_manager.active_constructions.duplicate(true)
-	save.building_unlock_history = week7_history_manager.building_unlock_history_to_array()
-	save.building_placement_history = week7_history_manager.building_placement_history_to_array()
-	save.construction_history = week7_history_manager.construction_history_to_array()
-	save.cafe_experience = week7_history_manager.cafe_experience
-	save.cafe_activity_history = week7_history_manager.cafe_activity_history_to_array()
-	save.cafe_experience_history = week7_history_manager.cafe_experience_history_to_array()
-	save.village_progress_state = week7_history_manager.village_progress_state.duplicate(true)
-	save.village_progress_history = week7_history_manager.village_progress_history_to_array()
-	save.growth_appearance_state = week7_history_manager.growth_appearance_state
-	save.growth_appearance_history = week7_history_manager.growth_appearance_history_to_array()
+	save.active_constructions = village_development_history_manager.active_constructions.duplicate(true)
+	save.building_unlock_history = village_development_history_manager.building_unlock_history_to_array()
+	save.building_placement_history = village_development_history_manager.building_placement_history_to_array()
+	save.construction_history = village_development_history_manager.construction_history_to_array()
+	save.cafe_experience = village_development_history_manager.cafe_experience
+	save.cafe_activity_history = village_development_history_manager.cafe_activity_history_to_array()
+	save.cafe_experience_history = village_development_history_manager.cafe_experience_history_to_array()
+	save.village_progress_state = village_development_history_manager.village_progress_state.duplicate(true)
+	save.village_progress_history = village_development_history_manager.village_progress_history_to_array()
+	save.growth_appearance_state = village_development_history_manager.growth_appearance_state
+	save.growth_appearance_history = village_development_history_manager.growth_appearance_history_to_array()
 
 func _sync_week7_from_runtime() -> void:
 	_discover_week5_runtime_managers()
@@ -831,34 +831,34 @@ func _sync_week7_from_runtime() -> void:
 			var village: VillageData = village_variant
 			if village.building_records.has("coffee_shop") and village.building_records["coffee_shop"] is Dictionary:
 				var raw: Dictionary = village.building_records["coffee_shop"]
-				var slot_id := Week7HistoryManager.canonical_slot_id(str(raw.get("slot_id", "")))
+				var slot_id := VillageDevelopmentHistoryManager.canonical_slot_id(str(raw.get("slot_id", "")))
 				if not slot_id.is_empty():
-					week7_history_manager.record_building_placement("cafe", slot_id, float(raw.get("placed_at", 0.0)))
+					village_development_history_manager.record_building_placement("cafe", slot_id, float(raw.get("placed_at", 0.0)))
 			if not village.active_construction.is_empty():
 				var active := ConstructionRecord.from_dict(village.active_construction)
 				if active.building_id in ["coffee_shop", "cafe"]:
 					var definition: BuildingData = _building_manager.get_building("coffee_shop") if _building_manager != null else null
 					var coin_cost := definition.coin_cost if definition != null else 0
 					var materials: Dictionary = definition.material_costs.duplicate(true) if definition != null else {}
-					week7_history_manager.record_construction_start(active, coin_cost, materials)
+					village_development_history_manager.record_construction_start(active, coin_cost, materials)
 	if _building_manager != null:
 		var cafe: BuildingData = _building_manager.get_building("coffee_shop")
 		if cafe != null and cafe.is_unlocked:
 			var source_event := "cafe_barista_arrives_001" if _life_event_manager != null and _life_event_manager.has_completed_life_event("cafe_barista_arrives_001") else "runtime_building_state"
-			week7_history_manager.record_building_unlock("cafe", _week7_event_time(source_event), source_event)
+			village_development_history_manager.record_building_unlock("cafe", _week7_event_time(source_event), source_event)
 	var rabbit := _current_rabbit()
 	if rabbit != null:
-		week7_history_manager.cafe_experience = maxi(week7_history_manager.cafe_experience, rabbit.cafe_experience)
+		village_development_history_manager.cafe_experience = maxi(village_development_history_manager.cafe_experience, rabbit.cafe_experience)
 	if _village_manager != null:
 		var progress_variant: Variant = _village_manager.get_village_progress()
 		if progress_variant is Dictionary:
-			week7_history_manager.village_progress_state = progress_variant.duplicate(true)
+			village_development_history_manager.village_progress_state = progress_variant.duplicate(true)
 		elif progress_variant is Object and progress_variant.has_method("to_dict"):
-			week7_history_manager.village_progress_state = progress_variant.to_dict()
+			village_development_history_manager.village_progress_state = progress_variant.to_dict()
 	if _growth_manager != null:
 		var appearance_variant: Variant = _growth_manager.get_appearance_state()
 		if appearance_variant is Dictionary:
-			week7_history_manager.growth_appearance_state = appearance_variant.duplicate(true)
+			village_development_history_manager.growth_appearance_state = appearance_variant.duplicate(true)
 
 func _on_week7_construction_started(record: ConstructionRecord) -> void:
 	if record == null or record.building_id not in ["coffee_shop", "cafe"]:
@@ -866,10 +866,10 @@ func _on_week7_construction_started(record: ConstructionRecord) -> void:
 	var definition: BuildingData = _building_manager.get_building("coffee_shop") if _building_manager != null else null
 	var coin_cost := definition.coin_cost if definition != null else 0
 	var materials: Dictionary = definition.material_costs.duplicate(true) if definition != null else {}
-	var history := week7_history_manager.record_construction_start(record, coin_cost, materials)
+	var history := village_development_history_manager.record_construction_start(record, coin_cost, materials)
 	if history != null and _diary_manager != null:
 		var placement: BuildingPlacementHistoryEntry = null
-		for raw: Dictionary in week7_history_manager.building_placement_history:
+		for raw: Dictionary in village_development_history_manager.building_placement_history:
 			var candidate := BuildingPlacementHistoryEntry.from_dict(raw)
 			if candidate.building_id == "cafe":
 				placement = candidate
@@ -882,14 +882,14 @@ func _on_week7_construction_started(record: ConstructionRecord) -> void:
 func _on_week7_construction_completed(result: ConstructionResult) -> void:
 	if result == null or result.building_id not in ["coffee_shop", "cafe"]:
 		return
-	var history := week7_history_manager.record_construction_complete(result)
+	var history := village_development_history_manager.record_construction_complete(result)
 	if history != null and _diary_manager != null:
 		var journal := _diary_manager.generate_week7_cafe_complete_journal(history, _current_rabbit_name())
 		_add_week7_album_moment("cafe_completed", history.construction_record_id, "咖啡館完成", journal.content if journal != null else "咖啡館正式完成，村莊多了一個新的生活場所。", "village", 1, history.completed_at, journal.journal_id if journal != null else "", "cafe_completed")
 	save_game()
 
 func _on_week7_village_progress_changed(progress: VillageProgressData) -> void:
-	var history := week7_history_manager.record_village_progress(progress, TimeManager.get_now())
+	var history := village_development_history_manager.record_village_progress(progress, TimeManager.get_now())
 	if history != null and _diary_manager != null and history.new_level > history.old_level:
 		_diary_manager.generate_week7_village_progress_journal(history, _current_rabbit_name())
 	save_game()
@@ -902,33 +902,33 @@ func _on_week7_history_changed() -> void:
 func _repair_week7_dependencies() -> void:
 	if _loaded_save == null:
 		return
-	week7_history_manager.setup_from_save(_loaded_save)
+	village_development_history_manager.setup_from_save(_loaded_save)
 	_sync_week7_from_runtime()
-	week7_history_manager.repair_consistency(TimeManager.get_now())
+	village_development_history_manager.repair_consistency(TimeManager.get_now())
 
 	# Recreate missing permanent journals from History only. Never re-spend costs or
 	# re-apply Café rewards during repair.
 	if _diary_manager != null:
-		for raw: Dictionary in week7_history_manager.building_unlock_history:
+		for raw: Dictionary in village_development_history_manager.building_unlock_history:
 			var entry := BuildingUnlockHistoryEntry.from_dict(raw)
 			_diary_manager.generate_week7_building_unlock_journal(entry, _current_rabbit_name())
-		for raw: Dictionary in week7_history_manager.building_placement_history:
+		for raw: Dictionary in village_development_history_manager.building_placement_history:
 			var entry := BuildingPlacementHistoryEntry.from_dict(raw)
 			_diary_manager.generate_week7_building_placement_journal(entry, _current_rabbit_name())
-		for raw: Dictionary in week7_history_manager.construction_history:
+		for raw: Dictionary in village_development_history_manager.construction_history:
 			var entry := ConstructionHistoryEntry.from_dict(raw)
 			_diary_manager.generate_week7_construction_journal(entry, _current_rabbit_name())
 			if entry.is_completed:
 				_diary_manager.generate_week7_cafe_complete_journal(entry, _current_rabbit_name())
-		for raw: Dictionary in week7_history_manager.cafe_activity_history:
+		for raw: Dictionary in village_development_history_manager.cafe_activity_history:
 			_diary_manager.generate_week7_cafe_activity_journal(CafeActivityHistoryEntry.from_dict(raw), _current_rabbit_name())
 
 	# GrowthAlbum repair: fill the moment only, never recreate its special journal.
 	if _growth_album_manager != null:
-		for raw: Dictionary in week7_history_manager.building_unlock_history:
+		for raw: Dictionary in village_development_history_manager.building_unlock_history:
 			var unlock := BuildingUnlockHistoryEntry.from_dict(raw)
 			_add_week7_album_moment("cafe_unlock", unlock.source_event_id if not unlock.source_event_id.is_empty() else "cafe_unlock_migrated", "咖啡館解鎖", "村莊正式有了建造咖啡館的計畫。", "village", 0, unlock.unlocked_at, "")
-		for raw: Dictionary in week7_history_manager.construction_history:
+		for raw: Dictionary in village_development_history_manager.construction_history:
 			var construction := ConstructionHistoryEntry.from_dict(raw)
 			if construction.is_completed:
 				_add_week7_album_moment("cafe_completed", construction.construction_record_id, "咖啡館完成", "咖啡館正式完成，村莊多了一個新的生活場所。", "village", 1, construction.completed_at, "")

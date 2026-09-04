@@ -210,7 +210,7 @@ func _create_expansion_window() -> void:
 	var filters := HBoxContainer.new()
 	filters.add_theme_constant_override("separation", 6)
 	diary_box.add_child(filters)
-	for filter_name in ["全部", "咖啡廳", "建築", "森林", "湖畔", "生活"]:
+	for filter_name in ["全部", "咖啡廳", "建築", "森林", "湖畔", "生活", "Forest Rabbit", "Lakeside Rabbit"]:
 		var filter_button := Button.new()
 		filter_button.text = filter_name
 		filter_button.pressed.connect(_set_diary_filter.bind(filter_name))
@@ -276,7 +276,7 @@ func _preview_placement() -> void:
 	if selected_slot_id.is_empty():
 		_enqueue_modal("尚未選擇位置", "請先選擇一塊高亮的建築預留地。", 50)
 		return
-	var formal_ready := _formal_cafe_runtime_ready()
+	var formal_ready := _cafe_runtime_ready()
 	var body := "咖啡廳將建在 %s。\n\n成本\n%s\n\n施工測試時間：30 秒" % [_slot_title(selected_slot_id), _cost_text(false)]
 	if not formal_ready:
 		body += "\n\n咖啡廳尚未正式開放，因此目前不會扣除金幣或素材。"
@@ -284,14 +284,15 @@ func _preview_placement() -> void:
 
 
 func _confirm_placement() -> void:
-	if not _formal_cafe_runtime_ready():
+	if not _cafe_runtime_ready():
 		return
 	var runtime_slot := _runtime_slot_id(selected_slot_id)
-	var check: Dictionary = player.can_place_building("coffee_shop", runtime_slot)
+	var cafe_id := _runtime_cafe_id()
+	var check: Dictionary = player.can_place_building(cafe_id, runtime_slot)
 	if not bool(check.get("ok", false)):
 		_enqueue_modal("無法建造", _reason_text(str(check.get("reason", "現在無法放置咖啡廳"))), 100)
 		return
-	var placed: Dictionary = player.place_building("coffee_shop", runtime_slot)
+	var placed: Dictionary = player.place_building(cafe_id, runtime_slot)
 	if not bool(placed.get("ok", false)):
 		_enqueue_modal("放置失敗", _reason_text(str(placed.get("reason", "位置沒有保存"))), 100)
 		return
@@ -359,7 +360,7 @@ func _refresh_cafe_card() -> void:
 		BuildingState.CONSTRUCTING: "施工中",
 		BuildingState.COMPLETED: "已完工 · 可以進入"
 	}.get(state, "咖啡廳尚未開放"))
-	if not _formal_cafe_runtime_ready():
+	if not _cafe_runtime_ready():
 		state_text = "咖啡廳建設功能準備中"
 	cafe_status_label.text = str(state_text)
 	cafe_cost_label.text = "建造成本\n%s\n建造時間　30 秒（測試設定保留）" % _cost_text(true)
@@ -494,7 +495,7 @@ func _on_village_event(event: Variant) -> void:
 	if event == null:
 		return
 	var event_id := str(_value(event, "event_id", ""))
-	if event_id == "building_cafe_unlock_001":
+	if event_id in ["building_cafe_unlock_001", "cafe_barista_arrives_001"]:
 		_enqueue_modal(
 			"村莊事件：咖啡師來到村莊",
 			"一位咖啡師來到村莊。\n\n「如果有地方的話，我想在這裡開一家小咖啡廳。」\n\n解鎖新建築：咖啡廳",
@@ -528,13 +529,21 @@ func _show_next_modal() -> void:
 	, CAFE_TEXTURE if "咖啡" in str(item.title) else null)
 
 
-func _formal_cafe_runtime_ready() -> bool:
-	return player.get_building("cafe") != null
+func _cafe_runtime_ready() -> bool:
+	return not _runtime_cafe_id().is_empty()
+
+
+func _runtime_cafe_id() -> String:
+	if player.get_building("cafe") != null:
+		return "cafe"
+	if player.get_building("coffee_shop") != null:
+		return "coffee_shop"
+	return ""
 
 
 func _cafe_state() -> String:
-	var id := "cafe" if _formal_cafe_runtime_ready() else "coffee_shop"
-	return player.get_building_state(id)
+	var id := _runtime_cafe_id()
+	return player.get_building_state(id) if not id.is_empty() else BuildingState.LOCKED
 
 
 func _slot_is_occupied(display_slot_id: String) -> bool:
@@ -548,7 +557,7 @@ func _slot_is_occupied(display_slot_id: String) -> bool:
 
 
 func _runtime_slot_id(display_slot_id: String) -> String:
-	if _formal_cafe_runtime_ready():
+	if _runtime_cafe_id() == "cafe":
 		return display_slot_id
 	var suffix := display_slot_id.trim_prefix("building_slot_")
 	return "Slot%s" % suffix
@@ -603,6 +612,8 @@ func _journal_matches(entry: JournalEntry, filter_name: String) -> bool:
 		"森林": return "forest" in haystack or "森林" in haystack
 		"湖畔": return "lake" in haystack or "fishing" in haystack or "湖" in haystack
 		"生活": return "life" in haystack or "生活" in haystack
+		"Forest Rabbit": return "forest_rabbit" in haystack or "forest_final" in haystack
+		"Lakeside Rabbit": return "lakeside_rabbit" in haystack or "lakeside_final" in haystack
 	return true
 
 

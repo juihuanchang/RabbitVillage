@@ -1,4 +1,4 @@
-class_name Week7HistoryManager
+class_name VillageDevelopmentHistoryManager
 extends Node
 
 signal history_changed

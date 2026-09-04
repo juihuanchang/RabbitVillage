@@ -9,7 +9,7 @@ var currency_manager: CurrencyManager
 var inventory_manager: InventoryManager
 
 func _init() -> void:
-	_add("coffee_shop", "Café", 30.0, 40, 50, {"twig": 5, "small_stone": 3}, false)
+	_add("coffee_shop", "Café", 30.0, 40, 80, {"twig": 10, "driftwood": 5, "small_stone": 4}, false)
 	_add("rest_pavilion", "Rest Pavilion", 30.0, 25, 25, {"twig": 3, "leaf": 5}, false)
 	_add("notice_board", "Notice Board", 30.0, 30, 30, {"twig": 4}, false)
 	_add("carrot_farm", "Carrot Farm", 30.0, 40, 40, {"twig": 3, "small_stone": 2}, false)

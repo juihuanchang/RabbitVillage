@@ -1,4 +1,4 @@
-class_name WeekUIFactory
+class_name UIComponentFactory
 extends RefCounted
 
 

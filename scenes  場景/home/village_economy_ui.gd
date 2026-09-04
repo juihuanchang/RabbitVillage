@@ -540,7 +540,7 @@ func _refresh_collection() -> void:
 
 func _connect_runtime_signals() -> void:
 	_connect_if_present(_manager("shop_manager"), "purchase_completed", func(result: Variant) -> void: _on_purchase_signal(result))
-	_connect_if_present(_manager("daily_shop_manager"), "daily_shop_refreshed", func(_offer: Variant = null) -> void: _enqueue_modal("今日小店", "今天的小店換了一些東西。", 45))
+	_connect_if_present(_manager("daily_shop_manager"), "daily_shop_refreshed", func(_day_key: String, _offers: Array[DailyShopOfferData]) -> void: _enqueue_modal("今日小店", "今天的小店換了一些東西。", 45))
 	_connect_if_present(_manager("shop_manager"), "product_unlocked", func(_product: Variant) -> void: _enqueue_modal("小店的新東西", "小店好像進了新的東西。", 70))
 	_connect_if_present(_manager("cooking_manager"), "cooking_completed", func(_result: Variant) -> void: _refresh_all())
 	_connect_if_present(_manager("cooking_manager"), "recipe_discovered", func(recipe: Variant) -> void: _enqueue_modal("第一次做出了！", str(_value(recipe, "display_name", "發現新料理！")), 75))
@@ -707,7 +707,7 @@ func _show_next_modal() -> void:
 	)
 
 func _has_external_modal() -> bool:
-	return WeekUIFactory.has_external_modal(self, modal_layer)
+	return UIComponentFactory.has_external_modal(self, modal_layer)
 
 func _close_windows() -> void:
 	for window in [shop_window, cooking_window, food_window, picnic_window, collection_window]:
@@ -718,13 +718,13 @@ func _clear(container: Node) -> void:
 		child.queue_free()
 
 func _window_root(node_name: String) -> Control:
-	return WeekUIFactory.window_root(modal_layer, node_name, 0.5)
+	return UIComponentFactory.window_root(modal_layer, node_name, 0.5)
 
 func _card(parent: Control, position: Vector2, size: Vector2) -> PanelContainer:
-	return WeekUIFactory.card(parent, position, size)
+	return UIComponentFactory.card(parent, position, size)
 
 func _margin_vbox(parent: Control, margin_size: int) -> VBoxContainer:
-	return WeekUIFactory.margin_vbox(parent, margin_size, 14)
+	return UIComponentFactory.margin_vbox(parent, margin_size, 14)
 
 func _button(text: String) -> Button:
 	var button := Button.new()

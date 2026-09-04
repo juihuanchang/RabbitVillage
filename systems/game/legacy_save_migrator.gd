@@ -451,4 +451,4 @@ static func _week7_life_event_time(save: SaveData, event_id: String) -> float:
 static func _week7_cafe_cost() -> Dictionary:
 	# Mirrors B's current café definition only as permanent transaction metadata.
 	# C never spends these resources itself.
-	return {"coin_cost": 50, "material_costs": {"twig": 5, "small_stone": 3}}
+	return {"coin_cost": 80, "material_costs": {"twig": 10, "driftwood": 5, "small_stone": 4}}
