@@ -1,7 +1,7 @@
 class_name SaveData
 extends Resource
 
-const CURRENT_VERSION := 8
+const CURRENT_VERSION := 9
 const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread",
 	"berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 const VALID_PRODUCT_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack"]
@@ -10,7 +10,7 @@ const VALID_FOOD_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack
 const WEEK7_BUILDING_IDS := ["cafe", "library", "flower_shop", "workshop"]
 const WEEK7_BUILDABLE_BUILDING_IDS := ["cafe"]
 const WEEK7_BUILDING_SLOTS := ["building_slot_01", "building_slot_02", "building_slot_03", "building_slot_04", "building_slot_05"]
-const WEEK7_APPEARANCE_STATES := ["normal", "leaf", "sprout", "forest_stage3", "lakeside_stage2"]
+const WEEK7_APPEARANCE_STATES := ["normal", "leaf", "sprout", "forest_stage3", "lakeside_stage2", "forest_final", "lakeside_final"]
 
 var save_version := CURRENT_VERSION
 var rabbits: Array[Dictionary] = []
@@ -949,7 +949,9 @@ static func _repair_week7_consistency(data: SaveData) -> void:
 	# Completed stage and mark/appearance repair.
 	var forest_stage := maxi(0, int(data.growth_path_progress.get("forest_stage", 0)))
 	var lakeside_stage := maxi(0, int(data.growth_path_progress.get("lakeside_stage", 0)))
-	if forest_stage >= 3:
+	if data.growth_appearance_state in ["forest_final", "lakeside_final"]:
+		data.growth_appearance_state = _load_week7_appearance_state(data.growth_appearance_state)
+	elif forest_stage >= 3:
 		data.growth_appearance_state = "forest_stage3"
 	elif lakeside_stage >= 2:
 		data.growth_appearance_state = "lakeside_stage2"

@@ -63,6 +63,7 @@ extends Resource
 @export var construction_id := ""
 @export var cafe_activity_id := ""
 @export var village_progress_event_id := ""
+@export var growth_form := "none"
 
 func _init(
 	initial_journal_id := "",
@@ -156,7 +157,8 @@ func to_dict() -> Dictionary:
 		"building_slot_id": building_slot_id,
 		"construction_id": construction_id,
 		"cafe_activity_id": cafe_activity_id,
-		"village_progress_event_id": village_progress_event_id
+		"village_progress_event_id": village_progress_event_id,
+		"growth_form": growth_form
 	}
 
 static func from_dict(data: Dictionary) -> JournalEntry:
@@ -236,6 +238,7 @@ static func from_dict(data: Dictionary) -> JournalEntry:
 	entry.picnic_event_id = str(data.get("picnic_event_id", data.get("PicnicEventId", "")))
 	entry.building_slot_id = str(data.get("building_slot_id", data.get("BuildingSlotId", data.get("slot_id", ""))))
 	entry.construction_id = str(data.get("construction_id", data.get("ConstructionId", entry.construction_record_id)))
+	entry.growth_form = str(data.get("growth_form", data.get("GrowthForm", "none")))
 	if entry.construction_record_id.is_empty() and not entry.construction_id.is_empty():
 		entry.construction_record_id = entry.construction_id
 	if entry.construction_id.is_empty() and not entry.construction_record_id.is_empty():

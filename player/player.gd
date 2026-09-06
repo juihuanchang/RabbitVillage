@@ -91,6 +91,7 @@ func load_game_state() -> void:
 	building_manager.setup_economy(currency_manager, inventory_manager, construction_manager)
 	activity_manager.setup_cafe(building_manager, currency_manager)
 	village_manager.setup_snapshot_sources(building_manager, growth_manager, life_event_manager)
+	village_manager.setup_late_game(rabbit_data, activity_manager, diary_manager)
 	life_event_manager.setup_week7(building_manager, activity_manager, village_manager, currency_manager)
 	growth_manager.set_completed_life_event_ids(life_event_manager.get_completed_event_ids())
 	village_event_manager.setup(village_data, rabbit_data, building_manager, growth_manager)
@@ -125,6 +126,7 @@ func _connect_system_signals() -> void:
 	diary_manager.journal_added.connect(func(_entry: JournalEntry) -> void: _request_save())
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
 	growth_manager.growth_event_confirmed.connect(func(_event: GrowthEventData) -> void: life_event_manager.call_deferred("check_life_events"))
+	growth_manager.final_growth_completed.connect(_on_final_growth_completed)
 	life_event_manager.life_event_confirmed.connect(func(_result: LifeEventResult) -> void: growth_manager.set_completed_life_event_ids(life_event_manager.get_completed_event_ids()); growth_manager.call_deferred("check_growth_path_events"))
 	construction_manager.construction_completed.connect(func(_result: ConstructionResult) -> void: life_event_manager.call_deferred("check_life_events"))
 	inventory_manager.inventory_changed.connect(func(_item_id: String, _old_amount: int, _new_amount: int, _source_type: String, _source_id: String) -> void: life_event_manager.check_life_events())
@@ -138,6 +140,8 @@ func _connect_system_signals() -> void:
 
 func _restore_pending_system_state() -> void:
 	_update_character_visibility()
+	var final_result := growth_manager.check_final_growth_completion()
+	if final_result.success: life_event_manager.check_life_events()
 	activity_manager.check_for_completion()
 	construction_manager.check_construction_completion()
 	building_interaction_manager.check_rest_pavilion_completion()
@@ -145,6 +149,9 @@ func _restore_pending_system_state() -> void:
 	village_event_manager.check_event_conditions()
 
 func _process(delta: float) -> void:
+	growth_manager.check_final_growth_conditions()
+	var final_result := growth_manager.check_final_growth_completion()
+	if final_result.success: life_event_manager.check_life_events()
 	construction_manager.check_construction_completion()
 	building_interaction_manager.check_rest_pavilion_completion()
 	farm_manager.check_farm_ready_state()
@@ -404,12 +411,28 @@ func get_pending_growth_event() -> GrowthEventData: return growth_manager.get_pe
 func confirm_growth_event(event_id: String) -> bool: return growth_manager.confirm_growth_event(event_id)
 func get_growth_tendency(path_id: String) -> String: return growth_manager.get_growth_tendency(path_id)
 func get_all_activity_records() -> Array[Dictionary]: return growth_manager.get_all_activity_records()
+func can_show_growth_direction_event() -> bool: return growth_manager.can_show_growth_direction_event()
+func get_growth_direction_options() -> Array[Dictionary]: return growth_manager.get_growth_direction_options()
+func submit_growth_direction_choice(choice_id: String) -> GrowthDirectionResult: return growth_manager.submit_growth_direction_choice(choice_id)
+func get_growth_direction_choice() -> GrowthDirectionChoiceData: return growth_manager.get_growth_direction_choice()
+func get_branch_reaction_context(context_id: String) -> Dictionary: return growth_manager.get_branch_reaction_context(context_id)
+func get_rabbit_life_summary() -> RabbitLifeSummaryData: return village_manager.get_rabbit_life_summary()
+func can_trigger_stage1_ending() -> bool: return village_manager.can_trigger_stage1_ending()
+func create_stage1_ending() -> EndingStateData: return village_manager.create_stage1_ending()
+func complete_stage1_ending() -> EndingResult: return village_manager.complete_stage1_ending()
+func has_completed_stage1_ending() -> bool: return village_manager.has_completed_stage1_ending()
+func get_stage1_ending_result() -> EndingResult: return village_manager.get_stage1_ending_result()
 
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
 	_update_character_visibility()
 	rabbit_status_changed.emit(returned_rabbit)
 	life_event_manager.check_life_events()
 	save_manager.save_game()
+
+func _on_final_growth_completed(result: FinalGrowthResult) -> void:
+	var history := save_manager.get_village_development_history_manager()
+	if history != null: history.record_appearance("forest_final" if result.branch == "forest" else "lakeside_final", "growth_%s_final_001" % result.branch, result.completed_at)
+	_request_save()
 
 func _on_data_changed() -> void:
 	_request_save()

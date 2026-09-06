@@ -14,7 +14,7 @@ const BUILDING_SLOTS := [
 ]
 const RESERVED_BUILDING_IDS := ["cafe", "library", "flower_shop", "workshop"]
 const BUILDABLE_BUILDING_IDS := ["cafe"]
-const VALID_APPEARANCE_STATES := ["normal", "leaf", "sprout", "forest_stage3", "lakeside_stage2"]
+const VALID_APPEARANCE_STATES := ["normal", "leaf", "sprout", "forest_stage3", "lakeside_stage2", "forest_final", "lakeside_final"]
 
 var building_slots: Dictionary = {}
 var unlocked_building_ids: Array[String] = []

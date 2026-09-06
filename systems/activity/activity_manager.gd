@@ -97,6 +97,7 @@ func _complete_activity(completed_time: float) -> void:
 	_completed_record_ids[completed.activity_record_id] = true; completed.mark_completed(completed_time)
 	var rabbit := completed.rabbit; var activity := completed.activity
 	rabbit.energy += activity.energy_change; rabbit.hunger += activity.hunger_change; rabbit.mood += activity.mood_change
+	if _growth_manager != null: rabbit.mood += int(_growth_manager.get_branch_reaction_context(activity.location_id).get("mood_bonus", 0))
 	rabbit.forest_experience += activity.forest_experience_change; rabbit.fishing_experience += activity.fishing_experience_change; rabbit.intimacy += activity.intimacy_change
 	match activity.location_id:
 		"forest": rabbit.forest_activity_count += 1

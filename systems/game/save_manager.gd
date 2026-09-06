@@ -624,19 +624,22 @@ func _on_activity_completed_for_life_journal(active: ActiveActivityData) -> void
 	if active.activity.location_id == "cafe":
 		var cafe_history := village_development_history_manager.record_cafe_activity(active)
 		if cafe_history != null and _diary_manager != null:
-			_diary_manager.generate_week7_cafe_activity_journal(cafe_history, _current_rabbit_name())
+			_tag_journal_growth_form(_diary_manager.generate_week7_cafe_activity_journal(cafe_history, _current_rabbit_name()))
 		# Café Activity Complete is an explicit Week 7 immediate-save point.
 		save_game()
 	if _growth_manager == null or _diary_manager == null:
 		return
 	if active.activity.location_id == "forest" and _growth_manager.get_forest_growth_stage() >= 2:
-		_diary_manager.generate_growth_lifestyle_journal("forest", _growth_manager.get_forest_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at)
+		_tag_journal_growth_form(_diary_manager.generate_growth_lifestyle_journal("forest", _growth_manager.get_forest_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at))
 		if _growth_manager.get_forest_growth_stage() >= 3:
-			_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "forest", _growth_manager.get_forest_growth_stage(), _current_rabbit_name(), active.completed_at)
+			_tag_journal_growth_form(_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "forest", _growth_manager.get_forest_growth_stage(), _current_rabbit_name(), active.completed_at))
 	elif active.activity.location_id == "lake" and _growth_manager.get_lakeside_growth_stage() >= 1:
-		_diary_manager.generate_growth_lifestyle_journal("lakeside", _growth_manager.get_lakeside_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at)
+		_tag_journal_growth_form(_diary_manager.generate_growth_lifestyle_journal("lakeside", _growth_manager.get_lakeside_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at))
 		if _growth_manager.get_lakeside_growth_stage() >= 2:
-			_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "lakeside", _growth_manager.get_lakeside_growth_stage(), _current_rabbit_name(), active.completed_at)
+			_tag_journal_growth_form(_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "lakeside", _growth_manager.get_lakeside_growth_stage(), _current_rabbit_name(), active.completed_at))
+
+func _tag_journal_growth_form(entry: JournalEntry) -> void:
+	if entry != null and _growth_manager != null: entry.growth_form = _growth_manager.get_current_final_form()
 
 func _on_rabbit_need_state_changed(hunger_state: String, energy_state: String, mood_state: String) -> void:
 	if not _week5_runtime_ready or _diary_manager == null:
@@ -857,8 +860,8 @@ func _sync_week7_from_runtime() -> void:
 			village_development_history_manager.village_progress_state = progress_variant.to_dict()
 	if _growth_manager != null:
 		var appearance_variant: Variant = _growth_manager.get_appearance_state()
-		if appearance_variant is Dictionary:
-			village_development_history_manager.growth_appearance_state = appearance_variant.duplicate(true)
+		if appearance_variant is String:
+			village_development_history_manager.growth_appearance_state = appearance_variant
 
 func _on_week7_construction_started(record: ConstructionRecord) -> void:
 	if record == null or record.building_id not in ["coffee_shop", "cafe"]:

@@ -31,6 +31,8 @@ func _init() -> void:
 
 	for cafe_id: String in ["cafe_barista_arrives_001", "cafe_first_visit_001", "cafe_first_work_001", "cafe_regular_visitor_001", "village_first_expansion_001"]:
 		_register_event(cafe_id, "", 0, "村莊真的開始熱鬧起來了" if cafe_id == "village_first_expansion_001" else "")
+	for final_id: String in ["forest_final_first_morning_001", "forest_final_home_001", "forest_final_cafe_001", "forest_final_memory_001", "lakeside_final_first_morning_001", "lakeside_final_home_001", "lakeside_final_cafe_001", "lakeside_final_memory_001", "balanced_not_ready_001"]:
+		_register_event(final_id, "", 0)
 
 func setup(inventory: InventoryManager, growth: GrowthManager = null, village_events: VillageEventManager = null) -> void:
 	_inventory = inventory; _growth = growth; _village_events = village_events
@@ -47,12 +49,15 @@ func _register_event(event_id: String, item_id: String, required_amount: int, di
 
 func check_life_events() -> LifeEventData:
 	if has_pending_life_event(): return get_pending_life_event()
+	for priority_id: String in ["forest_final_first_morning_001", "lakeside_final_first_morning_001", "balanced_not_ready_001", "forest_final_home_001", "lakeside_final_home_001", "forest_final_cafe_001", "lakeside_final_cafe_001", "forest_final_memory_001", "lakeside_final_memory_001"]:
+		if can_trigger_life_event(priority_id): return create_pending_life_event(priority_id)
 	for event: LifeEventData in _events.values():
 		if can_trigger_life_event(event.event_id): return create_pending_life_event(event.event_id)
 	return null
 
 func can_trigger_life_event(event_id: String) -> bool:
 	var event := _events.get(event_id) as LifeEventData
+	if event_id.contains("_final_") or event_id == "balanced_not_ready_001": return event != null and event.state == LifeEventState.LOCKED and not has_pending_life_event() and _final_event_condition(event_id)
 	if event_id.begins_with("cafe_") or event_id == "village_first_expansion_001":
 		return event != null and event.state == LifeEventState.LOCKED and not has_pending_life_event() and _week7_condition(event_id)
 	if event_id.begins_with("shop_") or event_id.begins_with("cooking_") or event_id.begins_with("picnic_") or event_id == "village_daily_life_001":
@@ -136,6 +141,25 @@ func _week7_condition(event_id: String) -> bool:
 			var building_event := has_completed_life_event("cafe_first_visit_001") or has_completed_life_event("cafe_first_work_001")
 			return advanced_growth and building_event and _village != null and _village.get_village_progress_snapshot().progress_score >= 50
 	return false
+
+func _final_event_condition(event_id: String) -> bool:
+	if _growth == null: return false
+	var form := _growth.get_current_final_form(); var rabbit := _activities.get_rabbit_data() if _activities != null else null
+	if event_id == "balanced_not_ready_001":
+		var choice := _growth.get_growth_direction_choice()
+		return choice.choice_id == "let_rabbit_decide" and choice.resolved_branch == "balanced" and form == "none"
+	var branch := "forest" if event_id.begins_with("forest_") else "lakeside"
+	if form != branch + "_rabbit": return false
+	if event_id.ends_with("first_morning_001"): return true
+	if event_id.ends_with("home_001"): return rabbit != null and rabbit.home_activity_count >= 1
+	if event_id.ends_with("cafe_001"): return rabbit != null and rabbit.cafe_activity_count >= 1
+	if event_id.ends_with("memory_001"): return _completed_final_event_count(branch) >= 3
+	return false
+func _completed_final_event_count(branch: String) -> int:
+	var count := 0
+	for id: String in get_completed_event_ids():
+		if id.begins_with(branch + "_final_"): count += 1
+	return count
 
 func _can_trigger_finale() -> bool:
 	if _inventory == null or _growth == null:
