@@ -1,0 +1,94 @@
+{
+  "templates": [
+    {
+      "title": "森林最後的成長 1",
+      "content": "等待了一段自然的時間後，{rabbit_name} 身上的森林痕跡終於完整連成了新的模樣。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 2",
+      "content": "從第一片葉子、嫩芽到一次次森林散步，{rabbit_name} 的生活累積成了 Forest Rabbit。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 3",
+      "content": "沒有一道瞬間出現的分界線；只是今天回頭看時，{rabbit_name} 已經真的長成了更親近森林的自己。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 4",
+      "content": "風穿過樹梢時，{rabbit_name} 的新模樣像是把一路走過的森林日子留在了身上。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 5",
+      "content": "森林沒有把別的地方從生活裡拿走。{rabbit_name} 只是多了一種更像自己的樣子。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 6",
+      "content": "那些森林活動、事件與陪伴沒有白白經過，今天都成了{rabbit_name} 成長的一部分。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 7",
+      "content": "等待了一段自然的時間後，{rabbit_name} 身上的森林痕跡終於完整連成了新的模樣。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 8",
+      "content": "從第一片葉子、嫩芽到一次次森林散步，{rabbit_name} 的生活累積成了 Forest Rabbit。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 9",
+      "content": "沒有一道瞬間出現的分界線；只是今天回頭看時，{rabbit_name} 已經真的長成了更親近森林的自己。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 10",
+      "content": "風穿過樹梢時，{rabbit_name} 的新模樣像是把一路走過的森林日子留在了身上。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 11",
+      "content": "森林沒有把別的地方從生活裡拿走。{rabbit_name} 只是多了一種更像自己的樣子。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 12",
+      "content": "那些森林活動、事件與陪伴沒有白白經過，今天都成了{rabbit_name} 成長的一部分。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 13",
+      "content": "等待了一段自然的時間後，{rabbit_name} 身上的森林痕跡終於完整連成了新的模樣。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 14",
+      "content": "從第一片葉子、嫩芽到一次次森林散步，{rabbit_name} 的生活累積成了 Forest Rabbit。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 15",
+      "content": "沒有一道瞬間出現的分界線；只是今天回頭看時，{rabbit_name} 已經真的長成了更親近森林的自己。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 16",
+      "content": "風穿過樹梢時，{rabbit_name} 的新模樣像是把一路走過的森林日子留在了身上。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 17",
+      "content": "森林沒有把別的地方從生活裡拿走。{rabbit_name} 只是多了一種更像自己的樣子。",
+      "form": "forest_rabbit"
+    },
+    {
+      "title": "森林最後的成長 18",
+      "content": "那些森林活動、事件與陪伴沒有白白經過，今天都成了{rabbit_name} 成長的一部分。",
+      "form": "forest_rabbit"
+    }
+  ]
+}

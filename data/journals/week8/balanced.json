@@ -1,0 +1,54 @@
+{
+  "templates": [
+    {
+      "title": "現在的 Amy 1",
+      "content": "{rabbit_name} 最近還是森林和湖邊都會去。牠似乎沒有急著把自己放進某一個答案裡。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 2",
+      "content": "有些日子喜歡樹葉，有些日子只想看水面。現在的{rabbit_name} 也很好。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 3",
+      "content": "生活沒有一定要立刻選出方向。{rabbit_name} 把兩邊的回憶都好好留著。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 4",
+      "content": "今天的{rabbit_name} 還是原本的模樣，但累積下來的經歷一點都沒有因此消失。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 5",
+      "content": "{rabbit_name} 最近還是森林和湖邊都會去。牠似乎沒有急著把自己放進某一個答案裡。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 6",
+      "content": "有些日子喜歡樹葉，有些日子只想看水面。現在的{rabbit_name} 也很好。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 7",
+      "content": "生活沒有一定要立刻選出方向。{rabbit_name} 把兩邊的回憶都好好留著。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 8",
+      "content": "今天的{rabbit_name} 還是原本的模樣，但累積下來的經歷一點都沒有因此消失。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 9",
+      "content": "{rabbit_name} 最近還是森林和湖邊都會去。牠似乎沒有急著把自己放進某一個答案裡。",
+      "form": "none"
+    },
+    {
+      "title": "現在的 Amy 10",
+      "content": "有些日子喜歡樹葉，有些日子只想看水面。現在的{rabbit_name} 也很好。",
+      "form": "none"
+    }
+  ]
+}

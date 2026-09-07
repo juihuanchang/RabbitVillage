@@ -1,0 +1,54 @@
+{
+  "templates": [
+    {
+      "form": "forest_rabbit",
+      "title": "Ending 之後的森林日常 1",
+      "content": "看過第一階段的回顧後，{rabbit_name} 今天還是照常生活。成為 Forest Rabbit 也沒有讓日子停止。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "Ending 之後的森林日常 2",
+      "content": "看過第一階段的回顧後，{rabbit_name} 今天還是照常生活。成為 Forest Rabbit 也沒有讓日子停止。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "Ending 之後的森林日常 3",
+      "content": "看過第一階段的回顧後，{rabbit_name} 今天還是照常生活。成為 Forest Rabbit 也沒有讓日子停止。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "Ending 之後的森林日常 4",
+      "content": "看過第一階段的回顧後，{rabbit_name} 今天還是照常生活。成為 Forest Rabbit 也沒有讓日子停止。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "Ending 之後的湖畔日常 1",
+      "content": "Ending 已經收進回憶裡，{rabbit_name} 今天仍照常去自己喜歡的地方。湖畔的生活還會繼續。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "Ending 之後的湖畔日常 2",
+      "content": "Ending 已經收進回憶裡，{rabbit_name} 今天仍照常去自己喜歡的地方。湖畔的生活還會繼續。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "Ending 之後的湖畔日常 3",
+      "content": "Ending 已經收進回憶裡，{rabbit_name} 今天仍照常去自己喜歡的地方。湖畔的生活還會繼續。"
+    },
+    {
+      "form": "none",
+      "title": "Ending 之後的現在日常 1",
+      "content": "即使暫時維持現在的模樣，{rabbit_name} 的生活也沒有少掉什麼。Ending 之後，新的普通日子繼續累積。"
+    },
+    {
+      "form": "none",
+      "title": "Ending 之後的現在日常 2",
+      "content": "即使暫時維持現在的模樣，{rabbit_name} 的生活也沒有少掉什麼。Ending 之後，新的普通日子繼續累積。"
+    },
+    {
+      "form": "none",
+      "title": "Ending 之後的現在日常 3",
+      "content": "即使暫時維持現在的模樣，{rabbit_name} 的生活也沒有少掉什麼。Ending 之後，新的普通日子繼續累積。"
+    }
+  ]
+}

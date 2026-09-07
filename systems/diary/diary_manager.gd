@@ -380,6 +380,110 @@ func has_week7_village_progress_journal(event_id: String) -> bool:
 			return true
 	return false
 
+# ---------------- Week 8 ----------------
+
+func generate_week8_growth_direction_journal(choice: GrowthDirectionChoiceHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if choice == null or choice.choice_id.is_empty() or has_week8_growth_direction_journal(choice.choice_id):
+		return null
+	return _append(JournalGenerator.generate_week8_growth_direction_journal(rabbit_name, _next_id(), choice))
+
+func generate_week8_balanced_journal(choice: GrowthDirectionChoiceHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if choice == null or choice.choice_id.is_empty() or has_week8_balanced_journal(choice.choice_id):
+		return null
+	return _append(JournalGenerator.generate_week8_balanced_journal(rabbit_name, _next_id(), choice))
+
+func generate_week8_final_growth_journal(history: FinalGrowthHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if history == null or history.final_growth_record_id.is_empty() or has_week8_final_growth_journal(history.final_growth_record_id):
+		return null
+	return _append(JournalGenerator.generate_week8_final_growth_journal(rabbit_name, _next_id(), history))
+
+func generate_week8_final_reaction_journal(source_record_id: String, context: String, final_form: String, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if source_record_id.is_empty() or final_form.is_empty() or has_week8_final_reaction(source_record_id):
+		return null
+	return _append(JournalGenerator.generate_week8_final_reaction_journal(rabbit_name, _next_id(), source_record_id, context, final_form, at, false))
+
+func generate_week8_stage1_journal(history: StageCompletionHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if history == null or history.stage_id.is_empty() or has_week8_stage1_journal(history.source_event_id):
+		return null
+	return _append(JournalGenerator.generate_week8_stage1_journal(rabbit_name, _next_id(), history))
+
+func generate_week8_life_resume_journal(profile_snapshot_id: String, rabbit_name := "Amy", at: float = -1.0) -> JournalEntry:
+	if profile_snapshot_id.is_empty() or has_week8_life_resume_journal(profile_snapshot_id):
+		return null
+	return _append(JournalGenerator.generate_week8_life_resume_journal(rabbit_name, _next_id(), profile_snapshot_id, at))
+
+func generate_week8_ending_journal(history: EndingHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if history == null or history.ending_id.is_empty() or has_week8_ending_journal(history.ending_id):
+		return null
+	return _append(JournalGenerator.generate_week8_ending_journal(rabbit_name, _next_id(), history))
+
+func generate_week8_post_ending_journal(source_record_id: String, final_form: String, rabbit_name := "Amy", at: float = -1.0, context: String = "") -> JournalEntry:
+	if source_record_id.is_empty() or has_week8_post_ending_journal(source_record_id):
+		return null
+	return _append(JournalGenerator.generate_week8_post_ending_journal(rabbit_name, _next_id(), source_record_id, final_form, at, context))
+
+func has_week8_growth_direction_journal(choice_id: String) -> bool:
+	if choice_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "growth_direction" and entry.growth_direction_choice_id == choice_id:
+			return true
+	return false
+
+func has_week8_balanced_journal(choice_id: String) -> bool:
+	if choice_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "balanced" and entry.growth_direction_choice_id == choice_id:
+			return true
+	return false
+
+func has_week8_final_growth_journal(record_id: String) -> bool:
+	if record_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "final_growth" and entry.final_growth_record_id == record_id:
+			return true
+	return false
+
+func has_week8_final_reaction(source_record_id: String) -> bool:
+	if source_record_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "final_reaction" and (entry.activity_record_id == source_record_id or entry.life_location_id == source_record_id):
+			return true
+	return false
+
+func has_week8_stage1_journal(stage_id: String = "village_stage1_complete_001") -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "village_stage1" and entry.village_progress_event_id == stage_id:
+			return true
+	return false
+
+func has_week8_life_resume_journal(snapshot_id: String) -> bool:
+	if snapshot_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "life_resume" and entry.life_profile_snapshot_id == snapshot_id:
+			return true
+	return false
+
+func has_week8_ending_journal(ending_id: String) -> bool:
+	if ending_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "ending" and entry.ending_id == ending_id:
+			return true
+	return false
+
+func has_week8_post_ending_journal(source_record_id: String) -> bool:
+	if source_record_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "post_ending" and entry.activity_record_id == source_record_id:
+			return true
+	return false
+
 func get_last_food_journal_date() -> String:
 	return _last_food_journal_date
 
@@ -623,6 +727,22 @@ func _duplicate(entry: JournalEntry) -> bool:
 			return has_week7_village_progress_journal(entry.village_progress_event_id)
 		"week7_finale":
 			return has_journal_for_life_event(entry.life_event_id)
+		"growth_direction":
+			return has_week8_growth_direction_journal(entry.growth_direction_choice_id)
+		"balanced":
+			return has_week8_balanced_journal(entry.growth_direction_choice_id)
+		"final_growth":
+			return has_week8_final_growth_journal(entry.final_growth_record_id)
+		"final_reaction":
+			return has_week8_final_reaction(entry.activity_record_id)
+		"village_stage1":
+			return has_week8_stage1_journal(entry.village_progress_event_id)
+		"life_resume":
+			return has_week8_life_resume_journal(entry.life_profile_snapshot_id)
+		"ending":
+			return has_week8_ending_journal(entry.ending_id)
+		"post_ending":
+			return has_week8_post_ending_journal(entry.activity_record_id)
 	return false
 
 func _append(entry: JournalEntry) -> JournalEntry:

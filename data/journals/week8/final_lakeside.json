@@ -1,0 +1,88 @@
+{
+  "templates": [
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 1",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 2",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 3",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 4",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 5",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 6",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 7",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": false,
+      "title": "Lakeside Rabbit 回湖邊 8",
+      "content": "{rabbit_name} 在湖邊停下來時顯得格外放鬆。水面的聲音已經是牠很熟悉的日常。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": true,
+      "title": "Forest Rabbit 去湖邊 1",
+      "content": "成為 Forest Rabbit 之後，{rabbit_name} 仍然會來湖邊。森林的痕跡和水面的安靜可以一起留在生活裡。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": true,
+      "title": "Forest Rabbit 去湖邊 2",
+      "content": "成為 Forest Rabbit 之後，{rabbit_name} 仍然會來湖邊。森林的痕跡和水面的安靜可以一起留在生活裡。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": true,
+      "title": "Forest Rabbit 去湖邊 3",
+      "content": "成為 Forest Rabbit 之後，{rabbit_name} 仍然會來湖邊。森林的痕跡和水面的安靜可以一起留在生活裡。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": true,
+      "title": "Forest Rabbit 去湖邊 4",
+      "content": "成為 Forest Rabbit 之後，{rabbit_name} 仍然會來湖邊。森林的痕跡和水面的安靜可以一起留在生活裡。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": true,
+      "title": "Forest Rabbit 去湖邊 5",
+      "content": "成為 Forest Rabbit 之後，{rabbit_name} 仍然會來湖邊。森林的痕跡和水面的安靜可以一起留在生活裡。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": true,
+      "title": "Forest Rabbit 去湖邊 6",
+      "content": "成為 Forest Rabbit 之後，{rabbit_name} 仍然會來湖邊。森林的痕跡和水面的安靜可以一起留在生活裡。"
+    }
+  ]
+}

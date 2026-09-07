@@ -65,6 +65,15 @@ extends Resource
 @export var village_progress_event_id := ""
 @export var growth_form := "none"
 
+# Week 8 final-growth / life-resume / ending fields.
+@export var growth_direction_choice_id := ""
+@export var final_growth_record_id := ""
+@export var final_form := "none"
+@export var life_profile_snapshot_id := ""
+@export var ending_id := ""
+@export var ending_snapshot_id := ""
+@export var is_post_ending := false
+
 func _init(
 	initial_journal_id := "",
 	initial_record_id := "",
@@ -158,7 +167,14 @@ func to_dict() -> Dictionary:
 		"construction_id": construction_id,
 		"cafe_activity_id": cafe_activity_id,
 		"village_progress_event_id": village_progress_event_id,
-		"growth_form": growth_form
+		"growth_form": growth_form,
+		"growth_direction_choice_id": growth_direction_choice_id,
+		"final_growth_record_id": final_growth_record_id,
+		"final_form": final_form,
+		"life_profile_snapshot_id": life_profile_snapshot_id,
+		"ending_id": ending_id,
+		"ending_snapshot_id": ending_snapshot_id,
+		"is_post_ending": is_post_ending
 	}
 
 static func from_dict(data: Dictionary) -> JournalEntry:
@@ -245,6 +261,13 @@ static func from_dict(data: Dictionary) -> JournalEntry:
 		entry.construction_id = entry.construction_record_id
 	entry.cafe_activity_id = str(data.get("cafe_activity_id", data.get("CafeActivityId", "")))
 	entry.village_progress_event_id = str(data.get("village_progress_event_id", data.get("VillageProgressEventId", "")))
+	entry.growth_direction_choice_id = str(data.get("growth_direction_choice_id", ""))
+	entry.final_growth_record_id = str(data.get("final_growth_record_id", ""))
+	entry.final_form = str(data.get("final_form", "none"))
+	entry.life_profile_snapshot_id = str(data.get("life_profile_snapshot_id", ""))
+	entry.ending_id = str(data.get("ending_id", ""))
+	entry.ending_snapshot_id = str(data.get("ending_snapshot_id", ""))
+	entry.is_post_ending = bool(data.get("is_post_ending", false))
 	return entry
 
 func is_valid() -> bool:
@@ -319,4 +342,16 @@ func is_valid() -> bool:
 			return not village_progress_event_id.is_empty()
 		"week7_finale":
 			return not life_event_id.is_empty()
+		"growth_direction", "balanced":
+			return not growth_direction_choice_id.is_empty()
+		"final_growth":
+			return not final_growth_record_id.is_empty() and final_form in ["forest_rabbit", "lakeside_rabbit"]
+		"final_reaction", "post_ending":
+			return not activity_record_id.is_empty() or not life_location_id.is_empty()
+		"village_stage1":
+			return village_progress_event_id == "village_stage1_complete_001"
+		"life_resume":
+			return not life_profile_snapshot_id.is_empty()
+		"ending":
+			return not ending_id.is_empty()
 	return true

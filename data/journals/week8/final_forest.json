@@ -1,0 +1,88 @@
+{
+  "templates": [
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 1",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 2",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 3",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 4",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 5",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 6",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 7",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "forest_rabbit",
+      "cross_branch": false,
+      "title": "Forest Rabbit 回森林 8",
+      "content": "{rabbit_name} 回到森林時明顯更自在了。熟悉的聲音和氣味，像是在迎接已經長大的老朋友。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": true,
+      "title": "Lakeside Rabbit 去森林 1",
+      "content": "成為 Lakeside Rabbit 之後，{rabbit_name} 還是照樣走進森林。湖畔留下的氣息沒有阻止牠喜歡這裡。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": true,
+      "title": "Lakeside Rabbit 去森林 2",
+      "content": "成為 Lakeside Rabbit 之後，{rabbit_name} 還是照樣走進森林。湖畔留下的氣息沒有阻止牠喜歡這裡。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": true,
+      "title": "Lakeside Rabbit 去森林 3",
+      "content": "成為 Lakeside Rabbit 之後，{rabbit_name} 還是照樣走進森林。湖畔留下的氣息沒有阻止牠喜歡這裡。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": true,
+      "title": "Lakeside Rabbit 去森林 4",
+      "content": "成為 Lakeside Rabbit 之後，{rabbit_name} 還是照樣走進森林。湖畔留下的氣息沒有阻止牠喜歡這裡。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": true,
+      "title": "Lakeside Rabbit 去森林 5",
+      "content": "成為 Lakeside Rabbit 之後，{rabbit_name} 還是照樣走進森林。湖畔留下的氣息沒有阻止牠喜歡這裡。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "cross_branch": true,
+      "title": "Lakeside Rabbit 去森林 6",
+      "content": "成為 Lakeside Rabbit 之後，{rabbit_name} 還是照樣走進森林。湖畔留下的氣息沒有阻止牠喜歡這裡。"
+    }
+  ]
+}

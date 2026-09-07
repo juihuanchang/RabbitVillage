@@ -1,0 +1,54 @@
+{
+  "templates": [
+    {
+      "form": "forest_rabbit",
+      "title": "森林兔兔的咖啡館反應 1",
+      "content": "{rabbit_name} 在咖啡館選了能看見綠意的位置。新模樣沒有讓咖啡館變陌生，反而像多了一個固定座位。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "森林兔兔的咖啡館反應 2",
+      "content": "{rabbit_name} 在咖啡館選了能看見綠意的位置。新模樣沒有讓咖啡館變陌生，反而像多了一個固定座位。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "森林兔兔的咖啡館反應 3",
+      "content": "{rabbit_name} 在咖啡館選了能看見綠意的位置。新模樣沒有讓咖啡館變陌生，反而像多了一個固定座位。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "森林兔兔的咖啡館反應 4",
+      "content": "{rabbit_name} 在咖啡館選了能看見綠意的位置。新模樣沒有讓咖啡館變陌生，反而像多了一個固定座位。"
+    },
+    {
+      "form": "forest_rabbit",
+      "title": "森林兔兔的咖啡館反應 5",
+      "content": "{rabbit_name} 在咖啡館選了能看見綠意的位置。新模樣沒有讓咖啡館變陌生，反而像多了一個固定座位。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "湖畔兔兔的咖啡館反應 1",
+      "content": "{rabbit_name} 看著杯子裡輕輕晃動的倒影。湖畔的平靜也被牠帶進了咖啡館。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "湖畔兔兔的咖啡館反應 2",
+      "content": "{rabbit_name} 看著杯子裡輕輕晃動的倒影。湖畔的平靜也被牠帶進了咖啡館。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "湖畔兔兔的咖啡館反應 3",
+      "content": "{rabbit_name} 看著杯子裡輕輕晃動的倒影。湖畔的平靜也被牠帶進了咖啡館。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "湖畔兔兔的咖啡館反應 4",
+      "content": "{rabbit_name} 看著杯子裡輕輕晃動的倒影。湖畔的平靜也被牠帶進了咖啡館。"
+    },
+    {
+      "form": "lakeside_rabbit",
+      "title": "湖畔兔兔的咖啡館反應 5",
+      "content": "{rabbit_name} 看著杯子裡輕輕晃動的倒影。湖畔的平靜也被牠帶進了咖啡館。"
+    }
+  ]
+}

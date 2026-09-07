@@ -34,10 +34,15 @@ var cooking_history_manager := CookingHistoryManager.new()
 var life_location_history_manager := LifeLocationHistoryManager.new()
 var recipe_collection_manager := RecipeCollectionManager.new()
 var village_development_history_manager := VillageDevelopmentHistoryManager.new()
+var growth_history_manager := GrowthHistoryManager.new()
+var rabbit_life_history_manager := RabbitLifeHistoryManager.new()
+var ending_history_manager := EndingHistoryManager.new()
 
 var _loaded_save: SaveData
 var _week5_runtime_ready := false
 var _week5_signals_connected := false
+var _week8_runtime_signature := ""
+var _week8_processing := false
 
 func setup(
 	rabbit_manager: RabbitManager,
@@ -90,6 +95,7 @@ func save_game() -> bool:
 		_capture_week5_from_loaded(save)
 	_capture_week6_persistent(save)
 	_capture_week7_persistent(save)
+	_capture_week8_persistent(save)
 	_backup_valid_primary()
 	var ok := _write(save)
 	if ok:
@@ -106,6 +112,8 @@ func load_or_create(default_rabbit: RabbitData) -> RabbitData:
 		_loaded_save = save
 		_prepare_week5_persistent_managers(save)
 		var created := _create_default(default_rabbit)
+		# Fresh save: this is the one point where Move In time is known reliably.
+		rabbit_life_history_manager.record_move_in(TimeManager.get_now(), created.rabbit_name, created.move_in_date)
 		call_deferred("_apply_loaded_week5_runtime")
 		save_game()
 		return created
@@ -156,6 +164,7 @@ func migrate_save_data(save: SaveData) -> SaveData:
 		save = LegacySaveMigrator.migrate_week4_to_week5(save)
 		save = LegacySaveMigrator.migrate_week5_to_week6(save)
 		save = LegacySaveMigrator.migrate_week6_to_week7(save)
+		save = LegacySaveMigrator.migrate_week7_to_week8(save)
 	save.save_version = SaveData.CURRENT_VERSION
 	return save
 
@@ -186,6 +195,18 @@ func get_recipe_collection_manager() -> RecipeCollectionManager:
 func get_village_development_history_manager() -> VillageDevelopmentHistoryManager:
 	return village_development_history_manager
 
+func get_growth_history_manager() -> GrowthHistoryManager:
+	return growth_history_manager
+
+func get_rabbit_life_history_manager() -> RabbitLifeHistoryManager:
+	return rabbit_life_history_manager
+
+func get_ending_history_manager() -> EndingHistoryManager:
+	return ending_history_manager
+
+func get_ending_replay_snapshot(ending_id: String = "stage1_ending") -> EndingMemorySnapshot:
+	return ending_history_manager.get_replay_snapshot(ending_id)
+
 func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	resource_history_manager.setup(save.inventory_history, save.currency_history, save.reward_history, save.item_discovery_history)
 	life_history_manager.setup(save.food_use_history, save.growth_path_history, save.life_event_history, save.food_variety_records)
@@ -195,12 +216,15 @@ func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	life_location_history_manager.setup(save.life_location_history)
 	recipe_collection_manager.setup(save.recipe_collection)
 	village_development_history_manager.setup_from_save(save)
+	growth_history_manager.setup_from_save(save)
+	rabbit_life_history_manager.setup_from_save(save)
+	ending_history_manager.setup_from_save(save)
 	if _diary_manager != null:
 		_diary_manager.setup_week5_limits(save.last_food_journal_date, save.last_needs_journal_date)
 		_diary_manager.setup_week6_limits(save.last_shopping_journal_date, save.last_cooking_journal_date, save.last_picnic_journal_date)
 
 func _ensure_week5_managers() -> void:
-	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, village_development_history_manager]:
+	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, village_development_history_manager, growth_history_manager, rabbit_life_history_manager, ending_history_manager]:
 		if manager.get_parent() == null:
 			add_child(manager)
 
@@ -258,6 +282,8 @@ func _connect_week5_signals() -> void:
 		_growth_manager.growth_event_triggered.connect(_on_growth_event_pending)
 		_growth_manager.growth_event_confirmed.connect(_on_growth_event_confirmed)
 		_growth_manager.growth_path_updated.connect(_on_growth_path_updated)
+		_growth_manager.growth_progress_changed.connect(_on_week8_growth_progress_changed)
+		_growth_manager.final_growth_completed.connect(_on_week8_final_growth_completed)
 	if _activity_manager != null:
 		_activity_manager.activity_completed.connect(_on_activity_completed_for_life_journal)
 	if _rabbit_manager != null:
@@ -309,7 +335,9 @@ func _apply_loaded_week5_runtime() -> void:
 	_repair_reward_history_dependencies()
 	_repair_week6_dependencies()
 	_repair_week7_dependencies()
+	_repair_week8_dependencies()
 	_week5_runtime_ready = true
+	_week8_runtime_signature = _build_week8_runtime_signature()
 	_on_rabbit_need_state_changed(_rabbit_manager.get_hunger_state(), _rabbit_manager.get_energy_state(), _rabbit_manager.get_mood_state())
 	save_game()
 
@@ -637,6 +665,11 @@ func _on_activity_completed_for_life_journal(active: ActiveActivityData) -> void
 		_tag_journal_growth_form(_diary_manager.generate_growth_lifestyle_journal("lakeside", _growth_manager.get_lakeside_growth_stage(), active.activity_record_id, _current_rabbit_name(), active.completed_at))
 		if _growth_manager.get_lakeside_growth_stage() >= 2:
 			_tag_journal_growth_form(_diary_manager.generate_week7_growth_reaction_journal(active.activity_record_id, "lakeside", _growth_manager.get_lakeside_growth_stage(), _current_rabbit_name(), active.completed_at))
+	var final_form := _growth_manager.get_current_final_form()
+	if final_form in ["forest_rabbit", "lakeside_rabbit"] and active.activity.location_id in ["home", "forest", "lake", "cafe"]:
+		_diary_manager.generate_week8_final_reaction_journal(active.activity_record_id, active.activity.location_id, final_form, _current_rabbit_name(), active.completed_at)
+	if ending_history_manager.ending_seen:
+		_diary_manager.generate_week8_post_ending_journal(active.activity_record_id, final_form, _current_rabbit_name(), active.completed_at, active.activity.location_id)
 
 func _tag_journal_growth_form(entry: JournalEntry) -> void:
 	if entry != null and _growth_manager != null: entry.growth_form = _growth_manager.get_current_final_form()
@@ -770,6 +803,11 @@ func _on_life_location_completed(result: LifeLocationResult) -> void:
 		_diary_manager.generate_picnic_journal(result, _current_rabbit_name())
 		if result.activity_id == "picnic_eat" and not food_id.is_empty():
 			_diary_manager.generate_picnic_food_journal(result, food_id, _current_rabbit_name())
+		var final_form := _growth_manager.get_current_final_form() if _growth_manager != null else "none"
+		if final_form in ["forest_rabbit", "lakeside_rabbit"]:
+			_diary_manager.generate_week8_final_reaction_journal(result.location_record_id, "picnic", final_form, _current_rabbit_name(), result.completed_at)
+		if ending_history_manager.ending_seen:
+			_diary_manager.generate_week8_post_ending_journal(result.location_record_id, final_form, _current_rabbit_name(), result.completed_at, "picnic")
 	save_game()
 
 func _repair_week6_dependencies() -> void:
@@ -976,6 +1014,299 @@ func _growth_mark_for_event(event_id: String) -> String:
 		"growth_lakeside_stage2_001":
 			return "lakeside_stage2"
 	return ""
+
+# ---------------- Week 8 ----------------
+
+func _process(_delta: float) -> void:
+	if not _week5_runtime_ready or _week8_processing:
+		return
+	# B owns the runtime rules and does not expose signals for every ending transition.
+	# C observes the already-decided runtime state and persists changes without re-evaluating B's rules.
+	_check_week8_runtime_state()
+	if ending_history_manager.get_stage1_history() == null:
+		_try_record_week8_stage1_completion()
+
+func _capture_week8_persistent(save: SaveData) -> void:
+	var rabbit := _current_rabbit()
+	if rabbit != null:
+		growth_history_manager.sync_from_runtime(rabbit, _growth_manager)
+		rabbit_life_history_manager.update_profile(save, rabbit, _growth_manager, growth_history_manager, save.last_saved_at)
+	if _village_manager != null:
+		ending_history_manager.sync_ending_state(_village_manager.get_stage1_ending_state())
+	var ending_result := _village_manager.get_stage1_ending_result() if _village_manager != null else null
+	if ending_result != null and ending_result.completed_at > 0.0 and ending_history_manager.get_ending_history(ending_result.ending_id) == null and rabbit != null:
+		var profile_snapshot := rabbit_life_history_manager.create_frozen_profile_snapshot("life_profile_%s" % ending_result.ending_id, save, rabbit, _growth_manager, growth_history_manager, ending_result.completed_at)
+		ending_history_manager.record_ending(ending_result, profile_snapshot, save, rabbit_life_history_manager.milestones_to_array())
+	growth_history_manager.repair_consistency(rabbit, _growth_manager)
+	ending_history_manager.repair_basic_consistency()
+	save.growth_direction_choice = growth_history_manager.growth_direction_choice.duplicate(true)
+	save.final_growth_state = growth_history_manager.final_growth_state.duplicate(true)
+	save.final_growth_history = growth_history_manager.final_growth_history_to_array()
+	save.rabbit_life_milestones = rabbit_life_history_manager.milestones_to_array()
+	save.rabbit_life_profile = rabbit_life_history_manager.rabbit_life_profile.duplicate(true)
+	save.stage1_completion_state = ending_history_manager.stage1_completion_state.duplicate(true)
+	save.stage1_completion_history = ending_history_manager.stage1_history_to_array()
+	save.ending_state = ending_history_manager.ending_state.duplicate(true)
+	save.ending_history = ending_history_manager.ending_history_to_array()
+	save.ending_snapshots = ending_history_manager.ending_snapshots_to_array()
+	save.ending_seen = ending_history_manager.ending_seen
+	save.post_ending_state = ending_history_manager.post_ending_state.duplicate(true)
+
+func _repair_week8_dependencies() -> void:
+	if _loaded_save == null:
+		return
+	var rabbit := _current_rabbit()
+	growth_history_manager.setup_from_save(_loaded_save)
+	rabbit_life_history_manager.setup_from_save(_loaded_save)
+	ending_history_manager.setup_from_save(_loaded_save)
+	if rabbit != null:
+		growth_history_manager.sync_from_runtime(rabbit, _growth_manager)
+		growth_history_manager.repair_consistency(rabbit, _growth_manager)
+		rabbit_life_history_manager.rebuild_from_reliable_history(_loaded_save, rabbit, growth_history_manager)
+		rabbit_life_history_manager.update_profile(_loaded_save, rabbit, _growth_manager, growth_history_manager, _loaded_save.last_saved_at)
+		if _village_manager != null:
+			_village_manager.set_life_history_summary(rabbit_life_history_manager.get_runtime_summary())
+	if _village_manager != null:
+		ending_history_manager.sync_ending_state(_village_manager.get_stage1_ending_state())
+	var stage := ending_history_manager.get_stage1_history()
+	if stage != null:
+		_repair_week8_stage1_content(stage)
+	var final_entry := growth_history_manager.get_completed_final_growth()
+	if final_entry != null:
+		_repair_week8_final_content(final_entry)
+	var choice := growth_history_manager.get_choice_entry()
+	if choice != null:
+		_repair_week8_choice_content(choice)
+	var ending_result := _village_manager.get_stage1_ending_result() if _village_manager != null else null
+	if ending_result != null and ending_result.completed_at > 0.0 and rabbit != null:
+		var source := _week8_current_save_view()
+		var profile_snapshot := rabbit_life_history_manager.create_frozen_profile_snapshot("life_profile_%s" % ending_result.ending_id, source, rabbit, _growth_manager, growth_history_manager, ending_result.completed_at)
+		var ending_entry := ending_history_manager.record_ending(ending_result, profile_snapshot, source, rabbit_life_history_manager.milestones_to_array())
+		ending_history_manager.repair_missing_snapshot(ending_result, profile_snapshot, source, rabbit_life_history_manager.milestones_to_array())
+		_repair_week8_ending_content(ending_entry)
+	# If EndingHistory survived but B's original EndingResult did not, repair the missing
+	# snapshot conservatively from dated permanent history only. Never draw new memories.
+	if rabbit != null:
+		var repair_source := _week8_current_save_view()
+		for raw: Dictionary in ending_history_manager.ending_history:
+			var history := EndingHistoryEntry.from_dict(raw)
+			if history.ending_id.is_empty() or ending_history_manager.get_snapshot(history.snapshot_id) != null:
+				continue
+			var repaired_profile := rabbit_life_history_manager.create_frozen_profile_snapshot("life_profile_%s" % history.ending_id, repair_source, rabbit, _growth_manager, growth_history_manager, history.completed_at)
+			ending_history_manager.repair_missing_snapshot_from_history(history, repaired_profile, repair_source, rabbit_life_history_manager.milestones_to_array())
+	ending_history_manager.repair_basic_consistency()
+
+func _on_week8_growth_progress_changed() -> void:
+	if not _week5_runtime_ready:
+		return
+	_check_week8_runtime_state(true)
+
+func _check_week8_runtime_state(force := false) -> void:
+	if _week8_processing:
+		return
+	var signature := _build_week8_runtime_signature()
+	if not force and signature == _week8_runtime_signature:
+		return
+	_week8_runtime_signature = signature
+	_week8_processing = true
+	var changed := _process_week8_runtime_changes()
+	_week8_processing = false
+	_week8_runtime_signature = _build_week8_runtime_signature()
+	if changed:
+		save_game()
+
+func _process_week8_runtime_changes() -> bool:
+	var changed := false
+	var rabbit := _current_rabbit()
+	if rabbit == null:
+		return false
+	var old_choice_id := str(growth_history_manager.growth_direction_choice.get("choice_id", ""))
+	var old_final_count := growth_history_manager.final_growth_history.size()
+	growth_history_manager.sync_from_runtime(rabbit, _growth_manager)
+	var choice := growth_history_manager.get_choice_entry()
+	if choice != null and old_choice_id.is_empty():
+		_handle_week8_choice(choice)
+		changed = true
+	if growth_history_manager.final_growth_history.size() > old_final_count:
+		var final_entry := growth_history_manager.get_completed_final_growth()
+		if final_entry != null:
+			_handle_week8_final_history(final_entry)
+			changed = true
+	if _village_manager != null:
+		var previous_ending_state := ending_history_manager.ending_state.duplicate(true)
+		ending_history_manager.sync_ending_state(_village_manager.get_stage1_ending_state())
+		if previous_ending_state != ending_history_manager.ending_state:
+			changed = true
+		var result := _village_manager.get_stage1_ending_result()
+		if result != null and result.completed_at > 0.0 and ending_history_manager.get_ending_history(result.ending_id) == null:
+			_handle_week8_ending_completion(result)
+			changed = true
+	return changed
+
+func _on_week8_final_growth_completed(result: FinalGrowthResult) -> void:
+	if result == null or not result.success:
+		return
+	var history := growth_history_manager.record_final_growth(result, 3 if result.branch == "forest" else 2)
+	if history != null:
+		_handle_week8_final_history(history)
+	_week8_runtime_signature = _build_week8_runtime_signature()
+	save_game()
+
+func _handle_week8_choice(choice: GrowthDirectionChoiceHistoryEntry) -> void:
+	if choice == null:
+		return
+	var journal: JournalEntry = null
+	if _diary_manager != null:
+		journal = _diary_manager.generate_week8_growth_direction_journal(choice, _current_rabbit_name())
+		if choice.resolved_branch == "balanced" or choice.choice_id == "maintain_current":
+			_diary_manager.generate_week8_balanced_journal(choice, _current_rabbit_name())
+	_add_week8_album_moment("final_direction", choice.source_event_id, "Amy 的最後方向", journal.content if journal != null else "Amy 開始慢慢走向屬於自己的生活方向。", choice.resolved_branch, 0, choice.selected_at, journal.journal_id if journal != null else "", "final_direction")
+	if choice.resolved_branch == "balanced" or choice.choice_id == "maintain_current":
+		_add_week8_album_moment("current_amy", "%s_%s" % [choice.source_event_id, choice.choice_id], "現在的 Amy", "Amy 沒有急著變成某一種樣子，現在的生活也值得被記住。", "balanced", 0, choice.selected_at, "", "current_amy")
+
+func _handle_week8_final_history(history: FinalGrowthHistoryEntry) -> void:
+	if history == null:
+		return
+	var journal: JournalEntry = null
+	if _diary_manager != null:
+		journal = _diary_manager.generate_week8_final_growth_journal(history, _current_rabbit_name())
+	var moment_id := "forest_rabbit" if history.final_form == "forest_rabbit" else "lakeside_rabbit"
+	var title := "Forest Rabbit" if history.final_form == "forest_rabbit" else "Lakeside Rabbit"
+	_add_week8_album_moment(moment_id, history.final_growth_record_id, title, journal.content if journal != null else "Amy 完成了這一階段最重要的成長。", history.growth_path, history.new_stage, history.completed_at, journal.journal_id if journal != null else "", moment_id)
+	village_development_history_manager.record_appearance("forest_final" if history.final_form == "forest_rabbit" else "lakeside_final", history.final_growth_record_id, history.completed_at)
+	var rabbit := _current_rabbit()
+	if rabbit != null:
+		var source := _week8_current_save_view()
+		rabbit_life_history_manager.rebuild_from_reliable_history(source, rabbit, growth_history_manager)
+		rabbit_life_history_manager.update_profile(source, rabbit, _growth_manager, growth_history_manager, history.completed_at)
+		if _village_manager != null:
+			_village_manager.set_life_history_summary(rabbit_life_history_manager.get_runtime_summary())
+
+func _try_record_week8_stage1_completion() -> bool:
+	if _village_manager == null or ending_history_manager.get_stage1_history() != null:
+		return false
+	var result := _village_manager.check_stage1_completion()
+	if result == null or not result.success:
+		return false
+	var history := ending_history_manager.record_stage1_completion(result)
+	if history == null:
+		return false
+	var journal: JournalEntry = null
+	if _diary_manager != null:
+		journal = _diary_manager.generate_week8_stage1_journal(history, _current_rabbit_name())
+	_add_week8_album_moment("stage1_village_complete", history.source_event_id, "這裡真的變成一個村子了", journal.content if journal != null else "Amy 和村莊一起走完了第一階段。", "village", 1, history.completed_at, journal.journal_id if journal != null else "", "village_stage1")
+	var rabbit := _current_rabbit()
+	if rabbit != null:
+		var source := _week8_current_save_view()
+		var profile := rabbit_life_history_manager.update_profile(source, rabbit, _growth_manager, growth_history_manager, history.completed_at)
+		if profile != null and _diary_manager != null:
+			_diary_manager.generate_week8_life_resume_journal(profile.snapshot_id, rabbit.rabbit_name, history.completed_at)
+		if _village_manager != null:
+			_village_manager.set_life_history_summary(rabbit_life_history_manager.get_runtime_summary())
+	call_deferred("save_game")
+	return true
+
+func _handle_week8_ending_completion(result: EndingResult) -> void:
+	var rabbit := _current_rabbit()
+	if result == null or rabbit == null:
+		return
+	var source := _week8_current_save_view()
+	var profile_snapshot := rabbit_life_history_manager.create_frozen_profile_snapshot("life_profile_%s" % result.ending_id, source, rabbit, _growth_manager, growth_history_manager, result.completed_at)
+	var history := ending_history_manager.record_ending(result, profile_snapshot, source, rabbit_life_history_manager.milestones_to_array())
+	if history == null:
+		return
+	if _diary_manager != null:
+		_diary_manager.generate_week8_ending_journal(history, rabbit.rabbit_name)
+	_add_week8_album_moment("first_ending", history.ending_id, "第一次 Ending", "Amy 和村莊的第一階段留下了完整的回憶。", "village", 1, history.completed_at, _find_week8_ending_journal_id(history.ending_id), "first_ending")
+
+func _repair_week8_choice_content(choice: GrowthDirectionChoiceHistoryEntry) -> void:
+	if choice == null:
+		return
+	var journal: JournalEntry = null
+	if _diary_manager != null:
+		journal = _diary_manager.generate_week8_growth_direction_journal(choice, _current_rabbit_name())
+		if choice.resolved_branch == "balanced" or choice.choice_id == "maintain_current":
+			_diary_manager.generate_week8_balanced_journal(choice, _current_rabbit_name())
+	_add_week8_album_moment("final_direction", choice.source_event_id, "Amy 的最後方向", "Amy 的成長方向已經被記錄下來。", choice.resolved_branch, 0, choice.selected_at, journal.journal_id if journal != null else "", "final_direction")
+	if choice.resolved_branch == "balanced" or choice.choice_id == "maintain_current":
+		_add_week8_album_moment("current_amy", "%s_%s" % [choice.source_event_id, choice.choice_id], "現在的 Amy", "Amy 選擇先維持現在的樣子。", "balanced", 0, choice.selected_at, "", "current_amy")
+
+func _repair_week8_final_content(history: FinalGrowthHistoryEntry) -> void:
+	if history == null:
+		return
+	# A completed permanent FinalHistory can safely restore a missing journal/album,
+	# but this does not re-run B's first-apply rewards or growth transition.
+	var journal: JournalEntry = null
+	if _diary_manager != null:
+		journal = _diary_manager.generate_week8_final_growth_journal(history, _current_rabbit_name())
+	var moment_id := "forest_rabbit" if history.final_form == "forest_rabbit" else "lakeside_rabbit"
+	_add_week8_album_moment(moment_id, history.final_growth_record_id, "Forest Rabbit" if history.final_form == "forest_rabbit" else "Lakeside Rabbit", "Amy 的 Final Growth 已完成。", history.growth_path, history.new_stage, history.completed_at, journal.journal_id if journal != null else "", moment_id)
+
+func _repair_week8_stage1_content(history: StageCompletionHistoryEntry) -> void:
+	if history == null:
+		return
+	var journal: JournalEntry = null
+	if _diary_manager != null:
+		journal = _diary_manager.generate_week8_stage1_journal(history, _current_rabbit_name())
+	_add_week8_album_moment("stage1_village_complete", history.source_event_id, "這裡真的變成一個村子了", "Amy 和村莊已完成第一階段。", "village", 1, history.completed_at, journal.journal_id if journal != null else "", "village_stage1")
+
+func _repair_week8_ending_content(history: EndingHistoryEntry) -> void:
+	if history == null:
+		return
+	if _diary_manager != null:
+		_diary_manager.generate_week8_ending_journal(history, _current_rabbit_name())
+	_add_week8_album_moment("first_ending", history.ending_id, "第一次 Ending", "Amy 和村莊的第一階段回憶已經保存。", "village", 1, history.completed_at, _find_week8_ending_journal_id(history.ending_id), "first_ending")
+
+func _add_week8_album_moment(moment_id: String, source_event_id: String, title: String, description: String, growth_path: String, stage: int, at: float, journal_id: String, illustration_id: String = "") -> void:
+	if _growth_album_manager == null or source_event_id.is_empty():
+		return
+	_growth_album_manager.add_week8_moment(moment_id, source_event_id, title, description, growth_path, stage, at, journal_id, illustration_id)
+
+func _find_week8_ending_journal_id(ending_id: String) -> String:
+	if _diary_manager == null:
+		return ""
+	for entry: JournalEntry in _diary_manager.get_all_journals():
+		if entry.journal_type == "ending" and entry.ending_id == ending_id:
+			return entry.journal_id
+	return ""
+
+func _build_week8_runtime_signature() -> String:
+	var rabbit := _current_rabbit()
+	if rabbit == null:
+		return ""
+	var ending_state: Dictionary = {}
+	var ending_result: Dictionary = {}
+	if _village_manager != null:
+		var state := _village_manager.get_stage1_ending_state()
+		if state != null:
+			ending_state = state.to_dict()
+		var result := _village_manager.get_stage1_ending_result()
+		if result != null:
+			ending_result = result.to_dict()
+	return JSON.stringify({
+		"choice": rabbit.growth_direction_choice,
+		"final_state": rabbit.final_growth_state,
+		"final_form": rabbit.current_final_form,
+		"ending_state": ending_state,
+		"ending_result": ending_result
+	})
+
+func _week8_current_save_view() -> SaveData:
+	var source := SaveData.from_dict(_loaded_save.to_dict()) if _loaded_save != null else SaveData.new()
+	if _diary_manager != null:
+		source.journals = _diary_manager.to_array()
+	if _growth_album_manager != null:
+		source.growth_album_entries = _growth_album_manager.to_array()
+	if _growth_manager != null:
+		source.all_activity_records = _growth_manager.get_all_activity_records()
+	source.food_use_history = life_history_manager.food_use_history_to_array()
+	source.life_event_history = life_history_manager.life_event_history_to_array()
+	source.purchase_history = shop_history_manager.purchase_history_to_array()
+	source.cooking_history = cooking_history_manager.cooking_history_to_array()
+	source.building_unlock_history = village_development_history_manager.building_unlock_history_to_array()
+	source.construction_history = village_development_history_manager.construction_history_to_array()
+	source.final_growth_history = growth_history_manager.final_growth_history_to_array()
+	return source
 
 func _current_rabbit() -> RabbitData:
 	if _rabbit_manager == null:

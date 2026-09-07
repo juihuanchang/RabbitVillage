@@ -87,6 +87,20 @@ var village_progress_history: Array[Dictionary] = []
 var growth_appearance_state := "normal"
 var growth_appearance_history: Array[Dictionary] = []
 
+# Week 8 final-growth / life-resume / ending permanent data.
+var growth_direction_choice: Dictionary = {}
+var final_growth_state: Dictionary = {"state": "not_completed", "branch": "balanced", "pending_at": 0.0, "complete_at": 0.0, "completed_at": 0.0, "result_applied": false}
+var final_growth_history: Array[Dictionary] = []
+var rabbit_life_milestones: Array[Dictionary] = []
+var rabbit_life_profile: Dictionary = {}
+var stage1_completion_state: Dictionary = {"state": "not_completed", "completed_at": 0.0, "source_event_id": "village_stage1_complete_001"}
+var stage1_completion_history: Array[Dictionary] = []
+var ending_state: Dictionary = {"state": "locked", "ending_id": "stage1_ending", "created_at": 0.0, "completed_at": 0.0}
+var ending_history: Array[Dictionary] = []
+var ending_snapshots: Array[Dictionary] = []
+var ending_seen := false
+var post_ending_state: Dictionary = {"is_post_ending": false, "started_at": 0.0, "ending_id": ""}
+
 func to_dict() -> Dictionary:
 	return {
 		"save_version": save_version,
@@ -151,6 +165,18 @@ func to_dict() -> Dictionary:
 		"village_progress_history": village_progress_history.duplicate(true),
 		"growth_appearance_state": growth_appearance_state,
 		"growth_appearance_history": growth_appearance_history.duplicate(true),
+		"growth_direction_choice": growth_direction_choice.duplicate(true),
+		"final_growth_state": final_growth_state.duplicate(true),
+		"final_growth_history": final_growth_history.duplicate(true),
+		"rabbit_life_milestones": rabbit_life_milestones.duplicate(true),
+		"rabbit_life_profile": rabbit_life_profile.duplicate(true),
+		"stage1_completion_state": stage1_completion_state.duplicate(true),
+		"stage1_completion_history": stage1_completion_history.duplicate(true),
+		"ending_state": ending_state.duplicate(true),
+		"ending_history": ending_history.duplicate(true),
+		"ending_snapshots": ending_snapshots.duplicate(true),
+		"ending_seen": ending_seen,
+		"post_ending_state": post_ending_state.duplicate(true),
 		"cooking_state": cooking_state.duplicate(true),
 		"food_runtime_state": food_runtime_state.duplicate(true),
 		"life_location_state": life_location_state.duplicate(true)
@@ -239,12 +265,25 @@ static func from_dict(data: Dictionary) -> SaveData:
 	_load_week7_village_progress_history(data.get("village_progress_history", []), result.village_progress_history)
 	result.growth_appearance_state = _load_week7_appearance_state(str(data.get("growth_appearance_state", "normal")))
 	_load_week7_appearance_history(data.get("growth_appearance_history", []), result.growth_appearance_history)
+	if data.get("growth_direction_choice", {}) is Dictionary: result.growth_direction_choice = data.get("growth_direction_choice", {}).duplicate(true)
+	if data.get("final_growth_state", {}) is Dictionary and not data.get("final_growth_state", {}).is_empty(): result.final_growth_state = data.get("final_growth_state", {}).duplicate(true)
+	_load_week8_final_growth_history(data.get("final_growth_history", []), result.final_growth_history)
+	_load_week8_milestones(data.get("rabbit_life_milestones", []), result.rabbit_life_milestones)
+	if data.get("rabbit_life_profile", {}) is Dictionary: result.rabbit_life_profile = data.get("rabbit_life_profile", {}).duplicate(true)
+	if data.get("stage1_completion_state", {}) is Dictionary and not data.get("stage1_completion_state", {}).is_empty(): result.stage1_completion_state = data.get("stage1_completion_state", {}).duplicate(true)
+	_load_week8_stage_history(data.get("stage1_completion_history", []), result.stage1_completion_history)
+	if data.get("ending_state", {}) is Dictionary and not data.get("ending_state", {}).is_empty(): result.ending_state = data.get("ending_state", {}).duplicate(true)
+	_load_week8_ending_history(data.get("ending_history", []), result.ending_history)
+	_load_week8_ending_snapshots(data.get("ending_snapshots", []), result.ending_snapshots)
+	result.ending_seen = bool(data.get("ending_seen", false))
+	if data.get("post_ending_state", {}) is Dictionary and not data.get("post_ending_state", {}).is_empty(): result.post_ending_state = data.get("post_ending_state", {}).duplicate(true)
 	result.cooking_state = _load_cooking_state(data.get("cooking_state", {}))
 	if data.get("food_runtime_state", {}) is Dictionary: result.food_runtime_state = data.get("food_runtime_state", {}).duplicate(true)
 	if data.get("life_location_state", {}) is Dictionary: result.life_location_state = data.get("life_location_state", {}).duplicate(true)
 	_repair_growth_progress(result)
 	_repair_week6_transaction_guards(result)
 	_repair_week7_consistency(result)
+	_repair_week8_consistency(result)
 	return result
 
 func is_supported_version() -> bool:
@@ -965,6 +1004,104 @@ static func _repair_week7_consistency(data: SaveData) -> void:
 	# Café total may never be lower than the permanent source history.
 	for raw: Dictionary in data.cafe_experience_history:
 		data.cafe_experience = maxi(data.cafe_experience, CafeExperienceHistoryEntry.from_dict(raw).amount_after)
+
+static func _load_week8_final_growth_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := FinalGrowthHistoryEntry.from_dict(raw)
+		if entry.growth_path not in ["forest", "lakeside"] or entry.final_form not in ["forest_rabbit", "lakeside_rabbit"]:
+			continue
+		if entry.final_growth_record_id.is_empty():
+			entry.final_growth_record_id = "final_growth_%s_%d" % [entry.growth_path, int(round(entry.completed_at * 1000.0))]
+		if seen.has(entry.final_growth_record_id):
+			continue
+		seen[entry.final_growth_record_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week8_milestones(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := RabbitLifeMilestoneEntry.from_dict(raw)
+		if entry.milestone_id.is_empty() or seen.has(entry.milestone_id):
+			continue
+		if entry.occurred_at <= 0.0 and entry.occurred_date.is_empty():
+			continue
+		seen[entry.milestone_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week8_stage_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := StageCompletionHistoryEntry.from_dict(raw)
+		if entry.stage_id.is_empty() or seen.has(entry.stage_id):
+			continue
+		seen[entry.stage_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week8_ending_history(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var entry := EndingHistoryEntry.from_dict(raw)
+		if entry.ending_id.is_empty() or seen.has(entry.ending_id):
+			continue
+		seen[entry.ending_id] = true
+		target.append(entry.to_dict())
+
+static func _load_week8_ending_snapshots(source: Variant, target: Array[Dictionary]) -> void:
+	if not (source is Array):
+		return
+	var seen := {}
+	for raw: Variant in source:
+		if not (raw is Dictionary):
+			continue
+		var snapshot := EndingMemorySnapshot.from_dict(raw)
+		if snapshot.snapshot_id.is_empty() or seen.has(snapshot.snapshot_id):
+			continue
+		seen[snapshot.snapshot_id] = true
+		target.append(snapshot.to_dict())
+
+static func _repair_week8_consistency(data: SaveData) -> void:
+	# Week7 late stages are prerequisites only; they must never become a Final form by themselves.
+	var final_form := "none"
+	for raw: Dictionary in data.rabbits:
+		var candidate := str(raw.get("current_final_form", "none"))
+		if candidate in ["forest_rabbit", "lakeside_rabbit"]:
+			final_form = candidate
+			break
+	if final_form == "none" and data.final_growth_history.is_empty():
+		if str(data.final_growth_state.get("state", "")).is_empty() or str(data.final_growth_state.get("state", "")) == "final_completed":
+			data.final_growth_state = {"state": "not_completed", "branch": "balanced", "pending_at": 0.0, "complete_at": 0.0, "completed_at": 0.0, "result_applied": false}
+
+	# Final forms imply minimum final stages, but do not erase the other branch's accumulated progress.
+	if final_form == "forest_rabbit":
+		data.growth_path_progress["forest_stage"] = maxi(4, int(data.growth_path_progress.get("forest_stage", 0)))
+		data.growth_appearance_state = "forest_final"
+	elif final_form == "lakeside_rabbit":
+		data.growth_path_progress["lakeside_stage"] = maxi(3, int(data.growth_path_progress.get("lakeside_stage", 0)))
+		data.growth_appearance_state = "lakeside_final"
+
+	# One formal ending per ending_id. A completed history is authoritative for ending_seen/post-ending.
+	if not data.ending_history.is_empty():
+		var ending := EndingHistoryEntry.from_dict(data.ending_history[0])
+		data.ending_seen = true
+		data.ending_state = {"state": "completed", "ending_id": ending.ending_id, "created_at": float(data.ending_state.get("created_at", 0.0)), "completed_at": ending.completed_at}
+		data.post_ending_state = {"is_post_ending": true, "started_at": ending.completed_at, "ending_id": ending.ending_id}
 
 static func _time_is_earlier(candidate: float, current: float) -> bool:
 	if current <= 0.0:

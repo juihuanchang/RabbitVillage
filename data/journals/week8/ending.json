@@ -1,0 +1,76 @@
+{
+  "templates": [
+    {
+      "ending_type": "forest",
+      "form": "forest_rabbit",
+      "title": "第一階段 Ending・森林篇 1",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "forest",
+      "form": "forest_rabbit",
+      "title": "第一階段 Ending・森林篇 2",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "forest",
+      "form": "forest_rabbit",
+      "title": "第一階段 Ending・森林篇 3",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "forest",
+      "form": "forest_rabbit",
+      "title": "第一階段 Ending・森林篇 4",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "lakeside",
+      "form": "lakeside_rabbit",
+      "title": "第一階段 Ending・湖畔篇 1",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "lakeside",
+      "form": "lakeside_rabbit",
+      "title": "第一階段 Ending・湖畔篇 2",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "lakeside",
+      "form": "lakeside_rabbit",
+      "title": "第一階段 Ending・湖畔篇 3",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "lakeside",
+      "form": "lakeside_rabbit",
+      "title": "第一階段 Ending・湖畔篇 4",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "maintain",
+      "form": "none",
+      "title": "第一階段 Ending・現在的 Amy 1",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "maintain",
+      "form": "none",
+      "title": "第一階段 Ending・現在的 Amy 2",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "maintain",
+      "form": "none",
+      "title": "第一階段 Ending・現在的 Amy 3",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    },
+    {
+      "ending_type": "maintain",
+      "form": "none",
+      "title": "第一階段 Ending・現在的 Amy 4",
+      "content": "從剛搬進來的那一天，到現在熟悉的村莊生活，{rabbit_name} 的第一段故事在這裡留下了一個可以回頭看的記號。這不是結束，明天仍然會照常開始。"
+    }
+  ]
+}

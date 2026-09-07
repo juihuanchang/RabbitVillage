@@ -54,6 +54,21 @@ const WEEK7_GROWTH_REACTIONS_PATH := "res://data/journals/week7/growth_reactions
 const WEEK7_VILLAGE_PROGRESS_PATH := "res://data/journals/week7/village_progress.json"
 const WEEK7_FINALE_PATH := "res://data/journals/week7/week7_finale.json"
 
+# Week 8 final-growth / life-resume / ending templates.
+const WEEK8_GROWTH_DIRECTION_PATH := "res://data/journals/week8/growth_direction.json"
+const WEEK8_FOREST_FINAL_PATH := "res://data/journals/week8/forest_final.json"
+const WEEK8_LAKESIDE_FINAL_PATH := "res://data/journals/week8/lakeside_final.json"
+const WEEK8_BALANCED_PATH := "res://data/journals/week8/balanced.json"
+const WEEK8_FINAL_HOME_PATH := "res://data/journals/week8/final_home.json"
+const WEEK8_FINAL_FOREST_PATH := "res://data/journals/week8/final_forest.json"
+const WEEK8_FINAL_LAKESIDE_PATH := "res://data/journals/week8/final_lakeside.json"
+const WEEK8_FINAL_CAFE_PATH := "res://data/journals/week8/final_cafe.json"
+const WEEK8_FINAL_PICNIC_PATH := "res://data/journals/week8/final_picnic.json"
+const WEEK8_LIFE_RESUME_PATH := "res://data/journals/week8/life_resume.json"
+const WEEK8_VILLAGE_STAGE1_PATH := "res://data/journals/week8/village_stage1.json"
+const WEEK8_ENDING_PATH := "res://data/journals/week8/ending.json"
+const WEEK8_POST_ENDING_PATH := "res://data/journals/week8/post_ending.json"
+
 static func generate(active: ActiveActivityData, journal_id: String) -> JournalEntry:
 	if active == null or active.rabbit == null or active.activity == null:
 		return null
@@ -712,6 +727,142 @@ static func generate_week7_finale_journal(rabbit_name: String, journal_id: Strin
 	journal.is_village_memory = true
 	return journal
 
+# ---------------- Week 8 ----------------
+
+static func generate_week8_growth_direction_journal(rabbit_name: String, journal_id: String, choice: GrowthDirectionChoiceHistoryEntry) -> JournalEntry:
+	if choice == null or choice.choice_id.is_empty():
+		return null
+	var data := _load_json(WEEK8_GROWTH_DIRECTION_PATH)
+	var template := _pick_filtered(data.get("templates", []), "choice_id", choice.choice_id)
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "growth_direction", choice.selected_at, str(template.get("title", "成長方向")), str(template.get("content", "")))
+	journal.growth_direction_choice_id = choice.choice_id
+	journal.growth_path = choice.resolved_branch
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week8_balanced_journal(rabbit_name: String, journal_id: String, choice: GrowthDirectionChoiceHistoryEntry) -> JournalEntry:
+	if choice == null or choice.choice_id.is_empty():
+		return null
+	var data := _load_json(WEEK8_BALANCED_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "balanced", choice.selected_at, str(template.get("title", "現在的 Amy")), str(template.get("content", "")))
+	journal.growth_direction_choice_id = choice.choice_id
+	journal.final_form = "none"
+	journal.growth_form = "none"
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week8_final_growth_journal(rabbit_name: String, journal_id: String, entry: FinalGrowthHistoryEntry) -> JournalEntry:
+	if entry == null or entry.final_growth_record_id.is_empty():
+		return null
+	var path := WEEK8_FOREST_FINAL_PATH if entry.growth_path == "forest" else WEEK8_LAKESIDE_FINAL_PATH
+	var data := _load_json(path)
+	var template := _pick_filtered(data.get("templates", []), "form", entry.final_form)
+	if template.is_empty():
+		template = _pick_dictionary(data.get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "final_growth", entry.completed_at, str(template.get("title", "Amy 長大了")), str(template.get("content", "")))
+	journal.final_growth_record_id = entry.final_growth_record_id
+	journal.final_form = entry.final_form
+	journal.growth_form = entry.final_form
+	journal.growth_path = entry.growth_path
+	journal.growth_stage = entry.new_stage
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week8_final_reaction_journal(rabbit_name: String, journal_id: String, source_record_id: String, context: String, final_form: String, at: float, post_ending := false) -> JournalEntry:
+	if source_record_id.is_empty():
+		return null
+	var path := ""
+	match context:
+		"home": path = WEEK8_FINAL_HOME_PATH
+		"forest": path = WEEK8_FINAL_FOREST_PATH
+		"lake", "lakeside": path = WEEK8_FINAL_LAKESIDE_PATH
+		"cafe": path = WEEK8_FINAL_CAFE_PATH
+		"picnic": path = WEEK8_FINAL_PICNIC_PATH
+	if path.is_empty():
+		return null
+	var data := _load_json(path)
+	var template := _pick_filtered(data.get("templates", []), "form", final_form)
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "final_reaction", at, str(template.get("title", "成長後的日常")), str(template.get("content", "")))
+	journal.final_form = final_form
+	journal.growth_form = final_form
+	if context == "picnic":
+		journal.life_location_id = source_record_id
+		journal.life_location_activity_id = "picnic"
+		journal.location_id = "picnic_area"
+		journal.location_name = "野餐區"
+	else:
+		journal.activity_record_id = source_record_id
+		journal.location_id = "lake" if context in ["lake", "lakeside"] else context
+		journal.location_name = {"home": "家裡", "forest": "森林", "lake": "湖邊", "lakeside": "湖邊", "cafe": "咖啡館"}.get(context, "村莊")
+	journal.is_post_ending = post_ending
+	return journal
+
+static func generate_week8_stage1_journal(rabbit_name: String, journal_id: String, entry: StageCompletionHistoryEntry) -> JournalEntry:
+	if entry == null:
+		return null
+	var data := _load_json(WEEK8_VILLAGE_STAGE1_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty(): return null
+	var journal := _base(journal_id, rabbit_name, "village_stage1", entry.completed_at, str(template.get("title", "這裡真的變成一個村子了")), str(template.get("content", "")))
+	journal.village_progress_event_id = entry.source_event_id
+	journal.village_stage = 1
+	journal.is_special_memory = true
+	journal.is_village_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week8_life_resume_journal(rabbit_name: String, journal_id: String, profile_snapshot_id: String, at: float) -> JournalEntry:
+	if profile_snapshot_id.is_empty(): return null
+	var data := _load_json(WEEK8_LIFE_RESUME_PATH)
+	var template := _pick_dictionary(data.get("templates", []))
+	if template.is_empty(): return null
+	var journal := _base(journal_id, rabbit_name, "life_resume", at, str(template.get("title", "Amy 的生活履歷")), str(template.get("content", "")))
+	journal.life_profile_snapshot_id = profile_snapshot_id
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week8_ending_journal(rabbit_name: String, journal_id: String, entry: EndingHistoryEntry) -> JournalEntry:
+	if entry == null or entry.ending_id.is_empty(): return null
+	var data := _load_json(WEEK8_ENDING_PATH)
+	var template := _pick_filtered(data.get("templates", []), "ending_type", entry.ending_type)
+	if template.is_empty(): template = _pick_dictionary(data.get("templates", []))
+	if template.is_empty(): return null
+	var journal := _base(journal_id, rabbit_name, "ending", entry.completed_at, str(template.get("title", "第一階段 Ending")), str(template.get("content", "")))
+	journal.ending_id = entry.ending_id
+	journal.ending_snapshot_id = entry.snapshot_id
+	journal.final_form = entry.final_form
+	journal.growth_form = entry.final_form
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	journal.is_village_memory = true
+	return journal
+
+static func generate_week8_post_ending_journal(rabbit_name: String, journal_id: String, source_record_id: String, final_form: String, at: float, context: String = "") -> JournalEntry:
+	if source_record_id.is_empty(): return null
+	var data := _load_json(WEEK8_POST_ENDING_PATH)
+	var template := _pick_filtered(data.get("templates", []), "form", final_form)
+	if template.is_empty(): template = _pick_dictionary(data.get("templates", []))
+	if template.is_empty(): return null
+	var journal := _base(journal_id, rabbit_name, "post_ending", at, str(template.get("title", "Ending 之後的日常")), str(template.get("content", "")))
+	journal.activity_record_id = source_record_id
+	journal.final_form = final_form
+	journal.growth_form = final_form
+	journal.is_post_ending = true
+	journal.location_id = "lake" if context in ["lake", "lakeside"] else context
+	journal.location_name = {"home": "家裡", "forest": "森林", "lake": "湖邊", "lakeside": "湖邊", "cafe": "咖啡館", "picnic": "野餐區"}.get(context, "村莊")
+	return journal
+
 static func _base(id: String, rabbit_name: String, journal_type: String, at: float, title: String, content: String) -> JournalEntry:
 	var time := TimeManager.get_now() if at <= 0.0 else at
 	return JournalEntry.new(id, "", _format_date(time), "", rabbit_name, title, _format_content(content, rabbit_name), time, journal_type, "village", "村莊")
@@ -722,6 +873,15 @@ static func _pick_activity_template(activity_id: String) -> Dictionary:
 		return {}
 	var data := _load_json(path)
 	return _pick_dictionary(data.get("templates", []))
+
+static func _pick_filtered(raw: Variant, key: String, expected: Variant) -> Dictionary:
+	if not (raw is Array):
+		return {}
+	var matches: Array[Dictionary] = []
+	for item: Variant in raw:
+		if item is Dictionary and item.get(key, null) == expected:
+			matches.append(item)
+	return _pick_dictionary(matches)
 
 static func _pick_dictionary(raw: Variant) -> Dictionary:
 	if not (raw is Array) or raw.is_empty():

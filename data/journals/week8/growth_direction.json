@@ -1,0 +1,76 @@
+{
+  "templates": [
+    {
+      "choice_id": "encourage_forest",
+      "branch": "forest",
+      "title": "靠近森林 1",
+      "content": "{rabbit_name} 聽完你的回應後沒有立刻改變什麼，只是把這句話安靜地收進今天的生活裡。"
+    },
+    {
+      "choice_id": "encourage_forest",
+      "branch": "forest",
+      "title": "靠近森林 2",
+      "content": "方向被說出口之後，{rabbit_name} 還是照自己的步調過日子。真正的答案會由之後的每一天慢慢累積。"
+    },
+    {
+      "choice_id": "encourage_forest",
+      "branch": "forest",
+      "title": "靠近森林 3",
+      "content": "{rabbit_name} 好像理解了你的意思。這不是一次決定全部未來的選擇，而是一個會留在成長裡的小小方向。"
+    },
+    {
+      "choice_id": "maintain_current",
+      "branch": "balanced",
+      "title": "先維持現在 1",
+      "content": "{rabbit_name} 聽完你的回應後沒有立刻改變什麼，只是把這句話安靜地收進今天的生活裡。"
+    },
+    {
+      "choice_id": "maintain_current",
+      "branch": "balanced",
+      "title": "先維持現在 2",
+      "content": "方向被說出口之後，{rabbit_name} 還是照自己的步調過日子。真正的答案會由之後的每一天慢慢累積。"
+    },
+    {
+      "choice_id": "maintain_current",
+      "branch": "balanced",
+      "title": "先維持現在 3",
+      "content": "{rabbit_name} 好像理解了你的意思。這不是一次決定全部未來的選擇，而是一個會留在成長裡的小小方向。"
+    },
+    {
+      "choice_id": "encourage_lakeside",
+      "branch": "lakeside",
+      "title": "多看看湖邊 1",
+      "content": "{rabbit_name} 聽完你的回應後沒有立刻改變什麼，只是把這句話安靜地收進今天的生活裡。"
+    },
+    {
+      "choice_id": "encourage_lakeside",
+      "branch": "lakeside",
+      "title": "多看看湖邊 2",
+      "content": "方向被說出口之後，{rabbit_name} 還是照自己的步調過日子。真正的答案會由之後的每一天慢慢累積。"
+    },
+    {
+      "choice_id": "encourage_lakeside",
+      "branch": "lakeside",
+      "title": "多看看湖邊 3",
+      "content": "{rabbit_name} 好像理解了你的意思。這不是一次決定全部未來的選擇，而是一個會留在成長裡的小小方向。"
+    },
+    {
+      "choice_id": "let_rabbit_decide",
+      "branch": "balanced",
+      "title": "讓 Amy 自己決定 1",
+      "content": "{rabbit_name} 聽完你的回應後沒有立刻改變什麼，只是把這句話安靜地收進今天的生活裡。"
+    },
+    {
+      "choice_id": "let_rabbit_decide",
+      "branch": "balanced",
+      "title": "讓 Amy 自己決定 2",
+      "content": "方向被說出口之後，{rabbit_name} 還是照自己的步調過日子。真正的答案會由之後的每一天慢慢累積。"
+    },
+    {
+      "choice_id": "let_rabbit_decide",
+      "branch": "balanced",
+      "title": "讓 Amy 自己決定 3",
+      "content": "{rabbit_name} 好像理解了你的意思。這不是一次決定全部未來的選擇，而是一個會留在成長裡的小小方向。"
+    }
+  ]
+}

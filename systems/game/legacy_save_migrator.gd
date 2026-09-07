@@ -431,6 +431,75 @@ static func _migrate_week7_growth_layer(save: SaveData) -> void:
 	else:
 		save.growth_appearance_state = "normal"
 
+## Week 7 (SaveVersion 8) -> Week 8 final-growth / life-resume / ending migration.
+## B owns the runtime decision state. C mirrors only traceable facts and never turns
+## Forest Stage3/Lakeside Stage2 into a Final form during load.
+static func migrate_week7_to_week8(save: SaveData) -> SaveData:
+	if save == null:
+		return null
+	var rabbit_raw: Dictionary = save.rabbits[0] if not save.rabbits.is_empty() else {}
+
+	if save.growth_direction_choice.is_empty() and rabbit_raw.get("growth_direction_choice", {}) is Dictionary:
+		var raw_choice: Dictionary = rabbit_raw.get("growth_direction_choice", {})
+		if not raw_choice.is_empty() and not str(raw_choice.get("choice_id", "")).is_empty():
+			save.growth_direction_choice = raw_choice.duplicate(true)
+			save.growth_direction_choice["selected_at"] = maxf(0.0, float(raw_choice.get("confirmed_at", 0.0)))
+			save.growth_direction_choice["source_event_id"] = str(raw_choice.get("event_id", "growth_direction_001"))
+
+	var rabbit_final_state: Dictionary = rabbit_raw.get("final_growth_state", {}) if rabbit_raw.get("final_growth_state", {}) is Dictionary else {}
+	if not rabbit_final_state.is_empty():
+		save.final_growth_state = rabbit_final_state.duplicate(true)
+	elif save.final_growth_state.is_empty() or str(save.final_growth_state.get("state", "")).is_empty():
+		save.final_growth_state = {"state": "not_completed", "branch": "balanced", "pending_at": 0.0, "complete_at": 0.0, "completed_at": 0.0, "result_applied": false}
+
+	# Only a legal runtime Final form plus a completed B final state can backfill FinalHistory.
+	# Week7 Stage3/Stage2 by themselves deliberately remain not_completed.
+	var form := str(rabbit_raw.get("current_final_form", "none"))
+	if save.final_growth_history.is_empty() and form in ["forest_rabbit", "lakeside_rabbit"] and str(save.final_growth_state.get("state", "")) == GrowthDirectionChoiceData.FINAL_COMPLETED:
+		var branch := "forest" if form == "forest_rabbit" else "lakeside"
+		var history := FinalGrowthHistoryEntry.new()
+		history.growth_path = branch
+		history.old_stage = 3 if branch == "forest" else 2
+		history.new_stage = 4 if branch == "forest" else 3
+		history.final_form = form
+		history.completed_at = maxf(0.0, float(save.final_growth_state.get("completed_at", 0.0)))
+		history.final_growth_record_id = "final_growth_%s_%d" % [branch, int(round(history.completed_at * 1000.0))]
+		save.final_growth_history.append(history.to_dict())
+
+	# Week7 appearance migrates as-is. Final appearance is only accepted when a legal final form exists.
+	if form == "forest_rabbit":
+		save.growth_appearance_state = "forest_final"
+		save.growth_path_progress["forest_stage"] = maxi(4, int(save.growth_path_progress.get("forest_stage", 0)))
+	elif form == "lakeside_rabbit":
+		save.growth_appearance_state = "lakeside_final"
+		save.growth_path_progress["lakeside_stage"] = maxi(3, int(save.growth_path_progress.get("lakeside_stage", 0)))
+
+	# Old saves start with Ending locked. B test/runtime data that already contains a
+	# valid ending state/result is preserved instead of being discarded.
+	var rabbit_ending_state: Dictionary = rabbit_raw.get("stage1_ending_state", {}) if rabbit_raw.get("stage1_ending_state", {}) is Dictionary else {}
+	if not rabbit_ending_state.is_empty() and str(rabbit_ending_state.get("state", "")) in [EndingStateData.AVAILABLE, EndingStateData.PENDING, EndingStateData.COMPLETED]:
+		save.ending_state = rabbit_ending_state.duplicate(true)
+	elif save.ending_state.is_empty() or str(save.ending_state.get("state", "")) not in [EndingStateData.LOCKED, EndingStateData.AVAILABLE, EndingStateData.PENDING, EndingStateData.COMPLETED]:
+		# A real Week7 save has no C ending state, so initialize it locked. If a Week8
+		# C state already exists (for example a pending ending), preserve it on reload.
+		save.ending_state = {"state": EndingStateData.LOCKED, "ending_id": "stage1_ending", "created_at": 0.0, "completed_at": 0.0}
+
+	var rabbit_ending_result: Dictionary = rabbit_raw.get("stage1_ending_result", {}) if rabbit_raw.get("stage1_ending_result", {}) is Dictionary else {}
+	if str(save.ending_state.get("state", "")) == EndingStateData.COMPLETED and not rabbit_ending_result.is_empty():
+		var ending_id := str(rabbit_ending_result.get("ending_id", "stage1_ending"))
+		var completed_at := maxf(0.0, float(rabbit_ending_result.get("completed_at", save.ending_state.get("completed_at", 0.0))))
+		if save.ending_history.is_empty():
+			var ending := EndingHistoryEntry.new()
+			ending.ending_id = ending_id
+			ending.ending_type = str(rabbit_ending_result.get("ending_type", ""))
+			ending.completed_at = completed_at
+			ending.final_form = str(rabbit_ending_result.get("current_form", form))
+			ending.snapshot_id = "ending_snapshot_%s" % ending_id
+			save.ending_history.append(ending.to_dict())
+		save.ending_seen = true
+		save.post_ending_state = {"is_post_ending": true, "started_at": completed_at, "ending_id": ending_id}
+	return save
+
 static func _week7_canonical_slot(slot_id: String) -> String:
 	if SaveData.WEEK7_BUILDING_SLOTS.has(slot_id):
 		return slot_id
