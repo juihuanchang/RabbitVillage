@@ -11,12 +11,14 @@ var rabbit: RabbitData
 var activity_manager: ActivityManager
 var diary_manager: DiaryManager
 var history_summary: Dictionary = {}
+var resident_manager: ResidentManager
 
 func setup(village_data: VillageData) -> void:
 	data = village_data
 	if data.progress.village_level > 0 or data.progress.village_experience > 0:
 		check_village_level()
 func setup_snapshot_sources(buildings: BuildingManager, growth: GrowthManager, life_events: LifeEventManager) -> void: building_manager = buildings; growth_manager = growth; life_event_manager = life_events
+func setup_residents(residents: ResidentManager) -> void: resident_manager = residents; refresh_stage2_progress()
 func setup_late_game(value: RabbitData, activities: ActivityManager, diary: DiaryManager, summary: Dictionary = {}) -> void: rabbit = value; activity_manager = activities; diary_manager = diary; history_summary = summary.duplicate(true)
 func set_life_history_summary(summary: Dictionary) -> void: history_summary = summary.duplicate(true)
 func get_village_progress_snapshot() -> VillageProgressSnapshot:
@@ -30,7 +32,16 @@ func get_village_progress_snapshot() -> VillageProgressSnapshot:
 		if growth_manager.get_lakeside_growth_stage() > 0: snapshot.areas.append("lakeside")
 	if life_event_manager != null: snapshot.life_events = life_event_manager.get_completed_event_ids()
 	snapshot.progress_score = snapshot.completed_buildings.size() * 20 + snapshot.unlocked_buildings.size() * 5 + snapshot.life_events.size() * 5 + int(snapshot.growth_progress.get("forest_stage", 0)) * 10 + int(snapshot.growth_progress.get("lakeside_stage", 0)) * 10
+	if resident_manager != null: snapshot.resident_count = resident_manager.get_resident_count(); snapshot.friend_count = resident_manager.get_friend_count()
+	snapshot.stage2_progress = _calculate_stage2_progress(snapshot); data.progress.resident_count = snapshot.resident_count; data.progress.friend_count = snapshot.friend_count; data.progress.stage2_progress = snapshot.stage2_progress
 	return snapshot
+func _calculate_stage2_progress(snapshot: VillageProgressSnapshot) -> int:
+	var activity_count := rabbit.total_activity_count if rabbit != null else 0
+	return mini(99, snapshot.completed_buildings.size() * 12 + snapshot.resident_count * 20 + snapshot.friend_count * 20 + snapshot.life_events.size() * 3 + mini(activity_count, 20))
+func refresh_stage2_progress() -> int:
+	if data == null: return 0
+	var value := get_village_progress_snapshot().stage2_progress
+	data.progress.stage2_progress = value; village_progress_changed.emit(data.progress); return value
 func add_village_experience(value: int) -> int:
 	if data == null or value <= 0: return get_village_experience()
 	data.progress.village_experience += value; check_village_level(); village_progress_changed.emit(data.progress); return data.progress.village_experience

@@ -20,6 +20,7 @@ const TYPE_HOME := "home"
 @export_range(0, 100) var required_energy: int = 0
 @export var is_unlocked: bool = true
 @export_enum("outdoor", "home") var activity_type: String = TYPE_OUTDOOR
+@export var participant_resident_id := ""
 
 # Week-two compatibility properties.
 var activity_name: String:
@@ -82,7 +83,8 @@ func to_dict() -> Dictionary:
 		"fishing_experience_change": fishing_experience_change,
 		"intimacy_change": intimacy_change, "reward_items": reward_items,
 		"required_energy": required_energy,
-		"is_unlocked": is_unlocked, "activity_type": activity_type
+		"is_unlocked": is_unlocked, "activity_type": activity_type,
+		"participant_resident_id": participant_resident_id
 	}
 
 static func from_dict(data: Dictionary) -> ActivityData:
@@ -104,7 +106,7 @@ static func from_dict(data: Dictionary) -> ActivityData:
 			"home_rest":
 				loaded_location_id = "home"
 				loaded_location_name = "家裡"
-	return ActivityData.new(
+	var result := ActivityData.new(
 		loaded_activity_id,
 		loaded_location_id,
 		loaded_location_name,
@@ -122,3 +124,5 @@ static func from_dict(data: Dictionary) -> ActivityData:
 		bool(data.get("is_unlocked", true)),
 		str(data.get("activity_type", TYPE_OUTDOOR))
 	)
+	result.participant_resident_id = str(data.get("participant_resident_id", ""))
+	return result

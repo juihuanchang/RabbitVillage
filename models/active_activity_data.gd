@@ -54,6 +54,7 @@ func get_completion_data() -> Dictionary:
 		"activity_id": activity.activity_id if activity else "",
 		"location_id": activity.location_id if activity else "",
 		"location_name": activity.location_name if activity else "",
+		"participant_resident_id": activity.participant_resident_id if activity else "",
 		"activity_name": activity.activity_name if activity else "",
 		"started_at": started_at,
 		"completed_at": completed_at,

@@ -10,9 +10,12 @@ extends Resource
 @export var farm_growth_cycle_count := 0
 @export var total_harvest_count := 0
 @export var total_carrots_obtained := 0
+@export var resident_count := 0
+@export var friend_count := 0
+@export var stage2_progress := 0
 
 func to_dict() -> Dictionary:
-    return {"village_level": village_level, "village_experience": village_experience, "completed_building_count": completed_building_count, "completed_village_event_count": completed_village_event_count, "rest_pavilion_use_count": rest_pavilion_use_count, "notice_board_read_count": notice_board_read_count, "farm_growth_cycle_count": farm_growth_cycle_count, "total_harvest_count": total_harvest_count, "total_carrots_obtained": total_carrots_obtained}
+    return {"village_level": village_level, "village_experience": village_experience, "completed_building_count": completed_building_count, "completed_village_event_count": completed_village_event_count, "rest_pavilion_use_count": rest_pavilion_use_count, "notice_board_read_count": notice_board_read_count, "farm_growth_cycle_count": farm_growth_cycle_count, "total_harvest_count": total_harvest_count, "total_carrots_obtained": total_carrots_obtained, "resident_count": resident_count, "friend_count": friend_count, "stage2_progress": stage2_progress}
 
 static func from_dict(data: Dictionary) -> VillageProgressData:
     var p := VillageProgressData.new()
@@ -25,4 +28,7 @@ static func from_dict(data: Dictionary) -> VillageProgressData:
     p.farm_growth_cycle_count = maxi(0, int(data.get("farm_growth_cycle_count", 0)))
     p.total_harvest_count = maxi(0, int(data.get("total_harvest_count", 0)))
     p.total_carrots_obtained = maxi(0, int(data.get("total_carrots_obtained", 0)))
+    p.resident_count = maxi(0, int(data.get("resident_count", 0)))
+    p.friend_count = maxi(0, int(data.get("friend_count", 0)))
+    p.stage2_progress = clampi(int(data.get("stage2_progress", 0)), 0, 99)
     return p

@@ -17,6 +17,7 @@ var _buildings: BuildingManager
 var _activities: ActivityManager
 var _village: VillageManager
 var _currency: CurrencyManager
+var _residents: ResidentManager
 
 func _init() -> void:
 	_register_event("life_leaf_collection_001", "leaf", 15)
@@ -33,6 +34,8 @@ func _init() -> void:
 		_register_event(cafe_id, "", 0, "村莊真的開始熱鬧起來了" if cafe_id == "village_first_expansion_001" else "")
 	for final_id: String in ["forest_final_first_morning_001", "forest_final_home_001", "forest_final_cafe_001", "forest_final_memory_001", "lakeside_final_first_morning_001", "lakeside_final_home_001", "lakeside_final_cafe_001", "lakeside_final_memory_001", "balanced_not_ready_001"]:
 		_register_event(final_id, "", 0)
+	for resident_event_id: String in ["resident_first_meeting_001", "resident_first_visit_001", "resident_first_gift_001", "resident_first_friend_001", "resident_first_letter_001"]:
+		_register_event(resident_event_id, "", 0)
 
 func setup(inventory: InventoryManager, growth: GrowthManager = null, village_events: VillageEventManager = null) -> void:
 	_inventory = inventory; _growth = growth; _village_events = village_events
@@ -42,6 +45,7 @@ func setup_week6(shop: ShopManager, cooking: CookingManager, locations: LifeLoca
 
 func setup_week7(buildings: BuildingManager, activities: ActivityManager, village: VillageManager, currency: CurrencyManager) -> void:
 	_buildings = buildings; _activities = activities; _village = village; _currency = currency
+func setup_week9(residents: ResidentManager) -> void: _residents = residents
 
 func _register_event(event_id: String, item_id: String, required_amount: int, display_name := "") -> void:
 	var event := LifeEventData.new(); event.event_id = event_id; event.item_id = item_id
@@ -57,6 +61,7 @@ func check_life_events() -> LifeEventData:
 
 func can_trigger_life_event(event_id: String) -> bool:
 	var event := _events.get(event_id) as LifeEventData
+	if event_id.begins_with("resident_"): return event != null and event.state == LifeEventState.LOCKED and not has_pending_life_event() and _resident_event_condition(event_id)
 	if event_id.contains("_final_") or event_id == "balanced_not_ready_001": return event != null and event.state == LifeEventState.LOCKED and not has_pending_life_event() and _final_event_condition(event_id)
 	if event_id.begins_with("cafe_") or event_id == "village_first_expansion_001":
 		return event != null and event.state == LifeEventState.LOCKED and not has_pending_life_event() and _week7_condition(event_id)
@@ -87,6 +92,8 @@ func confirm_life_event(event_id: String) -> LifeEventResult:
 	result.confirmed_at = event.confirmed_at; result.is_applied = true
 	life_event_confirmed.emit(result)
 	if event_id == "cafe_barista_arrives_001" and _buildings != null: _buildings.unlock_building("coffee_shop")
+	if event_id == "cafe_barista_arrives_001" and _residents != null: _residents.unlock_resident("cafe_owner")
+	if event_id.begins_with("resident_") and _residents != null: _residents.apply_event_relationship("cafe_owner", event_id)
 	if _shop != null: _shop.refresh_product_unlocks(0, get_completed_event_ids())
 	# 已達標的其他生活事件會在目前確認流程結束後依序排入，不必等待下一次物品變動。
 	call_deferred("check_life_events")
@@ -132,14 +139,28 @@ func _week7_condition(event_id: String) -> bool:
 	var rabbit := _activities.get_rabbit_data()
 	match event_id:
 		"cafe_barista_arrives_001": return has_completed_life_event("village_life_expands_001") and _currency != null and _currency.get_coin_amount() >= 50 and _inventory != null and _inventory.get_item_amount("twig") >= 5 and rabbit != null and rabbit.total_activity_count >= 5
-		"cafe_first_visit_001": return _buildings.is_building_completed("coffee_shop") and rabbit != null and rabbit.cafe_activity_count >= 1
-		"cafe_first_work_001": return rabbit != null and rabbit.cafe_experience >= 12
-		"cafe_regular_visitor_001": return rabbit != null and rabbit.cafe_activity_count >= 5
+		"cafe_first_visit_001": return _buildings.is_building_completed("coffee_shop") and _cafe_owner_available() and rabbit != null and rabbit.cafe_activity_count >= 1
+		"cafe_first_work_001": return _cafe_owner_available() and rabbit != null and rabbit.cafe_experience >= 12
+		"cafe_regular_visitor_001": return _cafe_owner_available() and rabbit != null and rabbit.cafe_activity_count >= 5
 		"village_first_expansion_001":
 			if not _buildings.is_building_completed("coffee_shop") or rabbit == null or rabbit.cafe_activity_count < 3 or _growth == null: return false
 			var advanced_growth := _growth.get_forest_growth_stage() >= 3 or _growth.get_lakeside_growth_stage() >= 2
 			var building_event := has_completed_life_event("cafe_first_visit_001") or has_completed_life_event("cafe_first_work_001")
 			return advanced_growth and building_event and _village != null and _village.get_village_progress_snapshot().progress_score >= 50
+	return false
+func _cafe_owner_available() -> bool:
+	if _residents == null: return true
+	var resident := _residents.get_resident("cafe_owner"); return resident != null and resident.state.state != ResidentStateData.LOCKED
+func _resident_event_condition(event_id: String) -> bool:
+	if _residents == null: return false
+	var resident := _residents.get_resident("cafe_owner")
+	if resident == null or resident.state.state == ResidentStateData.LOCKED: return false
+	match event_id:
+		"resident_first_meeting_001": return resident.relationship.interaction_count >= 1 or resident.relationship.shared_activity_count >= 1
+		"resident_first_visit_001": return resident.state.current_location == "home" or _residents.has_resident_event("cafe_owner", event_id)
+		"resident_first_gift_001": return _residents.has_resident_event("cafe_owner", event_id)
+		"resident_first_friend_001": return resident.relationship.state == ResidentRelationshipData.FRIEND
+		"resident_first_letter_001": return _residents.has_resident_event("cafe_owner", event_id)
 	return false
 
 func _final_event_condition(event_id: String) -> bool:

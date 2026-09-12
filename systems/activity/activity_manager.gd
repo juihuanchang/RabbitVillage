@@ -8,7 +8,7 @@ signal activity_completed_data(completion_data: Dictionary)
 signal rabbit_returned(rabbit: RabbitData)
 
 const MIN_HUNGER_TO_START := 15
-const VALID_LOCATIONS := ["home", "forest", "lake", "cafe"]
+const VALID_LOCATIONS := ["home", "forest", "lake", "cafe", "picnic"]
 var active_activity: ActiveActivityData
 var last_error := ""
 var _rabbit: RabbitData
@@ -19,17 +19,27 @@ var _activities: Dictionary = {}
 var _completed_record_ids: Dictionary = {}
 var _building_manager: BuildingManager
 var _currency_manager: CurrencyManager
+var _resident_manager: ResidentManager
 
 func _init() -> void:
 	register_activity(ActivityData.create_forest_walk()); register_activity(ActivityData.create_forest_explore())
 	register_activity(ActivityData.create_fishing()); register_activity(ActivityData.create_home_rest())
 	register_activity(CafeActivityData.create("cafe_hot_drink", "Hot Drink", 30.0, 0, 8, 8))
-	register_activity(CafeActivityData.create("cafe_help_serve", "Help Serve", 45.0, -8, 5, 12, 3, 10))
+	var cafe_work := CafeActivityData.create("cafe_help_serve", "Help Serve", 45.0, -8, 5, 12, 3, 10); cafe_work.participant_resident_id = "cafe_owner"; register_activity(cafe_work)
 	register_activity(CafeActivityData.create("cafe_relax", "Relax", 30.0, 12, 10, 5, 1))
+	_register_shared("resident_talk", "home", "Talk", 20.0, 0, 2, 2, 2)
+	_register_shared("cafe_chat", "cafe", "Café Conversation", 25.0, 0, 3, 3, 2)
+	_register_shared("shared_forest_walk", "forest", "Forest Walk Together", 45.0, -5, 5, 5, 3)
+	_register_shared("shared_cafe_time", "cafe", "Café Time Together", 35.0, -2, 6, 5, 3)
+	_register_shared("shared_picnic", "picnic", "Shared Picnic", 40.0, -3, 7, 6, 4)
+
+func _register_shared(id: String, location: String, title: String, seconds: float, energy: int, mood: int, relationship: int, social: int) -> void:
+	var activity := SharedActivityData.new(); activity.activity_id = id; activity.location_id = location; activity.location_name = location.capitalize(); activity.display_name = title; activity.duration_seconds = seconds; activity.energy_change = energy; activity.mood_change = mood; activity.required_energy = maxi(0, -energy); activity.participant_resident_id = "cafe_owner"; activity.relationship_change = relationship; activity.social_experience_change = social; register_activity(activity)
 
 func setup(rabbit: RabbitData, rewards: RewardManager = null, life_events: LifeEventManager = null, growth: GrowthManager = null) -> void:
 	_rabbit = rabbit; _reward_manager = rewards; _life_event_manager = life_events; _growth_manager = growth
 func setup_cafe(buildings: BuildingManager, currency: CurrencyManager) -> void: _building_manager = buildings; _currency_manager = currency
+func setup_residents(residents: ResidentManager) -> void: _resident_manager = residents
 func register_activity(activity: ActivityData) -> bool:
 	if activity == null or activity.activity_id.is_empty(): return false
 	_activities[activity.activity_id] = activity; return true
@@ -49,6 +59,10 @@ func can_start_activity(activity_id: String) -> Dictionary:
 	if activity == null or not activity.is_unlocked or not VALID_LOCATIONS.has(activity.location_id): return _check(false, "invalid_activity")
 	if _rabbit == null: return _check(false, "invalid_activity")
 	if activity.location_id == "cafe" and (_building_manager == null or not _building_manager.is_building_completed("coffee_shop")): return _check(false, "cafe_not_completed")
+	if not activity.participant_resident_id.is_empty() and _resident_manager != null and (_resident_manager.get_resident(activity.participant_resident_id) == null or _resident_manager.get_resident(activity.participant_resident_id).state.state == ResidentStateData.LOCKED): return _check(false, "resident_unavailable")
+	if not activity.participant_resident_id.is_empty() and _resident_manager != null:
+		var resident_check := _resident_manager.can_start_shared_activity(activity.participant_resident_id, activity.activity_id)
+		if not resident_check.ok: return _check(false, resident_check.reason)
 	if (_life_event_manager != null and _life_event_manager.has_pending_life_event()) or (_growth_manager != null and _growth_manager.has_pending_growth_event()): return _check(false, "invalid_activity")
 	if activity.activity_type != ActivityData.TYPE_HOME and _rabbit.hunger < MIN_HUNGER_TO_START: return _check(false, "too_hungry")
 	if _rabbit.energy < activity.required_energy: return _check(false, "too_tired")
@@ -111,6 +125,7 @@ func _complete_activity(completed_time: float) -> void:
 	if _reward_manager != null:
 		var reward := _reward_manager.generate_activity_reward(activity.activity_id, completed.activity_record_id)
 		if reward != null and not _reward_manager.has_reward_been_applied(completed.activity_record_id): _reward_manager.apply_activity_reward(reward)
+	if _resident_manager != null and not activity.participant_resident_id.is_empty(): _resident_manager.apply_shared_activity(completed)
 	activity_completed.emit(completed); activity_completed_data.emit(completed.get_completion_data())
 	active_activity = null; rabbit_returned.emit(rabbit)
 

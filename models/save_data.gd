@@ -1,7 +1,7 @@
 class_name SaveData
 extends Resource
 
-const CURRENT_VERSION := 9
+const CURRENT_VERSION := 10
 const VALID_ITEM_IDS := ["carrot", "leaf", "twig", "small_stone", "driftwood", "apple", "bread",
 	"berry_juice", "small_snack", "carrot_sandwich", "forest_salad", "berry_toast", "picnic_snack"]
 const VALID_PRODUCT_IDS := ["carrot", "apple", "bread", "berry_juice", "small_snack"]

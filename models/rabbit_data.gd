@@ -26,6 +26,7 @@ signal data_changed
 @export var final_growth_state: Dictionary = {}
 @export var stage1_ending_state: Dictionary = {}
 @export var stage1_ending_result: Dictionary = {}
+@export var resident_runtime: Dictionary = {}
 @export var unlocked_growth_marks: Array[Dictionary] = []
 @export var pending_growth_event: Dictionary = {}
 @export var village_data: Dictionary = {}: set = _set_village_data
@@ -67,6 +68,7 @@ func to_dict() -> Dictionary:
 		"move_in_date": move_in_date, "current_final_form": current_final_form,
 		"growth_direction_choice": growth_direction_choice.duplicate(true), "final_growth_state": final_growth_state.duplicate(true),
 		"stage1_ending_state": stage1_ending_state.duplicate(true), "stage1_ending_result": stage1_ending_result.duplicate(true),
+		"resident_runtime": resident_runtime.duplicate(true),
 		"unlocked_growth_marks": unlocked_growth_marks.duplicate(),
 		"pending_growth_event": pending_growth_event.duplicate(true),
 		"village_data": village_data.duplicate(true)
@@ -93,6 +95,7 @@ static func from_dict(data: Dictionary) -> RabbitData:
 	result.final_growth_state = data.get("final_growth_state", {}).duplicate(true) if data.get("final_growth_state", {}) is Dictionary else {}
 	result.stage1_ending_state = data.get("stage1_ending_state", {}).duplicate(true) if data.get("stage1_ending_state", {}) is Dictionary else {}
 	result.stage1_ending_result = data.get("stage1_ending_result", {}).duplicate(true) if data.get("stage1_ending_result", {}) is Dictionary else {}
+	result.resident_runtime = data.get("resident_runtime", {}).duplicate(true) if data.get("resident_runtime", {}) is Dictionary else {}
 	for mark: Variant in data.get("unlocked_growth_marks", []):
 		if mark is Dictionary:
 			result.unlocked_growth_marks.append(mark.duplicate(true))

@@ -61,7 +61,7 @@ func _test_stage1_ending_replay() -> void:
 		if completed >= 6: break
 		event.state = LifeEventState.COMPLETED; completed += 1
 	var diary := DiaryManager.new(); var raw_journals: Array[Dictionary] = []
-	for i in 8: raw_journals.append({"journal_id": "j_%d" % i, "journal_type": "activity", "activity_record_id": "a_%d" % i, "activity_id": "forest_walk", "created_at": float(i + 1)})
+	for i in 8: raw_journals.append({"journal_id": "j_%d" % i, "journal_type": "activity", "activity_record_id": "a_%d" % i, "activity_id": "forest_walk", "title": "Forest walk", "content": "A quiet walk together.", "created_at": float(i + 1)})
 	diary.load_from_array(raw_journals)
 	var village := VillageManager.new(); village.setup(village_data); village.setup_snapshot_sources(buildings, growth, life); village.setup_late_game(rabbit, ActivityManager.new(), diary)
 	_expect(village.can_trigger_stage1_ending(), "Stage1 ending must become eligible")

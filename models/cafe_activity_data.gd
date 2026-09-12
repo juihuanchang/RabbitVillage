@@ -4,6 +4,9 @@ extends ActivityData
 @export var cafe_experience_change := 0
 @export var social_experience_change := 0
 @export var coin_reward := 0
+var resident_id: String:
+	get: return participant_resident_id
+	set(value): participant_resident_id = value
 
 static func create(id: String, name: String, seconds: float, energy: int, mood: int, cafe_exp: int, social_exp: int = 0, coins: int = 0) -> CafeActivityData:
 	var value := CafeActivityData.new()

@@ -38,6 +38,7 @@ var daily_shop_manager := DailyShopManager.new()
 var shop_manager := ShopManager.new()
 var cooking_manager := CookingManager.new()
 var life_location_manager := LifeLocationManager.new()
+var resident_manager := ResidentManager.new()
 var village_data: VillageData
 var _save_requested := false
 var _home_tick_elapsed := 0.0
@@ -62,7 +63,7 @@ func _ready() -> void:
 
 
 func _attach_system_managers() -> void:
-	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager, inventory_manager, currency_manager, reward_manager, life_event_manager, food_manager, daily_shop_manager, shop_manager, cooking_manager, life_location_manager]:
+	for manager: Node in [activity_manager, rabbit_manager, diary_manager, save_manager, growth_manager, growth_album_manager, village_manager, building_manager, construction_manager, village_event_manager, building_interaction_manager, farm_manager, notice_manager, village_history_manager, inventory_manager, currency_manager, reward_manager, life_event_manager, food_manager, daily_shop_manager, shop_manager, cooking_manager, life_location_manager, resident_manager]:
 		add_child(manager)
 
 
@@ -89,10 +90,15 @@ func load_game_state() -> void:
 	building_manager.setup(village_data)
 	construction_manager.setup(village_data, building_manager, village_manager)
 	building_manager.setup_economy(currency_manager, inventory_manager, construction_manager)
+	resident_manager.setup(rabbit_data, building_manager, growth_manager, inventory_manager)
 	activity_manager.setup_cafe(building_manager, currency_manager)
+	activity_manager.setup_residents(resident_manager)
 	village_manager.setup_snapshot_sources(building_manager, growth_manager, life_event_manager)
 	village_manager.setup_late_game(rabbit_data, activity_manager, diary_manager)
+	village_manager.setup_residents(resident_manager)
 	life_event_manager.setup_week7(building_manager, activity_manager, village_manager, currency_manager)
+	life_event_manager.setup_week9(resident_manager)
+	if life_event_manager.has_completed_life_event("cafe_barista_arrives_001"): resident_manager.unlock_resident("cafe_owner")
 	growth_manager.set_completed_life_event_ids(life_event_manager.get_completed_event_ids())
 	village_event_manager.setup(village_data, rabbit_data, building_manager, growth_manager)
 	farm_manager.setup(village_data, building_manager, village_manager, inventory_manager)
@@ -127,6 +133,10 @@ func _connect_system_signals() -> void:
 	growth_album_manager.album_entry_added.connect(func(_entry: GrowthAlbumEntry) -> void: _request_save())
 	growth_manager.growth_event_confirmed.connect(func(_event: GrowthEventData) -> void: life_event_manager.call_deferred("check_life_events"))
 	growth_manager.final_growth_completed.connect(_on_final_growth_completed)
+	resident_manager.relationship_stage_changed.connect(func(_result: ResidentInteractionResult) -> void: village_manager.refresh_stage2_progress(); life_event_manager.call_deferred("check_life_events"); _request_save())
+	resident_manager.resident_arrived.connect(func(_resident: ResidentData) -> void: village_manager.refresh_stage2_progress(); life_event_manager.call_deferred("check_life_events"); _request_save())
+	resident_manager.resident_event_created.connect(func(_event_id: String, _resident_id: String) -> void: life_event_manager.call_deferred("check_life_events"); _request_save())
+	resident_manager.resident_progress_changed.connect(func(_resident: ResidentData) -> void: village_manager.refresh_stage2_progress(); life_event_manager.call_deferred("check_life_events"); _request_save())
 	life_event_manager.life_event_confirmed.connect(func(_result: LifeEventResult) -> void: growth_manager.set_completed_life_event_ids(life_event_manager.get_completed_event_ids()); growth_manager.call_deferred("check_growth_path_events"))
 	construction_manager.construction_completed.connect(func(_result: ConstructionResult) -> void: life_event_manager.call_deferred("check_life_events"))
 	inventory_manager.inventory_changed.connect(func(_item_id: String, _old_amount: int, _new_amount: int, _source_type: String, _source_id: String) -> void: life_event_manager.check_life_events())
@@ -422,6 +432,13 @@ func create_stage1_ending() -> EndingStateData: return village_manager.create_st
 func complete_stage1_ending() -> EndingResult: return village_manager.complete_stage1_ending()
 func has_completed_stage1_ending() -> bool: return village_manager.has_completed_stage1_ending()
 func get_stage1_ending_result() -> EndingResult: return village_manager.get_stage1_ending_result()
+func get_resident(resident_id: String) -> ResidentData: return resident_manager.get_resident(resident_id)
+func get_resident_count() -> int: return resident_manager.get_resident_count()
+func get_friend_count() -> int: return resident_manager.get_friend_count()
+func interact_with_resident(resident_id: String, interaction_type: String, interaction_id := "") -> ResidentInteractionResult: return resident_manager.interact(resident_id, interaction_type, interaction_id)
+func create_resident_invitation(resident_id: String, activity_id: String, invitation_id: String) -> Dictionary: return resident_manager.create_invitation(resident_id, activity_id, invitation_id)
+func respond_to_resident_invitation(resident_id: String, invitation_id: String, accept: bool) -> Dictionary: return resident_manager.respond_to_invitation(resident_id, invitation_id, accept)
+func get_village_stage2_progress() -> int: return village_manager.refresh_stage2_progress()
 
 func _on_rabbit_returned(returned_rabbit: RabbitData) -> void:
 	_update_character_visibility()
