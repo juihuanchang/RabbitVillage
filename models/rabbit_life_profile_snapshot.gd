@@ -17,6 +17,8 @@ extends Resource
 @export var cafe_unlock := ""
 @export var cafe_complete := ""
 @export var final_growth := ""
+@export var first_friend := ""
+@export var friend_list: Array[String] = []
 @export var favorite_location := ""
 @export var favorite_food := ""
 @export var most_used_activity := ""
@@ -44,6 +46,8 @@ func to_dict() -> Dictionary:
 		"cafe_unlock": cafe_unlock,
 		"cafe_complete": cafe_complete,
 		"final_growth": final_growth,
+		"first_friend": first_friend,
+		"friend_list": friend_list.duplicate(),
 		"favorite_location": favorite_location,
 		"favorite_food": favorite_food,
 		"most_used_activity": most_used_activity,
@@ -70,6 +74,11 @@ static func from_dict(raw: Dictionary) -> RabbitLifeProfileSnapshot:
 	value.cafe_unlock = str(raw.get("cafe_unlock", ""))
 	value.cafe_complete = str(raw.get("cafe_complete", ""))
 	value.final_growth = str(raw.get("final_growth", ""))
+	value.first_friend = str(raw.get("first_friend", ""))
+	for friend_id: Variant in raw.get("friend_list", []):
+		var canonical := str(friend_id)
+		if not canonical.is_empty() and not value.friend_list.has(canonical):
+			value.friend_list.append(canonical)
 	value.favorite_location = str(raw.get("favorite_location", ""))
 	value.favorite_food = str(raw.get("favorite_food", ""))
 	value.most_used_activity = str(raw.get("most_used_activity", ""))

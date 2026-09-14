@@ -103,6 +103,40 @@ func add_week8_moment(
 	)
 	return add_album_entry(entry)
 
+func add_week9_moment(
+	moment_id: String,
+	source_event_id: String,
+	title: String,
+	description: String,
+	unlocked_at: float,
+	journal_id: String,
+	illustration_id: String = ""
+) -> bool:
+	if moment_id.is_empty() or source_event_id.is_empty():
+		return false
+	if has_entry_for_growth_mark(moment_id) or has_entry_for_week9_event(source_event_id):
+		return false
+	var entry := GrowthAlbumEntry.new(
+		"album_week9_%s_%s" % [moment_id, source_event_id],
+		moment_id,
+		title,
+		description,
+		"social",
+		0,
+		unlocked_at,
+		journal_id,
+		illustration_id
+	)
+	return add_album_entry(entry)
+
+func has_entry_for_week9_event(source_event_id: String) -> bool:
+	if source_event_id.is_empty():
+		return false
+	for entry: GrowthAlbumEntry in _entries:
+		if entry.id.begins_with("album_week9_") and entry.id.ends_with("_%s" % source_event_id):
+			return true
+	return false
+
 func has_entry_for_week8_event(source_event_id: String) -> bool:
 	if source_event_id.is_empty():
 		return false

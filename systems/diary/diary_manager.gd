@@ -484,6 +484,103 @@ func has_week8_post_ending_journal(source_record_id: String) -> bool:
 			return true
 	return false
 
+# ---------------- Week 9 ----------------
+
+func generate_week9_resident_arrival_journal(entry: ResidentHistoryEntry, relationship_state := ResidentRelationshipData.STRANGER, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.resident_id.is_empty() or has_week9_resident_arrival_journal(entry.resident_id):
+		return null
+	return _append(JournalGenerator.generate_week9_resident_arrival_journal(rabbit_name, _next_id(), entry, relationship_state))
+
+func generate_week9_first_meeting_journal(entry: ResidentHistoryEntry, relationship_state := ResidentRelationshipData.STRANGER, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.resident_id.is_empty() or has_week9_first_meeting_journal(entry.resident_id):
+		return null
+	return _append(JournalGenerator.generate_week9_first_meeting_journal(rabbit_name, _next_id(), entry, relationship_state))
+
+func generate_week9_interaction_journal(entry: ResidentInteractionHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.interaction_id.is_empty() or has_week9_interaction_journal(entry.interaction_id):
+		return null
+	return _append(JournalGenerator.generate_week9_interaction_journal(rabbit_name, _next_id(), entry))
+
+func generate_week9_shared_activity_journal(entry: SharedActivityHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.activity_record_id.is_empty() or has_week9_shared_activity_journal(entry.activity_record_id):
+		return null
+	return _append(JournalGenerator.generate_week9_shared_activity_journal(rabbit_name, _next_id(), entry))
+
+func generate_week9_visit_journal(entry: ResidentVisitHistoryEntry, relationship_state := "", rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.event_id.is_empty() or has_week9_resident_event_journal(entry.event_id):
+		return null
+	return _append(JournalGenerator.generate_week9_visit_journal(rabbit_name, _next_id(), entry, relationship_state))
+
+func generate_week9_gift_journal(entry: ResidentGiftHistoryEntry, relationship_state := "", rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.event_id.is_empty() or has_week9_resident_event_journal(entry.event_id):
+		return null
+	return _append(JournalGenerator.generate_week9_gift_journal(rabbit_name, _next_id(), entry, relationship_state))
+
+func generate_week9_letter_journal(entry: ResidentLetterHistoryEntry, relationship_state := "", rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.event_id.is_empty() or has_week9_resident_event_journal(entry.event_id):
+		return null
+	return _append(JournalGenerator.generate_week9_letter_journal(rabbit_name, _next_id(), entry, relationship_state))
+
+func generate_week9_invitation_journal(entry: ResidentInvitationHistoryEntry, relationship_state := "", rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.invitation_id.is_empty() or entry.state == "pending" or has_week9_invitation_journal(entry.invitation_id):
+		return null
+	return _append(JournalGenerator.generate_week9_invitation_journal(rabbit_name, _next_id(), entry, relationship_state))
+
+func generate_week9_first_friend_journal(entry: ResidentRelationshipHistoryEntry, rabbit_name := "Amy") -> JournalEntry:
+	if entry == null or entry.new_state != ResidentRelationshipData.FRIEND or has_week9_first_friend_journal():
+		return null
+	return _append(JournalGenerator.generate_week9_first_friend_journal(rabbit_name, _next_id(), entry))
+
+func has_week9_resident_arrival_journal(resident_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "resident_arrival" and entry.resident_id == resident_id:
+			return true
+	return false
+
+func has_week9_first_meeting_journal(resident_id: String) -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "resident_first_meeting" and entry.resident_id == resident_id:
+			return true
+	return false
+
+func has_week9_interaction_journal(interaction_id: String) -> bool:
+	if interaction_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "resident_interaction" and (entry.resident_interaction_id == interaction_id or entry.activity_record_id == interaction_id):
+			return true
+	return false
+
+func has_week9_shared_activity_journal(record_id: String) -> bool:
+	if record_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "resident_shared_activity" and entry.shared_activity_id == record_id:
+			return true
+	return false
+
+func has_week9_resident_event_journal(event_id: String) -> bool:
+	if event_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type in ["resident_visit", "resident_gift", "resident_letter"] and entry.resident_event_id == event_id:
+			return true
+	return false
+
+func has_week9_invitation_journal(invitation_id: String) -> bool:
+	if invitation_id.is_empty():
+		return false
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "resident_invitation" and entry.invitation_id == invitation_id:
+			return true
+	return false
+
+func has_week9_first_friend_journal() -> bool:
+	for entry: JournalEntry in _journals:
+		if entry.journal_type == "resident_first_friend":
+			return true
+	return false
+
 func get_last_food_journal_date() -> String:
 	return _last_food_journal_date
 
@@ -743,6 +840,20 @@ func _duplicate(entry: JournalEntry) -> bool:
 			return has_week8_ending_journal(entry.ending_id)
 		"post_ending":
 			return has_week8_post_ending_journal(entry.activity_record_id)
+		"resident_arrival":
+			return has_week9_resident_arrival_journal(entry.resident_id)
+		"resident_first_meeting":
+			return has_week9_first_meeting_journal(entry.resident_id)
+		"resident_interaction", "resident_reaction":
+			return has_week9_interaction_journal(entry.resident_interaction_id if not entry.resident_interaction_id.is_empty() else entry.activity_record_id)
+		"resident_shared_activity":
+			return has_week9_shared_activity_journal(entry.shared_activity_id)
+		"resident_visit", "resident_gift", "resident_letter":
+			return has_week9_resident_event_journal(entry.resident_event_id)
+		"resident_invitation":
+			return has_week9_invitation_journal(entry.invitation_id)
+		"resident_first_friend":
+			return has_week9_first_friend_journal()
 	return false
 
 func _append(entry: JournalEntry) -> JournalEntry:

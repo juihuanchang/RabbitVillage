@@ -25,6 +25,7 @@ var _life_location_manager: LifeLocationManager
 var _building_manager: BuildingManager
 var _construction_manager: ConstructionManager
 var _village_manager: VillageManager
+var _resident_manager: ResidentManager
 
 var resource_history_manager := ResourceHistoryManager.new()
 var life_history_manager := LifeHistoryManager.new()
@@ -37,6 +38,7 @@ var village_development_history_manager := VillageDevelopmentHistoryManager.new(
 var growth_history_manager := GrowthHistoryManager.new()
 var rabbit_life_history_manager := RabbitLifeHistoryManager.new()
 var ending_history_manager := EndingHistoryManager.new()
+var resident_history_manager := ResidentHistoryManager.new()
 
 var _loaded_save: SaveData
 var _week5_runtime_ready := false
@@ -66,6 +68,9 @@ func save_game() -> bool:
 	var save := SaveData.new()
 	save.save_version = SaveData.CURRENT_VERSION
 	save.last_saved_at = TimeManager.get_now()
+	# Week 9 repair may update ResidentData guards/state. Sync before serializing RabbitData
+	# so rabbit.resident_runtime and the top-level permanent history describe the same state.
+	_sync_week9_runtime(save.last_saved_at)
 	for rabbit: RabbitData in _rabbit_manager.get_all_rabbits():
 		# Saving must never assign village_data back to RabbitData. Its setter emits
 		# data_changed and would create a save loop.
@@ -95,6 +100,9 @@ func save_game() -> bool:
 		_capture_week5_from_loaded(save)
 	_capture_week6_persistent(save)
 	_capture_week7_persistent(save)
+	_capture_week9_persistent(save)
+	# Week 8 life resume reads first_friend/friend_list from Week 9 History, so capture
+	# resident history before rebuilding the life profile.
 	_capture_week8_persistent(save)
 	_backup_valid_primary()
 	var ok := _write(save)
@@ -165,6 +173,7 @@ func migrate_save_data(save: SaveData) -> SaveData:
 		save = LegacySaveMigrator.migrate_week5_to_week6(save)
 		save = LegacySaveMigrator.migrate_week6_to_week7(save)
 		save = LegacySaveMigrator.migrate_week7_to_week8(save)
+		save = LegacySaveMigrator.migrate_week8_to_week9(save)
 	save.save_version = SaveData.CURRENT_VERSION
 	return save
 
@@ -204,6 +213,9 @@ func get_rabbit_life_history_manager() -> RabbitLifeHistoryManager:
 func get_ending_history_manager() -> EndingHistoryManager:
 	return ending_history_manager
 
+func get_resident_history_manager() -> ResidentHistoryManager:
+	return resident_history_manager
+
 func get_ending_replay_snapshot(ending_id: String = "stage1_ending") -> EndingMemorySnapshot:
 	return ending_history_manager.get_replay_snapshot(ending_id)
 
@@ -219,12 +231,13 @@ func _prepare_week5_persistent_managers(save: SaveData) -> void:
 	growth_history_manager.setup_from_save(save)
 	rabbit_life_history_manager.setup_from_save(save)
 	ending_history_manager.setup_from_save(save)
+	resident_history_manager.setup_from_save(save)
 	if _diary_manager != null:
 		_diary_manager.setup_week5_limits(save.last_food_journal_date, save.last_needs_journal_date)
 		_diary_manager.setup_week6_limits(save.last_shopping_journal_date, save.last_cooking_journal_date, save.last_picnic_journal_date)
 
 func _ensure_week5_managers() -> void:
-	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, village_development_history_manager, growth_history_manager, rabbit_life_history_manager, ending_history_manager]:
+	for manager: Node in [resource_history_manager, life_history_manager, item_collection_manager, shop_history_manager, cooking_history_manager, life_location_history_manager, recipe_collection_manager, village_development_history_manager, growth_history_manager, rabbit_life_history_manager, ending_history_manager, resident_history_manager]:
 		if manager.get_parent() == null:
 			add_child(manager)
 
@@ -244,6 +257,7 @@ func _discover_week5_runtime_managers() -> void:
 	var building_variant: Variant = parent_node.get("building_manager")
 	var construction_variant: Variant = parent_node.get("construction_manager")
 	var village_variant: Variant = parent_node.get("village_manager")
+	var resident_variant: Variant = parent_node.get("resident_manager")
 	if inventory_variant is InventoryManager:
 		_inventory_manager = inventory_variant
 	if currency_variant is CurrencyManager:
@@ -261,6 +275,7 @@ func _discover_week5_runtime_managers() -> void:
 	if building_variant is BuildingManager: _building_manager = building_variant
 	if construction_variant is ConstructionManager: _construction_manager = construction_variant
 	if village_variant is VillageManager: _village_manager = village_variant
+	if resident_variant is ResidentManager: _resident_manager = resident_variant
 
 func _connect_week5_signals() -> void:
 	if _week5_signals_connected:
@@ -308,6 +323,17 @@ func _connect_week5_signals() -> void:
 		_construction_manager.construction_completed.connect(_on_week7_construction_completed)
 	if _village_manager != null:
 		_village_manager.village_progress_changed.connect(_on_week7_village_progress_changed)
+	if _resident_manager != null:
+		_resident_manager.resident_arrived.connect(_on_week9_resident_arrived)
+		_resident_manager.relationship_stage_changed.connect(_on_week9_relationship_changed)
+		_resident_manager.resident_location_changed.connect(_on_week9_location_changed)
+		_resident_manager.resident_interaction_completed.connect(_on_week9_interaction_completed)
+		_resident_manager.shared_activity_completed.connect(_on_week9_shared_activity_completed)
+		_resident_manager.resident_visit_completed.connect(_on_week9_visit_completed)
+		_resident_manager.resident_gift_received.connect(_on_week9_gift_received)
+		_resident_manager.resident_letter_received.connect(_on_week9_letter_received)
+		_resident_manager.resident_invitation_changed.connect(_on_week9_invitation_changed)
+		_resident_manager.resident_progress_changed.connect(_on_week9_resident_progress_changed)
 	_week5_signals_connected = true
 
 func _apply_loaded_week5_runtime() -> void:
@@ -335,6 +361,7 @@ func _apply_loaded_week5_runtime() -> void:
 	_repair_reward_history_dependencies()
 	_repair_week6_dependencies()
 	_repair_week7_dependencies()
+	_repair_week9_dependencies()
 	_repair_week8_dependencies()
 	_week5_runtime_ready = true
 	_week8_runtime_signature = _build_week8_runtime_signature()
@@ -606,6 +633,10 @@ func _on_life_event_confirmed(result: LifeEventResult) -> void:
 			_diary_manager.generate_week7_cafe_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
 		elif result.event_id == "village_first_expansion_001":
 			_diary_manager.generate_week7_finale_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
+		elif result.event_id.begins_with("resident_"):
+			# Week 9 owns resident-specific journals. Do not create a second generic
+			# LifeEvent journal for the same social milestone.
+			pass
 		else:
 			_diary_manager.generate_life_event_journal(result.event_id, _current_rabbit_name(), result.confirmed_at)
 	save_game()
@@ -1014,6 +1045,231 @@ func _growth_mark_for_event(event_id: String) -> String:
 		"growth_lakeside_stage2_001":
 			return "lakeside_stage2"
 	return ""
+
+# ---------------- Week 9 ----------------
+
+func _sync_week9_runtime(at := 0.0) -> void:
+	_discover_week5_runtime_managers()
+	if _resident_manager == null:
+		return
+	resident_history_manager.sync_from_runtime(_resident_manager, at)
+
+func _capture_week9_persistent(save: SaveData) -> void:
+	if save == null:
+		return
+	_write_week9_to_save(save)
+
+func _write_week9_to_save(save: SaveData) -> void:
+	save.resident_states = resident_history_manager.resident_states.duplicate(true)
+	save.resident_arrival_history = resident_history_manager.resident_arrival_history.duplicate(true)
+	save.resident_first_meeting_history = resident_history_manager.resident_first_meeting_history.duplicate(true)
+	save.resident_interaction_history = resident_history_manager.resident_interaction_history.duplicate(true)
+	save.resident_relationship_history = resident_history_manager.resident_relationship_history.duplicate(true)
+	save.shared_activity_history = resident_history_manager.shared_activity_history.duplicate(true)
+	save.resident_visit_history = resident_history_manager.resident_visit_history.duplicate(true)
+	save.resident_gift_history = resident_history_manager.resident_gift_history.duplicate(true)
+	save.resident_letter_history = resident_history_manager.resident_letter_history.duplicate(true)
+	save.resident_invitation_history = resident_history_manager.resident_invitation_history.duplicate(true)
+	save.resident_social_experience_history = resident_history_manager.resident_social_experience_history.duplicate(true)
+
+func _repair_week9_dependencies() -> void:
+	if _loaded_save == null:
+		return
+	resident_history_manager.setup_from_save(_loaded_save)
+	_discover_week5_runtime_managers()
+	if _resident_manager != null:
+		# C's canonical resident_states contains a full ResidentData snapshot. Restore it
+		# without replaying gameplay effects, then let runtime sanitization/History repair
+		# reconcile guards and relationship state. Migration populates this snapshot for
+		# Week 8 saves, so Café completion remains a legal Resident transition.
+		if not _loaded_save.resident_states.is_empty():
+			_resident_manager.restore_resident_states(_loaded_save.resident_states)
+		resident_history_manager.sync_from_runtime(_resident_manager, _loaded_save.last_saved_at)
+	_write_week9_to_save(_loaded_save)
+	_repair_week9_content()
+
+func _repair_week9_content() -> void:
+	if _diary_manager != null:
+		for raw: Dictionary in resident_history_manager.resident_arrival_history:
+			var entry := ResidentHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week9_resident_arrival_journal(entry, resident_history_manager.get_relationship_state(entry.resident_id), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.resident_first_meeting_history:
+			var entry := ResidentHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week9_first_meeting_journal(entry, resident_history_manager.get_relationship_state(entry.resident_id), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.resident_interaction_history:
+			_diary_manager.generate_week9_interaction_journal(ResidentInteractionHistoryEntry.from_dict(raw), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.shared_activity_history:
+			_diary_manager.generate_week9_shared_activity_journal(SharedActivityHistoryEntry.from_dict(raw), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.resident_visit_history:
+			var entry := ResidentVisitHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week9_visit_journal(entry, resident_history_manager.get_relationship_state(entry.resident_id), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.resident_gift_history:
+			var entry := ResidentGiftHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week9_gift_journal(entry, resident_history_manager.get_relationship_state(entry.resident_id), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.resident_letter_history:
+			var entry := ResidentLetterHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week9_letter_journal(entry, resident_history_manager.get_relationship_state(entry.resident_id), _current_rabbit_name())
+		for raw: Dictionary in resident_history_manager.resident_invitation_history:
+			var entry := ResidentInvitationHistoryEntry.from_dict(raw)
+			_diary_manager.generate_week9_invitation_journal(entry, resident_history_manager.get_relationship_state(entry.resident_id), _current_rabbit_name())
+		var first_friend := _week9_first_friend_entry()
+		if first_friend != null:
+			_diary_manager.generate_week9_first_friend_journal(first_friend, _current_rabbit_name())
+
+	if _growth_album_manager == null:
+		return
+	var first_resident_raw := _week9_earliest(resident_history_manager.resident_arrival_history, "created_at")
+	if not first_resident_raw.is_empty():
+		var entry := ResidentHistoryEntry.from_dict(first_resident_raw)
+		_add_week9_album_moment("first_resident", entry.history_id, "第一位居民", "村莊迎來了第一位正式居民。", entry.created_at, _week9_journal_id_for_resident("resident_arrival", entry.resident_id))
+	var first_chat_raw := _week9_earliest(resident_history_manager.resident_interaction_history, "interacted_at")
+	if not first_chat_raw.is_empty():
+		var entry := ResidentInteractionHistoryEntry.from_dict(first_chat_raw)
+		_add_week9_album_moment("first_chat", entry.interaction_id, "第一次聊天", "Amy 第一次和村莊居民好好聊了一會兒。", entry.interacted_at, _week9_journal_id_for_source("resident_interaction", entry.interaction_id))
+	var first_visit_raw := _week9_earliest(resident_history_manager.resident_visit_history, "visited_at")
+	if not first_visit_raw.is_empty():
+		var entry := ResidentVisitHistoryEntry.from_dict(first_visit_raw)
+		_add_week9_album_moment("first_visit", entry.event_id, "第一次拜訪", "第一次有居民到家裡拜訪 Amy。", entry.visited_at, _week9_journal_id_for_source("resident_visit", entry.event_id))
+	var first_gift_raw := _week9_earliest(resident_history_manager.resident_gift_history, "received_at")
+	if not first_gift_raw.is_empty():
+		var entry := ResidentGiftHistoryEntry.from_dict(first_gift_raw)
+		_add_week9_album_moment("first_resident_gift", entry.event_id, "第一次收到居民禮物", "Amy 第一次收到居民送來的禮物。", entry.received_at, _week9_journal_id_for_source("resident_gift", entry.event_id))
+	var first_friend := _week9_first_friend_entry()
+	if first_friend != null:
+		_add_week9_album_moment("first_friend", first_friend.relationship_history_id, "第一位朋友", "Amy 在村莊裡有了第一位真正的朋友。", first_friend.stage_changed_at, _week9_journal_id_for_resident("resident_first_friend", first_friend.resident_id))
+
+func _week9_earliest(source: Array[Dictionary], time_key: String) -> Dictionary:
+	var best: Dictionary = {}
+	var best_at := 0.0
+	for raw: Dictionary in source:
+		var at := maxf(0.0, float(raw.get(time_key, raw.get("created_at", 0.0))))
+		if best.is_empty() or (at > 0.0 and (best_at <= 0.0 or at < best_at)):
+			best = raw.duplicate(true)
+			best_at = at
+	return best
+
+func _week9_first_friend_entry() -> ResidentRelationshipHistoryEntry:
+	var best: ResidentRelationshipHistoryEntry = null
+	for raw: Dictionary in resident_history_manager.resident_relationship_history:
+		var entry := ResidentRelationshipHistoryEntry.from_dict(raw)
+		if entry.new_state != ResidentRelationshipData.FRIEND:
+			continue
+		if best == null or (entry.stage_changed_at > 0.0 and (best.stage_changed_at <= 0.0 or entry.stage_changed_at < best.stage_changed_at)):
+			best = entry
+	return best
+
+func _add_week9_album_moment(moment_id: String, source_event_id: String, title: String, description: String, at: float, journal_id: String) -> void:
+	if _growth_album_manager == null or source_event_id.is_empty():
+		return
+	_growth_album_manager.add_week9_moment(moment_id, source_event_id, title, description, at, journal_id, moment_id)
+
+func _week9_journal_id_for_source(journal_type: String, source_id: String) -> String:
+	if _diary_manager == null or source_id.is_empty():
+		return ""
+	for entry: JournalEntry in _diary_manager.get_all_journals():
+		if entry.journal_type != journal_type:
+			continue
+		if entry.resident_interaction_id == source_id or entry.shared_activity_id == source_id or entry.resident_event_id == source_id or entry.invitation_id == source_id:
+			return entry.journal_id
+	return ""
+
+func _week9_journal_id_for_resident(journal_type: String, resident_id: String) -> String:
+	if _diary_manager == null or resident_id.is_empty():
+		return ""
+	for entry: JournalEntry in _diary_manager.get_all_journals():
+		if entry.journal_type == journal_type and entry.resident_id == resident_id:
+			return entry.journal_id
+	return ""
+
+func _on_week9_resident_arrived(resident: ResidentData) -> void:
+	if resident == null:
+		return
+	resident_history_manager.record_arrival(resident, "cafe_barista_arrives_001" if resident.resident_id == ResidentManager.CAFE_OWNER else "resident_arrival_%s" % resident.resident_id, resident.state.arrived_at)
+	resident_history_manager.sync_resident_state(resident)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_relationship_changed(result: ResidentInteractionResult) -> void:
+	if result == null or _resident_manager == null:
+		return
+	var resident := _resident_manager.get_resident(result.resident_id)
+	if resident == null:
+		return
+	resident_history_manager.record_relationship_change(resident, result.interaction_id, TimeManager.get_now())
+	resident_history_manager.sync_resident_state(resident)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_location_changed(resident_id: String, _location_id: String, _changed_at: float) -> void:
+	if _resident_manager == null:
+		return
+	var resident := _resident_manager.get_resident(resident_id)
+	if resident != null:
+		resident_history_manager.sync_resident_state(resident)
+	save_game()
+
+func _on_week9_interaction_completed(result: ResidentInteractionResult, interaction_type: String, completed_at: float) -> void:
+	var location_id := ""
+	if result != null and _resident_manager != null:
+		var current := _resident_manager.get_resident(result.resident_id)
+		if current != null:
+			location_id = current.state.current_location
+	var entry := resident_history_manager.record_interaction(result, interaction_type, completed_at, location_id)
+	if entry == null:
+		return
+	resident_history_manager.record_social_experience(entry.resident_id, "interaction", entry.interaction_id, entry.social_experience_change, entry.interacted_at)
+	if _resident_manager != null:
+		var resident := _resident_manager.get_resident(entry.resident_id)
+		if resident != null:
+			resident_history_manager.sync_resident_state(resident)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_shared_activity_completed(result: SharedActivityResult, location_id: String, completed_at: float) -> void:
+	var entry := resident_history_manager.record_shared_activity(result, location_id, completed_at)
+	if entry == null:
+		return
+	resident_history_manager.record_social_experience(entry.resident_id, "shared_activity", entry.activity_record_id, entry.social_experience_change, entry.completed_at)
+	if _resident_manager != null:
+		var resident := _resident_manager.get_resident(entry.resident_id)
+		if resident != null:
+			resident_history_manager.sync_resident_state(resident)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_visit_completed(event_id: String, resident_id: String, location_id: String, completed_at: float) -> void:
+	resident_history_manager.record_visit(resident_id, event_id, location_id, completed_at)
+	_sync_week9_runtime(completed_at)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_gift_received(event_id: String, resident_id: String, item_id: String, amount: int, completed_at: float) -> void:
+	resident_history_manager.record_gift(resident_id, event_id, item_id, amount, completed_at)
+	_sync_week9_runtime(completed_at)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_letter_received(event_id: String, resident_id: String, reaction_tag: String, completed_at: float) -> void:
+	resident_history_manager.record_letter(resident_id, event_id, reaction_tag, completed_at)
+	_sync_week9_runtime(completed_at)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_invitation_changed(resident_id: String, invitation: Dictionary, changed_at: float) -> void:
+	resident_history_manager.record_invitation(resident_id, invitation, changed_at)
+	if _resident_manager != null:
+		var resident := _resident_manager.get_resident(resident_id)
+		if resident != null:
+			resident_history_manager.sync_resident_state(resident)
+	_repair_week9_content()
+	save_game()
+
+func _on_week9_resident_progress_changed(resident: ResidentData) -> void:
+	if resident == null:
+		return
+	resident_history_manager.sync_from_runtime(_resident_manager, TimeManager.get_now())
+	_repair_week9_content()
+	save_game()
 
 # ---------------- Week 8 ----------------
 

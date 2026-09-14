@@ -500,6 +500,154 @@ static func migrate_week7_to_week8(save: SaveData) -> SaveData:
 		save.post_ending_state = {"is_post_ending": true, "started_at": completed_at, "ending_id": ending_id}
 	return save
 
+## Week 8 (SaveVersion 9) -> Week 9 resident / social permanent migration.
+## Resident Runtime remains B-owned; C mirrors reliable facts into canonical History.
+static func migrate_week8_to_week9(save: SaveData) -> SaveData:
+	if save == null:
+		return null
+	var rabbit_raw: Dictionary = save.rabbits[0].duplicate(true) if not save.rabbits.is_empty() else {}
+	var runtime: Dictionary = rabbit_raw.get("resident_runtime", {}).duplicate(true) if rabbit_raw.get("resident_runtime", {}) is Dictionary else {}
+	var runtime_residents: Dictionary = runtime.get("residents", {}).duplicate(true) if runtime.get("residents", {}) is Dictionary else {}
+
+	if runtime_residents.has(ResidentManager.CAFE_OWNER) and runtime_residents[ResidentManager.CAFE_OWNER] is Dictionary:
+		var migrated := ResidentData.from_dict(runtime_residents[ResidentManager.CAFE_OWNER])
+		migrated.resident_id = ResidentManager.CAFE_OWNER
+		migrated.relationship.resident_id = ResidentManager.CAFE_OWNER
+		save.resident_states[ResidentManager.CAFE_OWNER] = migrated.to_dict()
+		_migrate_week9_runtime_histories(save, migrated)
+	elif save.resident_states.has(ResidentManager.CAFE_OWNER) and save.resident_states[ResidentManager.CAFE_OWNER] is Dictionary:
+		runtime_residents[ResidentManager.CAFE_OWNER] = save.resident_states[ResidentManager.CAFE_OWNER].duplicate(true)
+	elif _week9_cafe_completed(save):
+		var resident := ResidentData.new()
+		resident.resident_id = ResidentManager.CAFE_OWNER
+		resident.display_name = "Café Owner"
+		resident.relationship.resident_id = ResidentManager.CAFE_OWNER
+		resident.state.state = ResidentStateData.RESIDENT
+		resident.state.current_location = "cafe"
+		resident.state.arrived_at = _week9_cafe_completed_at(save)
+		if resident.state.arrived_at <= 0.0:
+			resident.state.arrived_at = maxf(0.0, save.last_saved_at)
+		save.resident_states[ResidentManager.CAFE_OWNER] = resident.to_dict()
+		runtime_residents[ResidentManager.CAFE_OWNER] = resident.to_dict()
+
+	if save.resident_states.has(ResidentManager.CAFE_OWNER) and save.resident_states[ResidentManager.CAFE_OWNER] is Dictionary:
+		var owner := ResidentData.from_dict(save.resident_states[ResidentManager.CAFE_OWNER])
+		if owner.state.state != ResidentStateData.LOCKED and not _week9_has_resident_fact(save.resident_arrival_history, owner.resident_id):
+			var arrival := ResidentHistoryEntry.new()
+			arrival.resident_id = owner.resident_id
+			arrival.history_type = ResidentHistoryEntry.ARRIVAL
+			arrival.source_event_id = "cafe_barista_arrives_001" if save.completed_life_event_ids.has("cafe_barista_arrives_001") else "cafe_completed_migration"
+			arrival.created_at = owner.state.arrived_at
+			arrival.location_id = owner.state.current_location
+			arrival.history_id = "resident_arrival_%s_%d" % [owner.resident_id, int(round(arrival.created_at * 1000.0))]
+			save.resident_arrival_history.append(arrival.to_dict())
+
+	if not runtime_residents.is_empty():
+		runtime["residents"] = runtime_residents
+		rabbit_raw["resident_runtime"] = runtime
+		if save.rabbits.is_empty():
+			save.rabbits.append(rabbit_raw)
+		else:
+			save.rabbits[0] = rabbit_raw
+	return save
+
+static func _migrate_week9_runtime_histories(save: SaveData, resident: ResidentData) -> void:
+	for raw: Dictionary in resident.relationship_history:
+		var source_id := str(raw.get("source_id", ""))
+		var new_state := str(raw.get("new_state", resident.relationship.state))
+		var history_id := "relationship_%s_%s_%s" % [resident.resident_id, source_id if not source_id.is_empty() else "migration", new_state]
+		var exists := false
+		for existing: Dictionary in save.resident_relationship_history:
+			if str(existing.get("relationship_history_id", "")) == history_id:
+				exists = true
+				break
+		if exists:
+			continue
+		var entry := ResidentRelationshipHistoryEntry.new()
+		entry.relationship_history_id = history_id
+		entry.resident_id = resident.resident_id
+		entry.source_id = source_id
+		entry.old_state = str(raw.get("old_state", ResidentRelationshipData.STRANGER))
+		entry.new_state = new_state
+		entry.stage_changed_at = maxf(0.0, float(raw.get("changed_at", save.last_saved_at)))
+		save.resident_relationship_history.append(entry.to_dict())
+
+	for raw: Dictionary in resident.social_experience_history:
+		var source_id := str(raw.get("source_id", ""))
+		if source_id.is_empty():
+			continue
+		var exists := false
+		for existing: Dictionary in save.resident_social_experience_history:
+			if str(existing.get("source_id", "")) == source_id:
+				exists = true
+				break
+		if exists:
+			continue
+		var social := ResidentSocialExperienceHistoryEntry.new()
+		social.resident_id = resident.resident_id
+		social.source_type = str(raw.get("source_type", ""))
+		social.source_id = source_id
+		social.amount = maxi(0, int(raw.get("amount", 0)))
+		social.created_at = maxf(0.0, float(raw.get("created_at", save.last_saved_at)))
+		if social.amount > 0:
+			save.resident_social_experience_history.append(social.to_dict())
+
+	if (resident.relationship.interaction_count > 0 or resident.relationship.shared_activity_count > 0) and not _week9_has_resident_fact(save.resident_first_meeting_history, resident.resident_id):
+		var source_id := "week9_first_meeting_migration_%s" % resident.resident_id
+		var met_at := maxf(0.0, save.last_saved_at)
+		for raw: Dictionary in save.resident_social_experience_history:
+			if str(raw.get("resident_id", "")) != resident.resident_id or str(raw.get("source_type", "")) not in ["interaction", "shared_activity"]:
+				continue
+			var candidate_at := float(raw.get("created_at", 0.0))
+			if met_at <= 0.0 or (candidate_at > 0.0 and candidate_at < met_at):
+				met_at = candidate_at
+				source_id = str(raw.get("source_id", source_id))
+		var meeting := ResidentHistoryEntry.new()
+		meeting.resident_id = resident.resident_id
+		meeting.history_type = ResidentHistoryEntry.FIRST_MEETING
+		meeting.source_event_id = source_id
+		meeting.created_at = met_at
+		meeting.location_id = resident.state.current_location
+		meeting.history_id = "resident_first_meeting_%s_%d" % [resident.resident_id, int(round(met_at * 1000.0))]
+		save.resident_first_meeting_history.append(meeting.to_dict())
+
+static func _week9_has_resident_fact(history: Array[Dictionary], resident_id: String) -> bool:
+	for raw: Dictionary in history:
+		if str(raw.get("resident_id", "")) == resident_id:
+			return true
+	return false
+
+static func _week9_cafe_completed(save: SaveData) -> bool:
+	for raw: Dictionary in save.construction_history:
+		var entry := ConstructionHistoryEntry.from_dict(raw)
+		if entry.building_id in ["cafe", "coffee_shop"] and entry.is_completed:
+			return true
+	var village := VillageData.from_dict(save.village_data)
+	for building_id: String in ["coffee_shop", "cafe"]:
+		if village.building_records.has(building_id) and village.building_records[building_id] is Dictionary:
+			var raw: Dictionary = village.building_records[building_id]
+			if str(raw.get("state", "")) == BuildingState.COMPLETED or bool(raw.get("is_completed", false)) or float(raw.get("completed_at", 0.0)) > 0.0:
+				return true
+	return false
+
+static func _week9_cafe_completed_at(save: SaveData) -> float:
+	var result := 0.0
+	for raw: Dictionary in save.construction_history:
+		var entry := ConstructionHistoryEntry.from_dict(raw)
+		if entry.building_id not in ["cafe", "coffee_shop"] or not entry.is_completed:
+			continue
+		if result <= 0.0 or (entry.completed_at > 0.0 and entry.completed_at < result):
+			result = entry.completed_at
+	if result > 0.0:
+		return result
+	var village := VillageData.from_dict(save.village_data)
+	for building_id: String in ["coffee_shop", "cafe"]:
+		if village.building_records.has(building_id) and village.building_records[building_id] is Dictionary:
+			var at := maxf(0.0, float((village.building_records[building_id] as Dictionary).get("completed_at", 0.0)))
+			if at > 0.0:
+				return at
+	return maxf(0.0, save.last_saved_at)
+
 static func _week7_canonical_slot(slot_id: String) -> String:
 	if SaveData.WEEK7_BUILDING_SLOTS.has(slot_id):
 		return slot_id

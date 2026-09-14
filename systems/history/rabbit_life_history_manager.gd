@@ -82,6 +82,8 @@ func update_profile(save: SaveData, rabbit: RabbitData, growth_manager: GrowthMa
 	profile.cafe_unlock = _milestone_display_before("cafe_unlock", profile.created_at)
 	profile.cafe_complete = _milestone_display_before("cafe_complete", profile.created_at)
 	profile.final_growth = _milestone_display_before("final_growth", profile.created_at)
+	profile.first_friend = _first_friend_from_history(save.resident_relationship_history, profile.created_at)
+	profile.friend_list = _friend_list_from_history(save.resident_relationship_history, profile.created_at)
 	profile.favorite_location = _favorite_key(save.all_activity_records, "location_id", profile.created_at)
 	profile.favorite_food = _favorite_key(save.food_use_history, "food_id", profile.created_at)
 	profile.most_used_activity = _favorite_key(save.all_activity_records, "activity_id", profile.created_at)
@@ -150,10 +152,42 @@ func get_runtime_summary() -> Dictionary:
 		"most_used_activity": str(rabbit_life_profile.get("most_used_activity", "")),
 		"first_growth_mark": str(rabbit_life_profile.get("first_growth", rabbit_life_profile.get("first_growth_mark", ""))),
 		"first_building": str(rabbit_life_profile.get("first_building", "")),
+		"first_friend": str(rabbit_life_profile.get("first_friend", "")),
+		"friend_list": rabbit_life_profile.get("friend_list", []).duplicate() if rabbit_life_profile.get("friend_list", []) is Array else [],
 		"first_forest": str(rabbit_life_profile.get("first_forest", "")),
 		"first_fishing": str(rabbit_life_profile.get("first_fishing", "")),
 		"important_memories": _memory_titles(rabbit_life_profile.get("important_memories", []))
 	}
+
+func _first_friend_from_history(history: Array[Dictionary], cutoff_at: float) -> String:
+	var resident_id := ""
+	var best_at := 0.0
+	for raw: Dictionary in history:
+		var entry := ResidentRelationshipHistoryEntry.from_dict(raw)
+		if entry.new_state != ResidentRelationshipData.FRIEND:
+			continue
+		if cutoff_at > 0.0 and entry.stage_changed_at > cutoff_at:
+			continue
+		if resident_id.is_empty() or _time_is_earlier(entry.stage_changed_at, best_at):
+			resident_id = entry.resident_id
+			best_at = entry.stage_changed_at
+	return resident_id
+
+func _friend_list_from_history(history: Array[Dictionary], cutoff_at: float) -> Array[String]:
+	var latest: Dictionary = {}
+	for raw: Dictionary in history:
+		var entry := ResidentRelationshipHistoryEntry.from_dict(raw)
+		if cutoff_at > 0.0 and entry.stage_changed_at > cutoff_at:
+			continue
+		var current: Dictionary = latest.get(entry.resident_id, {}) if latest.get(entry.resident_id, {}) is Dictionary else {}
+		if current.is_empty() or float(current.get("at", 0.0)) <= entry.stage_changed_at:
+			latest[entry.resident_id] = {"state": entry.new_state, "at": entry.stage_changed_at}
+	var result: Array[String] = []
+	for resident_id: String in latest:
+		if str((latest[resident_id] as Dictionary).get("state", "")) == ResidentRelationshipData.FRIEND:
+			result.append(resident_id)
+	result.sort()
+	return result
 
 func milestones_to_array() -> Array[Dictionary]:
 	return rabbit_life_milestones.duplicate(true)
@@ -331,6 +365,13 @@ func _sanitize_milestones(source: Variant) -> Array[Dictionary]:
 		seen[entry.milestone_id] = true
 		result.append(entry.to_dict())
 	return result
+
+func _time_is_earlier(candidate: float, current: float) -> bool:
+	if current <= 0.0:
+		return candidate > 0.0
+	if candidate <= 0.0:
+		return false
+	return candidate < current
 
 func _format_date(timestamp: float) -> String:
 	if timestamp <= 0.0:

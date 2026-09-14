@@ -69,6 +69,22 @@ const WEEK8_VILLAGE_STAGE1_PATH := "res://data/journals/week8/village_stage1.jso
 const WEEK8_ENDING_PATH := "res://data/journals/week8/ending.json"
 const WEEK8_POST_ENDING_PATH := "res://data/journals/week8/post_ending.json"
 
+# Week 9 resident / relationship templates.
+const RESIDENT_FIRST_MEETING_PATH := "res://data/journals/residents/first_meeting.json"
+const RESIDENT_CAFE_OWNER_PATH := "res://data/journals/residents/cafe_owner.json"
+const RESIDENT_CONVERSATION_PATH := "res://data/journals/residents/conversation.json"
+const RESIDENT_SHARED_CAFE_PATH := "res://data/journals/residents/shared_cafe.json"
+const RESIDENT_SHARED_FOREST_PATH := "res://data/journals/residents/shared_forest.json"
+const RESIDENT_SHARED_PICNIC_PATH := "res://data/journals/residents/shared_picnic.json"
+const RESIDENT_HOME_VISIT_PATH := "res://data/journals/residents/home_visit.json"
+const RESIDENT_GIFT_PATH := "res://data/journals/residents/gift.json"
+const RESIDENT_LETTER_PATH := "res://data/journals/residents/letter.json"
+const RESIDENT_INVITATION_PATH := "res://data/journals/residents/invitation.json"
+const RESIDENT_FIRST_FRIEND_PATH := "res://data/journals/residents/first_friend.json"
+const RESIDENT_FOREST_REACTION_PATH := "res://data/journals/residents/forest_reaction.json"
+const RESIDENT_LAKESIDE_REACTION_PATH := "res://data/journals/residents/lakeside_reaction.json"
+const RESIDENT_BALANCED_REACTION_PATH := "res://data/journals/residents/balanced_reaction.json"
+
 static func generate(active: ActiveActivityData, journal_id: String) -> JournalEntry:
 	if active == null or active.rabbit == null or active.activity == null:
 		return null
@@ -862,6 +878,185 @@ static func generate_week8_post_ending_journal(rabbit_name: String, journal_id: 
 	journal.location_id = "lake" if context in ["lake", "lakeside"] else context
 	journal.location_name = {"home": "家裡", "forest": "森林", "lake": "湖邊", "lakeside": "湖邊", "cafe": "咖啡館", "picnic": "野餐區"}.get(context, "村莊")
 	return journal
+
+# ---------------- Week 9 ----------------
+
+static func generate_week9_resident_arrival_journal(rabbit_name: String, journal_id: String, entry: ResidentHistoryEntry, relationship_state := ResidentRelationshipData.STRANGER) -> JournalEntry:
+	if entry == null or entry.resident_id.is_empty():
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_CAFE_OWNER_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_arrival", entry.created_at, str(template.get("title", "新的居民")), str(template.get("content", "{rabbit_name} 注意到村莊裡多了一位居民。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = relationship_state
+	journal.resident_event_id = entry.source_event_id if not entry.source_event_id.is_empty() else entry.history_id
+	journal.location_id = entry.location_id
+	journal.location_name = _resident_location_name(entry.location_id)
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week9_first_meeting_journal(rabbit_name: String, journal_id: String, entry: ResidentHistoryEntry, relationship_state := ResidentRelationshipData.STRANGER) -> JournalEntry:
+	if entry == null or entry.resident_id.is_empty():
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_FIRST_MEETING_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_first_meeting", entry.created_at, str(template.get("title", "第一次正式認識")), str(template.get("content", "{rabbit_name} 第一次和居民正式認識。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = relationship_state
+	journal.resident_interaction_id = entry.source_event_id
+	journal.resident_event_id = entry.history_id
+	journal.location_id = entry.location_id
+	journal.location_name = _resident_location_name(entry.location_id)
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week9_interaction_journal(rabbit_name: String, journal_id: String, entry: ResidentInteractionHistoryEntry) -> JournalEntry:
+	if entry == null or entry.interaction_id.is_empty() or entry.resident_id.is_empty():
+		return null
+	var path := _resident_reaction_path(entry.reaction_tag)
+	if path.is_empty():
+		path = RESIDENT_CONVERSATION_PATH
+	var template := _pick_dictionary(_load_json(path).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_interaction", entry.interacted_at, str(template.get("title", "聊了一會兒")), str(template.get("content", "{rabbit_name} 和居民聊了一會兒。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = entry.relationship_state
+	journal.resident_interaction_id = entry.interaction_id
+	journal.activity_record_id = entry.interaction_id
+	journal.activity_id = entry.interaction_type
+	journal.growth_form = _resident_branch_from_reaction(entry.reaction_tag)
+	journal.stat_changes = {"relationship": entry.relationship_change, "social_experience": entry.social_experience_change}
+	return journal
+
+static func generate_week9_shared_activity_journal(rabbit_name: String, journal_id: String, entry: SharedActivityHistoryEntry) -> JournalEntry:
+	if entry == null or entry.activity_record_id.is_empty() or entry.resident_id.is_empty():
+		return null
+	var path := RESIDENT_SHARED_CAFE_PATH
+	var location := entry.location_id
+	if location in ["forest"] or entry.activity_id.contains("forest"):
+		path = RESIDENT_SHARED_FOREST_PATH
+	elif location in ["picnic"] or entry.activity_id.contains("picnic"):
+		path = RESIDENT_SHARED_PICNIC_PATH
+	var template := _pick_dictionary(_load_json(path).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_shared_activity", entry.completed_at, str(template.get("title", "一起活動")), str(template.get("content", "{rabbit_name} 和居民一起度過了一段時間。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = entry.relationship_state
+	journal.shared_activity_id = entry.activity_record_id
+	journal.activity_record_id = entry.activity_record_id
+	journal.activity_id = entry.activity_id
+	journal.location_id = location
+	journal.location_name = _resident_location_name(location)
+	journal.growth_form = _resident_branch_from_reaction(entry.reaction_tag)
+	journal.stat_changes = {"relationship": entry.relationship_change, "social_experience": entry.social_experience_change}
+	return journal
+
+static func generate_week9_visit_journal(rabbit_name: String, journal_id: String, entry: ResidentVisitHistoryEntry, relationship_state := "") -> JournalEntry:
+	if entry == null or entry.event_id.is_empty():
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_HOME_VISIT_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_visit", entry.visited_at, str(template.get("title", "居民拜訪")), str(template.get("content", "今天有居民來找{rabbit_name}。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = relationship_state
+	journal.resident_event_id = entry.event_id
+	journal.life_event_id = entry.event_id
+	journal.location_id = entry.location_id
+	journal.location_name = _resident_location_name(entry.location_id)
+	journal.is_special_memory = true
+	return journal
+
+static func generate_week9_gift_journal(rabbit_name: String, journal_id: String, entry: ResidentGiftHistoryEntry, relationship_state := "") -> JournalEntry:
+	if entry == null or entry.event_id.is_empty():
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_GIFT_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_gift", entry.received_at, str(template.get("title", "收到居民禮物")), str(template.get("content", "{rabbit_name} 收到居民送的禮物。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = relationship_state
+	journal.resident_event_id = entry.event_id
+	journal.life_event_id = entry.event_id
+	journal.item_id = entry.item_id
+	journal.items = ["%s:%d" % [entry.item_id, entry.amount]]
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func generate_week9_letter_journal(rabbit_name: String, journal_id: String, entry: ResidentLetterHistoryEntry, relationship_state := "") -> JournalEntry:
+	if entry == null or entry.event_id.is_empty():
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_LETTER_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_letter", entry.received_at, str(template.get("title", "收到一封信")), str(template.get("content", "{rabbit_name} 收到居民寄來的信。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = relationship_state
+	journal.resident_event_id = entry.event_id
+	journal.life_event_id = entry.event_id
+	journal.growth_form = _resident_branch_from_reaction(entry.reaction_tag)
+	return journal
+
+static func generate_week9_invitation_journal(rabbit_name: String, journal_id: String, entry: ResidentInvitationHistoryEntry, relationship_state := "") -> JournalEntry:
+	if entry == null or entry.invitation_id.is_empty():
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_INVITATION_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var content := str(template.get("content", "{rabbit_name} 收到居民的邀請。"))
+	if entry.state == "accepted":
+		content += " 最後，{rabbit_name}答應了這個邀請。"
+	elif entry.state == "declined":
+		content += " 最後，{rabbit_name}這次沒有答應，但關係沒有因此變差。"
+	var journal := _base(journal_id, rabbit_name, "resident_invitation", entry.responded_at if entry.responded_at > 0.0 else entry.created_at, str(template.get("title", "收到居民邀請")), content)
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = relationship_state
+	journal.invitation_id = entry.invitation_id
+	journal.shared_activity_id = entry.activity_id
+	journal.activity_id = entry.activity_id
+	return journal
+
+static func generate_week9_first_friend_journal(rabbit_name: String, journal_id: String, entry: ResidentRelationshipHistoryEntry) -> JournalEntry:
+	if entry == null or entry.resident_id.is_empty() or entry.new_state != ResidentRelationshipData.FRIEND:
+		return null
+	var template := _pick_dictionary(_load_json(RESIDENT_FIRST_FRIEND_PATH).get("templates", []))
+	if template.is_empty():
+		return null
+	var journal := _base(journal_id, rabbit_name, "resident_first_friend", entry.stage_changed_at, str(template.get("title", "第一位朋友")), str(template.get("content", "{rabbit_name} 在村莊裡有了第一位朋友。")))
+	journal.resident_id = entry.resident_id
+	journal.relationship_state = entry.new_state
+	journal.resident_event_id = entry.relationship_history_id
+	journal.resident_interaction_id = entry.source_id
+	journal.is_special_memory = true
+	journal.is_life_memory = true
+	return journal
+
+static func _resident_reaction_path(reaction_tag: String) -> String:
+	var branch := _resident_branch_from_reaction(reaction_tag)
+	match branch:
+		"forest": return RESIDENT_FOREST_REACTION_PATH
+		"lakeside": return RESIDENT_LAKESIDE_REACTION_PATH
+		"balanced": return RESIDENT_BALANCED_REACTION_PATH
+	return RESIDENT_CONVERSATION_PATH
+
+static func _resident_branch_from_reaction(reaction_tag: String) -> String:
+	if reaction_tag.contains("_forest_"):
+		return "forest"
+	if reaction_tag.contains("_lakeside_"):
+		return "lakeside"
+	if reaction_tag.contains("_balanced_"):
+		return "balanced"
+	return ""
+
+static func _resident_location_name(location_id: String) -> String:
+	return {"home": "家裡", "forest": "森林", "lake": "湖邊", "lakeside": "湖邊", "cafe": "咖啡館", "picnic": "野餐區"}.get(location_id, "村莊")
 
 static func _base(id: String, rabbit_name: String, journal_type: String, at: float, title: String, content: String) -> JournalEntry:
 	var time := TimeManager.get_now() if at <= 0.0 else at

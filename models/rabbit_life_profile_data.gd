@@ -9,5 +9,7 @@ extends Resource
 @export var most_used_activity := ""
 @export var first_growth_mark := ""
 @export var first_building := ""
+@export var first_friend := ""
+@export var friend_list: Array[String] = []
 @export var important_event_count := 0
 @export var journal_count := 0

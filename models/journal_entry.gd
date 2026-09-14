@@ -74,6 +74,14 @@ extends Resource
 @export var ending_snapshot_id := ""
 @export var is_post_ending := false
 
+# Week 9 resident / relationship fields.
+@export var resident_id := ""
+@export var relationship_state := ""
+@export var shared_activity_id := ""
+@export var resident_event_id := ""
+@export var resident_interaction_id := ""
+@export var invitation_id := ""
+
 func _init(
 	initial_journal_id := "",
 	initial_record_id := "",
@@ -174,7 +182,13 @@ func to_dict() -> Dictionary:
 		"life_profile_snapshot_id": life_profile_snapshot_id,
 		"ending_id": ending_id,
 		"ending_snapshot_id": ending_snapshot_id,
-		"is_post_ending": is_post_ending
+		"is_post_ending": is_post_ending,
+		"resident_id": resident_id,
+		"relationship_state": relationship_state,
+		"shared_activity_id": shared_activity_id,
+		"resident_event_id": resident_event_id,
+		"resident_interaction_id": resident_interaction_id,
+		"invitation_id": invitation_id
 	}
 
 static func from_dict(data: Dictionary) -> JournalEntry:
@@ -268,6 +282,12 @@ static func from_dict(data: Dictionary) -> JournalEntry:
 	entry.ending_id = str(data.get("ending_id", ""))
 	entry.ending_snapshot_id = str(data.get("ending_snapshot_id", ""))
 	entry.is_post_ending = bool(data.get("is_post_ending", false))
+	entry.resident_id = str(data.get("resident_id", data.get("ResidentId", "")))
+	entry.relationship_state = str(data.get("relationship_state", data.get("RelationshipState", "")))
+	entry.shared_activity_id = str(data.get("shared_activity_id", data.get("SharedActivityId", "")))
+	entry.resident_event_id = str(data.get("resident_event_id", data.get("ResidentEventId", "")))
+	entry.resident_interaction_id = str(data.get("resident_interaction_id", data.get("ResidentInteractionId", "")))
+	entry.invitation_id = str(data.get("invitation_id", data.get("InvitationId", "")))
 	return entry
 
 func is_valid() -> bool:
@@ -354,4 +374,10 @@ func is_valid() -> bool:
 			return not life_profile_snapshot_id.is_empty()
 		"ending":
 			return not ending_id.is_empty()
+		"resident_arrival", "resident_first_meeting", "resident_interaction", "resident_visit", "resident_gift", "resident_letter", "resident_first_friend", "resident_reaction":
+			return not resident_id.is_empty() and (not resident_event_id.is_empty() or not resident_interaction_id.is_empty())
+		"resident_shared_activity":
+			return not resident_id.is_empty() and not shared_activity_id.is_empty()
+		"resident_invitation":
+			return not resident_id.is_empty() and not invitation_id.is_empty()
 	return true

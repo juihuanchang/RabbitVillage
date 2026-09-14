@@ -101,6 +101,19 @@ var ending_snapshots: Array[Dictionary] = []
 var ending_seen := false
 var post_ending_state: Dictionary = {"is_post_ending": false, "started_at": 0.0, "ending_id": ""}
 
+# Week 9 resident / social permanent data.
+var resident_states: Dictionary = {}
+var resident_arrival_history: Array[Dictionary] = []
+var resident_first_meeting_history: Array[Dictionary] = []
+var resident_interaction_history: Array[Dictionary] = []
+var resident_relationship_history: Array[Dictionary] = []
+var shared_activity_history: Array[Dictionary] = []
+var resident_visit_history: Array[Dictionary] = []
+var resident_gift_history: Array[Dictionary] = []
+var resident_letter_history: Array[Dictionary] = []
+var resident_invitation_history: Array[Dictionary] = []
+var resident_social_experience_history: Array[Dictionary] = []
+
 func to_dict() -> Dictionary:
 	return {
 		"save_version": save_version,
@@ -177,6 +190,17 @@ func to_dict() -> Dictionary:
 		"ending_snapshots": ending_snapshots.duplicate(true),
 		"ending_seen": ending_seen,
 		"post_ending_state": post_ending_state.duplicate(true),
+		"resident_states": resident_states.duplicate(true),
+		"resident_arrival_history": resident_arrival_history.duplicate(true),
+		"resident_first_meeting_history": resident_first_meeting_history.duplicate(true),
+		"resident_interaction_history": resident_interaction_history.duplicate(true),
+		"resident_relationship_history": resident_relationship_history.duplicate(true),
+		"shared_activity_history": shared_activity_history.duplicate(true),
+		"resident_visit_history": resident_visit_history.duplicate(true),
+		"resident_gift_history": resident_gift_history.duplicate(true),
+		"resident_letter_history": resident_letter_history.duplicate(true),
+		"resident_invitation_history": resident_invitation_history.duplicate(true),
+		"resident_social_experience_history": resident_social_experience_history.duplicate(true),
 		"cooking_state": cooking_state.duplicate(true),
 		"food_runtime_state": food_runtime_state.duplicate(true),
 		"life_location_state": life_location_state.duplicate(true)
@@ -277,6 +301,17 @@ static func from_dict(data: Dictionary) -> SaveData:
 	_load_week8_ending_snapshots(data.get("ending_snapshots", []), result.ending_snapshots)
 	result.ending_seen = bool(data.get("ending_seen", false))
 	if data.get("post_ending_state", {}) is Dictionary and not data.get("post_ending_state", {}).is_empty(): result.post_ending_state = data.get("post_ending_state", {}).duplicate(true)
+	result.resident_states = _load_week9_resident_states(data.get("resident_states", {}))
+	_copy_dict_array(data.get("resident_arrival_history", []), result.resident_arrival_history)
+	_copy_dict_array(data.get("resident_first_meeting_history", []), result.resident_first_meeting_history)
+	_copy_dict_array(data.get("resident_interaction_history", []), result.resident_interaction_history)
+	_copy_dict_array(data.get("resident_relationship_history", []), result.resident_relationship_history)
+	_copy_dict_array(data.get("shared_activity_history", []), result.shared_activity_history)
+	_copy_dict_array(data.get("resident_visit_history", []), result.resident_visit_history)
+	_copy_dict_array(data.get("resident_gift_history", []), result.resident_gift_history)
+	_copy_dict_array(data.get("resident_letter_history", []), result.resident_letter_history)
+	_copy_dict_array(data.get("resident_invitation_history", []), result.resident_invitation_history)
+	_copy_dict_array(data.get("resident_social_experience_history", []), result.resident_social_experience_history)
 	result.cooking_state = _load_cooking_state(data.get("cooking_state", {}))
 	if data.get("food_runtime_state", {}) is Dictionary: result.food_runtime_state = data.get("food_runtime_state", {}).duplicate(true)
 	if data.get("life_location_state", {}) is Dictionary: result.life_location_state = data.get("life_location_state", {}).duplicate(true)
@@ -284,6 +319,7 @@ static func from_dict(data: Dictionary) -> SaveData:
 	_repair_week6_transaction_guards(result)
 	_repair_week7_consistency(result)
 	_repair_week8_consistency(result)
+	_repair_week9_consistency(result)
 	return result
 
 func is_supported_version() -> bool:
@@ -1102,6 +1138,60 @@ static func _repair_week8_consistency(data: SaveData) -> void:
 		data.ending_seen = true
 		data.ending_state = {"state": "completed", "ending_id": ending.ending_id, "created_at": float(data.ending_state.get("created_at", 0.0)), "completed_at": ending.completed_at}
 		data.post_ending_state = {"is_post_ending": true, "started_at": ending.completed_at, "ending_id": ending.ending_id}
+
+static func _load_week9_resident_states(source: Variant) -> Dictionary:
+	var result := {}
+	if not (source is Dictionary):
+		return result
+	for raw_id: Variant in source.keys():
+		var resident_id := str(raw_id)
+		if resident_id.is_empty() or not (source[raw_id] is Dictionary):
+			continue
+		var resident := ResidentData.from_dict(source[raw_id])
+		resident.resident_id = resident_id
+		resident.relationship.resident_id = resident_id
+		result[resident_id] = resident.to_dict()
+	return result
+
+static func _repair_week9_consistency(data: SaveData) -> void:
+	# One canonical state per resident id. Arrays use stable transaction/event ids.
+	data.resident_states = _load_week9_resident_states(data.resident_states)
+	_dedup_week9(data.resident_arrival_history, "resident_id")
+	_dedup_week9(data.resident_first_meeting_history, "resident_id")
+	_dedup_week9(data.resident_interaction_history, "interaction_id")
+	_dedup_week9(data.resident_relationship_history, "relationship_history_id")
+	_dedup_week9(data.shared_activity_history, "activity_record_id")
+	_dedup_week9(data.resident_visit_history, "event_id")
+	_dedup_week9(data.resident_gift_history, "event_id")
+	_dedup_week9(data.resident_letter_history, "event_id")
+	_dedup_week9(data.resident_invitation_history, "invitation_id")
+	_dedup_week9(data.resident_social_experience_history, "source_id")
+	# Resident event ids are globally unique across visit / gift / letter histories.
+	var seen_event_ids := {}
+	data.resident_visit_history = _dedup_week9_global_events(data.resident_visit_history, seen_event_ids)
+	data.resident_gift_history = _dedup_week9_global_events(data.resident_gift_history, seen_event_ids)
+	data.resident_letter_history = _dedup_week9_global_events(data.resident_letter_history, seen_event_ids)
+
+static func _dedup_week9_global_events(collection: Array[Dictionary], seen_event_ids: Dictionary) -> Array[Dictionary]:
+	var cleaned: Array[Dictionary] = []
+	for raw: Dictionary in collection:
+		var event_id := str(raw.get("event_id", ""))
+		if event_id.is_empty() or seen_event_ids.has(event_id):
+			continue
+		seen_event_ids[event_id] = true
+		cleaned.append(raw.duplicate(true))
+	return cleaned
+
+static func _dedup_week9(collection: Array[Dictionary], key: String) -> void:
+	var seen := {}
+	var cleaned: Array[Dictionary] = []
+	for raw: Dictionary in collection:
+		var id := str(raw.get(key, ""))
+		if id.is_empty() or seen.has(id):
+			continue
+		seen[id] = true
+		cleaned.append(raw.duplicate(true))
+	collection.assign(cleaned)
 
 static func _time_is_earlier(candidate: float, current: float) -> bool:
 	if current <= 0.0:
